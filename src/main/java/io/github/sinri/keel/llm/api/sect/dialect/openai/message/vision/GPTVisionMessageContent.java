@@ -1,7 +1,7 @@
 package io.github.sinri.keel.llm.api.sect.dialect.openai.message.vision;
 
 import io.github.sinri.keel.llm.api.internal.sect.dialect.openai.GPTVisionMessageContentImpl;
-import io.github.sinri.keel.llm.api.sect.dialect.openai.vision.OpenAICompatibleVisionContent;
+import io.github.sinri.keel.llm.api.sect.dialect.openai.core.OpenAICompatibleVisionContent;
 import io.vertx.core.json.JsonObject;
 
 import java.util.Objects;

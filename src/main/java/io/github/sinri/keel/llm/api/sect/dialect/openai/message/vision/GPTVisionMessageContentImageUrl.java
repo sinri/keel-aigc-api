@@ -1,7 +1,7 @@
 package io.github.sinri.keel.llm.api.sect.dialect.openai.message.vision;
 
 import io.github.sinri.keel.llm.api.internal.sect.dialect.openai.GPTVisionMessageContentImageUrlImpl;
-import io.github.sinri.keel.llm.api.sect.dialect.openai.vision.OpenAICompatibleVisionContentForImageUrl;
+import io.github.sinri.keel.llm.api.sect.dialect.openai.core.OpenAICompatibleVisionContentForImageUrl;
 import io.vertx.core.json.JsonObject;
 
 public interface GPTVisionMessageContentImageUrl extends OpenAICompatibleVisionContentForImageUrl<GPTVisionMessageContentImageUrl> {

@@ -4,6 +4,7 @@ import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.llm.api.sect.provider.azure.AzureConfigElement;
 import io.github.sinri.keel.llm.api.sect.provider.dashscope.DashscopeConfigElement;
+import io.github.sinri.keel.llm.api.sect.provider.volces.VolcesConfigElement;
 
 import java.util.List;
 
@@ -35,5 +36,13 @@ public class ProviderConfigElement extends ConfigElement {
             throw new NotConfiguredException(getAbsoluteKeyChain(), "azure");
         }
         return new AzureConfigElement(x);
+    }
+
+    public VolcesConfigElement volces() throws NotConfiguredException {
+        ConfigElement x = extract("volces");
+        if (x == null) {
+            throw new NotConfiguredException(getAbsoluteKeyChain(), "volces");
+        }
+        return new VolcesConfigElement(x);
     }
 }

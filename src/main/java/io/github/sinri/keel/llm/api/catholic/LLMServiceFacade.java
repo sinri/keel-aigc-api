@@ -7,6 +7,7 @@ import io.github.sinri.keel.llm.api.catholic.response.stream.MixChatResponseChun
 import io.github.sinri.keel.llm.api.internal.catholic.LLMRegistration;
 import io.github.sinri.keel.llm.api.sect.provider.azure.AzureOpenAILargeLanguageModel;
 import io.github.sinri.keel.llm.api.sect.provider.dashscope.DashscopeLargeLanguageModel;
+import io.github.sinri.keel.llm.api.sect.provider.volces.VolcesLargeLanguageModel;
 import io.github.sinri.keel.logger.api.LateObject;
 import io.github.sinri.keel.logger.api.factory.LoggerFactory;
 import io.github.sinri.keel.logger.api.logger.Logger;
@@ -36,6 +37,8 @@ public final class LLMServiceFacade implements LLMService, LLMRegistration {
         registerModel(new DashscopeLargeLanguageModel(DashscopeLargeLanguageModel.MODEL_CODE_QWEN_VL_OCR));
 
         registerModel(new AzureOpenAILargeLanguageModel(AzureOpenAILargeLanguageModel.MODEL_CODE_GPT_5_CHAT));
+
+        registerModel(new VolcesLargeLanguageModel(VolcesLargeLanguageModel.MODEL_CODE_DOUBAO_PRO_32K));
     }
 
     public static LLMServiceFacade getInstance() {

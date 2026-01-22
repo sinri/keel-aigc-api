@@ -62,6 +62,7 @@ public class AzureOpenAIProvider implements LLMProvider {
      * @param requestPayload 请求体
      * @param requestId      请求 ID
      */
+    @Override
     public Future<JsonObject> request(WebClient webClient, String chatModel, JsonObject requestPayload, String requestId) {
         OpenAIModelConfigElement configElement = modelConfigElementMap.get(chatModel);
 
@@ -113,6 +114,7 @@ public class AzureOpenAIProvider implements LLMProvider {
      * @param cutterTimeout     超时时间（毫秒）
      * @param requestId         请求 ID
      */
+    @Override
     public Future<Void> requestStream(
             Vertx vertx,
             HttpClient httpClient,

@@ -32,7 +32,7 @@ class DashscopeProviderTest extends KeelJUnit5Test {
         return QwenRequest.create()
                           .input(input -> input
                                   .addSystemMessage("你是一个同声传译，用户说中文，你翻译成日文")
-                                  .addUserChatMessage("太君，这是我们找到的八路的情报")
+                                  .addUserChatMessage("今天的生活也是一样的苦涩")
                           );
     }
 
@@ -41,7 +41,7 @@ class DashscopeProviderTest extends KeelJUnit5Test {
         var webClient = LLMServiceFacade.getInstance().getWebClient();
         getUnitTestLogger().info("LLMServiceFacade WebClient Got");
 
-        dashscopeProvider.requestTextGeneration(
+        dashscopeProvider.request(
                                  webClient,
                                  "qwen-plus",
                                  createQwenRequest().toJsonObject(),
@@ -59,7 +59,7 @@ class DashscopeProviderTest extends KeelJUnit5Test {
         Vertx vertx = LLMServiceFacade.getInstance().getVertx();
         var httpClient = LLMServiceFacade.getInstance().getHttpClient();
 
-        dashscopeProvider.requestTextGenerationStream(
+        dashscopeProvider.requestStream(
                                  vertx,
                                  httpClient,
                                  "qwen-flash",

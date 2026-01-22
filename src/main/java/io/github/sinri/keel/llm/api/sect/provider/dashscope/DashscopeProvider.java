@@ -8,6 +8,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 
@@ -33,16 +34,28 @@ public class DashscopeProvider implements LLMProvider {
         return logger;
     }
 
-    public Future<JsonObject> requestTextGeneration(WebClient webClient, String chatModel, JsonObject requestPayload, String requestId) {
-        return request(webClient, endpointOfDashscopeQwenTextGenerate, chatModel, requestPayload, requestId);
+    private boolean isVisionSpecificRequest(JsonObject requestPayload) {
+        try {
+            JsonArray messages = requestPayload.getJsonObject("input").getJsonArray("messages");
+            for (var message : messages) {
+                if (message instanceof JsonObject j) {
+                    JsonArray jsonArray = j.getJsonArray("content");
+                    if (jsonArray != null && !jsonArray.isEmpty()) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
-    public Future<JsonObject> requestMultimodalGeneration(WebClient webClient, String chatModel, JsonObject requestPayload, String requestId) {
-        return request(webClient, endpointOfDashscopeQwenMultimodalGenerate, chatModel, requestPayload, requestId);
-    }
-
-    public Future<JsonObject> request(WebClient webClient, String endpoint, String chatModel, JsonObject requestPayload, String requestId) {
+    @Override
+    public Future<JsonObject> request(WebClient webClient, String chatModel, JsonObject requestPayload, String requestId) {
         requestPayload.put("model", chatModel);
+
+        String endpoint = isVisionSpecificRequest(requestPayload) ? endpointOfDashscopeQwenMultimodalGenerate : endpointOfDashscopeQwenTextGenerate;
+
         getLogger().debug(x -> x
                 .message("Start DashscopeServiceMeta.request")
                 .context(j -> j
@@ -73,22 +86,10 @@ public class DashscopeProvider implements LLMProvider {
                 });
     }
 
-    public Future<Void> requestTextGenerationStream(Vertx vertx,
-                                                    HttpClient httpClient,
-                                                    String chatModel, JsonObject requestPayload, Function<String, Future<Void>> cutterProcessFunc, long cutterTimeout, String requestId) {
-        return requestStream(vertx, httpClient, pathOfDashscopeQwenTextGenerate, chatModel, requestPayload, cutterProcessFunc, cutterTimeout, requestId);
-    }
-
-    public Future<Void> requestMultimodalGenerationStream(Vertx vertx,
-                                                          HttpClient httpClient,
-                                                          String chatModel, JsonObject requestPayload, Function<String, Future<Void>> cutterProcessFunc, long cutterTimeout, String requestId) {
-        return requestStream(vertx, httpClient, pathOfDashscopeQwenMultimodalGenerate, chatModel, requestPayload, cutterProcessFunc, cutterTimeout, requestId);
-    }
-
+    @Override
     public Future<Void> requestStream(
             Vertx vertx,
             HttpClient httpClient,
-            String path,
             String chatModel,
             JsonObject requestPayload,
             Function<String, Future<Void>> cutterProcessFunc,
@@ -96,6 +97,9 @@ public class DashscopeProvider implements LLMProvider {
             String requestId
     ) {
         requestPayload.put("model", chatModel);
+
+        String path = isVisionSpecificRequest(requestPayload) ? pathOfDashscopeQwenMultimodalGenerate : pathOfDashscopeQwenTextGenerate;
+
         getLogger().info("Start DashscopeServiceMeta.requestStream", j -> j
                 .put("payload", requestPayload)
                 .put("requestId", requestId));

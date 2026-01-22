@@ -25,7 +25,7 @@ public class DashscopeTextGenerationService extends AbstractLLMService {
     @Override
     public Future<MixChatResponse> request(MixChatRequest request) {
         QwenRequest qwenRequest = QwenUtils.toQwenRequest(request);
-        return dashscopeProvider.requestTextGeneration(
+        return dashscopeProvider.request(
                                         getWebClient(),
                                         request.getModel(),
                                         qwenRequest.toJsonObject(),
@@ -43,7 +43,7 @@ public class DashscopeTextGenerationService extends AbstractLLMService {
         QwenRequest qwenRequest = QwenUtils.toQwenRequest(request);
         qwenRequest.parameters(p -> p.stream(true).incrementalOutput(true));
 
-        return dashscopeProvider.requestTextGenerationStream(
+        return dashscopeProvider.requestStream(
                 getVertx(),
                 getHttpClient(),
                 request.getModel(),
@@ -73,7 +73,7 @@ public class DashscopeTextGenerationService extends AbstractLLMService {
 
         QwenRequest qwenRequest = QwenUtils.toQwenRequest(request);
         qwenRequest.parameters(p -> p.stream(true).incrementalOutput(true));
-        return dashscopeProvider.requestTextGenerationStream(
+        return dashscopeProvider.requestStream(
                                         getVertx(),
                                         getHttpClient(),
                                         request.getModel(),
@@ -113,7 +113,7 @@ public class DashscopeTextGenerationService extends AbstractLLMService {
     public Future<Void> requestStream(MixChatRequest request, Function<MixChatResponseChunk, Future<Void>> chunkHandler) {
         QwenRequest qwenRequest = QwenUtils.toQwenRequest(request);
         qwenRequest.parameters(p -> p.stream(true).incrementalOutput(true));
-        return dashscopeProvider.requestTextGenerationStream(
+        return dashscopeProvider.requestStream(
                 getVertx(),
                 getHttpClient(),
                 request.getModel(),

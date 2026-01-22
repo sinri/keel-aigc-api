@@ -1,4 +1,4 @@
-package io.github.sinri.keel.llm.api.sect.dialect.openai.vision;
+package io.github.sinri.keel.llm.api.sect.dialect.openai.core;
 
 import io.github.sinri.keel.base.annotations.SelfInterface;
 import io.github.sinri.keel.base.json.JsonifiableDataUnit;
