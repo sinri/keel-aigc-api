@@ -46,7 +46,7 @@ public interface MixChatMessage extends JsonObjectConvertible {
 
     String getRole();
 
-    MixChatMessage setRole(String role);
+    MixChatMessage setRole(@Nullable String role);
 
     @Nullable String getReasoningContent();
 

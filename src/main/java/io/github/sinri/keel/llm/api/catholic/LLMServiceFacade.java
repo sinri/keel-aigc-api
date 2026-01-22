@@ -1,10 +1,12 @@
 package io.github.sinri.keel.llm.api.catholic;
 
+import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.llm.api.catholic.request.MixChatRequest;
 import io.github.sinri.keel.llm.api.catholic.response.MixChatResponse;
 import io.github.sinri.keel.llm.api.catholic.response.stream.MixChatResponseChunk;
 import io.github.sinri.keel.llm.api.internal.catholic.LLMRegistration;
-import io.github.sinri.keel.llm.api.sect.dashscope.DashscopeLargeLanguageModel;
+import io.github.sinri.keel.llm.api.sect.provider.azure.AzureOpenAILargeLanguageModel;
+import io.github.sinri.keel.llm.api.sect.provider.dashscope.DashscopeLargeLanguageModel;
 import io.github.sinri.keel.logger.api.LateObject;
 import io.github.sinri.keel.logger.api.factory.LoggerFactory;
 import io.github.sinri.keel.logger.api.logger.Logger;
@@ -32,6 +34,8 @@ public final class LLMServiceFacade implements LLMService, LLMRegistration {
         registerModel(new DashscopeLargeLanguageModel(DashscopeLargeLanguageModel.MODEL_CODE_QWEN3_VL_PLUS));
         registerModel(new DashscopeLargeLanguageModel(DashscopeLargeLanguageModel.MODEL_CODE_QWEN3_VL_FLASH));
         registerModel(new DashscopeLargeLanguageModel(DashscopeLargeLanguageModel.MODEL_CODE_QWEN_VL_OCR));
+
+        registerModel(new AzureOpenAILargeLanguageModel(AzureOpenAILargeLanguageModel.MODEL_CODE_GPT_5_CHAT));
     }
 
     public static LLMServiceFacade getInstance() {
@@ -42,28 +46,44 @@ public final class LLMServiceFacade implements LLMService, LLMRegistration {
     public Future<MixChatResponse> request(MixChatRequest request) {
         String code = request.getModel();
         LargeLanguageModel largeLanguageModel = getModelWithCode(code);
-        return largeLanguageModel.getService().request(request);
+        try {
+            return largeLanguageModel.getService().request(request);
+        } catch (NotConfiguredException e) {
+            return Future.failedFuture(e);
+        }
     }
 
     @Override
     public Future<Void> requestStreamRaw(MixChatRequest request, Function<JsonObject, Future<Void>> fragmentDataHandler) {
         String code = request.getModel();
         LargeLanguageModel largeLanguageModel = getModelWithCode(code);
-        return largeLanguageModel.getService().requestStreamRaw(request, fragmentDataHandler);
+        try {
+            return largeLanguageModel.getService().requestStreamRaw(request, fragmentDataHandler);
+        } catch (NotConfiguredException e) {
+            return Future.failedFuture(e);
+        }
     }
 
     @Override
     public Future<MixChatResponse> requestStreamRaw(MixChatRequest request) {
         String code = request.getModel();
         LargeLanguageModel largeLanguageModel = getModelWithCode(code);
-        return largeLanguageModel.getService().requestStreamRaw(request);
+        try {
+            return largeLanguageModel.getService().requestStreamRaw(request);
+        } catch (NotConfiguredException e) {
+            return Future.failedFuture(e);
+        }
     }
 
     @Override
     public Future<Void> requestStream(MixChatRequest request, Function<MixChatResponseChunk, Future<Void>> chunkHandler) {
         String code = request.getModel();
         LargeLanguageModel largeLanguageModel = getModelWithCode(code);
-        return largeLanguageModel.getService().requestStream(request, chunkHandler);
+        try {
+            return largeLanguageModel.getService().requestStream(request, chunkHandler);
+        } catch (NotConfiguredException e) {
+            return Future.failedFuture(e);
+        }
     }
 
     public LLMRegistration getServiceSpecificationRegistration() {

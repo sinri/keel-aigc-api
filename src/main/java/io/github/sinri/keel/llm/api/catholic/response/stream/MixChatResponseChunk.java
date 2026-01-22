@@ -21,7 +21,7 @@ public interface MixChatResponseChunk extends JsonifiableDataUnit {
         return readInteger("created");
     }
 
-    default MixChatResponseChunk setCreated(Integer created) {
+    default MixChatResponseChunk setCreated(@Nullable Integer created) {
         ensureEntry("created", created);
         return this;
     }
@@ -30,7 +30,7 @@ public interface MixChatResponseChunk extends JsonifiableDataUnit {
         return this.readString("id");
     }
 
-    default MixChatResponseChunk setId(String id) {
+    default MixChatResponseChunk setId(@Nullable String id) {
         ensureEntry("id", id);
         return this;
     }
@@ -39,7 +39,7 @@ public interface MixChatResponseChunk extends JsonifiableDataUnit {
         return this.readString("model");
     }
 
-    default MixChatResponseChunk setModel(String model) {
+    default MixChatResponseChunk setModel(@Nullable String model) {
         ensureEntry("model", model);
         return this;
     }
@@ -48,7 +48,7 @@ public interface MixChatResponseChunk extends JsonifiableDataUnit {
         return this.readString("object");
     }
 
-    default MixChatResponseChunk setObject(String object) {
+    default MixChatResponseChunk setObject(@Nullable String object) {
         ensureEntry("object", object);
         return this;
     }

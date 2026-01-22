@@ -76,7 +76,7 @@ public interface MixChatResponseChunkChoice extends JsonifiableDataUnit {
         return readInteger("index");
     }
 
-    default MixChatResponseChunkChoice setIndex(Integer index) {
+    default MixChatResponseChunkChoice setIndex(@Nullable Integer index) {
         ensureEntry("index", index);
         return this;
     }

@@ -29,7 +29,7 @@ public class MixChatMessageImpl extends JsonifiableDataUnitImpl implements MixCh
     }
 
     @Override
-    public MixChatMessage setRole(String role) {
+    public MixChatMessage setRole(@Nullable String role) {
         ensureEntry(KEY_ROLE, role);
         return this;
     }

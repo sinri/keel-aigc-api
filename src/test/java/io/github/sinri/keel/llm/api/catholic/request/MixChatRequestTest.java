@@ -1,8 +1,9 @@
 package io.github.sinri.keel.llm.api.catholic.request;
 
 import io.github.sinri.keel.tesuto.KeelJUnit5Test;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
-
+@NullMarked
 class MixChatRequestTest extends KeelJUnit5Test {
 
     @Test

@@ -11,4 +11,6 @@ module io.github.sinri.keel.integration.llm.api {
 
     requires static org.jspecify;
     requires io.vertx.jsonschema;
+    requires java.naming;
+    requires java.logging;
 }
