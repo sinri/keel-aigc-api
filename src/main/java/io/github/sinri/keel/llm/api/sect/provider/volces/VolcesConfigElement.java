@@ -20,18 +20,16 @@ public class VolcesConfigElement extends ConfigElement {
         return readString(List.of("model", code));
     }
 
-    public Map<String, String> getModelMap() {
+    public Map<String, String> getModelMap() throws NotConfiguredException {
         Map<String, String> modelDeploymentMap = new HashMap<>();
         var models = this.extract("model");
-        if (models != null) {
-            models.getChildNames().forEach(k -> {
-                try {
-                    var v = models.getChild(k);
-                    modelDeploymentMap.put(k, v.getElementValue());
-                } catch (NotConfiguredException ignored) {
-                }
-            });
-        }
+        models.getChildNames().forEach(k -> {
+            try {
+                var v = models.getChild(k);
+                modelDeploymentMap.put(k, v.getElementValue());
+            } catch (NotConfiguredException ignored) {
+            }
+        });
         return modelDeploymentMap;
     }
 }

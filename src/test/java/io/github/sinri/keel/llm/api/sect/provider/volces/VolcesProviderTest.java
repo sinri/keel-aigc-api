@@ -1,6 +1,7 @@
 package io.github.sinri.keel.llm.api.sect.provider.volces;
 
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
+import io.github.sinri.keel.llm.api.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.llm.api.catholic.LLMServiceFacade;
 import io.github.sinri.keel.llm.api.sect.ProviderConfigElement;
 import io.github.sinri.keel.llm.api.sect.dialect.doubao.request.DoubaoRequest;
@@ -19,7 +20,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @NullMarked
-class VolcesProviderTest extends KeelJUnit5Test {
+class VolcesProviderTest extends LLMServiceFacadeBasedUnitTest {
     private final VolcesProvider provider;
 
     public VolcesProviderTest() throws NotConfiguredException {
@@ -27,10 +28,6 @@ class VolcesProviderTest extends KeelJUnit5Test {
         provider = new VolcesProvider(volcesConfigElement, getUnitTestLogger());
     }
 
-    @BeforeAll
-    public static void beforeAll() {
-        LLMServiceFacade.getInstance().setVertx(rtoc.vertx());
-    }
 
     private DoubaoRequest createDoubaoRequest() {
         return DoubaoRequest.create()
@@ -40,7 +37,7 @@ class VolcesProviderTest extends KeelJUnit5Test {
 
     @Test
     void request(VertxTestContext testContext) {
-        WebClient webClient = LLMServiceFacade.getInstance().getWebClient();
+        WebClient webClient = LLMServiceFacade.getWebClient();
         provider.request(
                         webClient,
                         VolcesLargeLanguageModel.MODEL_CODE_DOUBAO_PRO_32K,
@@ -56,8 +53,8 @@ class VolcesProviderTest extends KeelJUnit5Test {
 
     @Test
     void requestStream(VertxTestContext testContext) {
-        Vertx vertx = LLMServiceFacade.getInstance().getVertx();
-        HttpClient httpClient = LLMServiceFacade.getInstance().getHttpClient();
+        Vertx vertx = LLMServiceFacade.getVertx();
+        HttpClient httpClient = LLMServiceFacade.getHttpClient();
         provider.requestStream(
                         vertx,
                         httpClient,

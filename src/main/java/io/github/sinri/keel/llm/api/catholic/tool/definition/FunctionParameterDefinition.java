@@ -1,6 +1,7 @@
 package io.github.sinri.keel.llm.api.catholic.tool.definition;
 
 import io.vertx.json.schema.common.dsl.SchemaType;
+import org.jspecify.annotations.Nullable;
 
 /**
  * FunctionParameterDefinition 用于描述函数参数的定义。
@@ -22,7 +23,7 @@ public class FunctionParameterDefinition {
      */
     private String description;
 
-    private Boolean required;
+    private @Nullable Boolean required;
 
     /**
      * 构造方法，初始化参数定义。
@@ -88,7 +89,7 @@ public class FunctionParameterDefinition {
         this.required = required;
     }
 
-    public Boolean getRequired() {
+    public @Nullable Boolean getRequired() {
         return required;
     }
 }

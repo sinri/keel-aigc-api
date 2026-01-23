@@ -1,6 +1,7 @@
 package io.github.sinri.keel.llm.api.sect.provider.dashscope;
 
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
+import io.github.sinri.keel.llm.api.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.llm.api.catholic.LLMServiceFacade;
 import io.github.sinri.keel.llm.api.sect.ProviderConfigElement;
 import io.github.sinri.keel.llm.api.sect.dialect.qwen.request.QwenRequest;
@@ -13,15 +14,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 @NullMarked
-class DashscopeProviderTest extends KeelJUnit5Test {
+class DashscopeProviderTest extends LLMServiceFacadeBasedUnitTest {
 
     private final DashscopeProvider dashscopeProvider;
 
     public DashscopeProviderTest(VertxTestContext testContext) throws NotConfiguredException {
-        System.out.println("RTOC: " + rtoc);
-        System.out.println("RTOC Vertx: " + rtoc.vertx());
-        LLMServiceFacade.getInstance().setVertx(rtoc.vertx());
-        System.out.println("LLMServiceFacade Vertx Set");
         var apiKey = ProviderConfigElement.load().dashscope().qwen().apiKey();
         getUnitTestLogger().info("Qwen API Key Got");
         dashscopeProvider = new DashscopeProvider(apiKey, getUnitTestLogger());
@@ -38,7 +35,7 @@ class DashscopeProviderTest extends KeelJUnit5Test {
 
     @Test
     void testTextSync(VertxTestContext testContext) {
-        var webClient = LLMServiceFacade.getInstance().getWebClient();
+        var webClient = LLMServiceFacade.getWebClient();
         getUnitTestLogger().info("LLMServiceFacade WebClient Got");
 
         dashscopeProvider.request(
@@ -56,8 +53,8 @@ class DashscopeProviderTest extends KeelJUnit5Test {
 
     @Test
     void testTextStreamChunked(VertxTestContext testContext) {
-        Vertx vertx = LLMServiceFacade.getInstance().getVertx();
-        var httpClient = LLMServiceFacade.getInstance().getHttpClient();
+        Vertx vertx = LLMServiceFacade.getVertx();
+        var httpClient = LLMServiceFacade.getHttpClient();
 
         dashscopeProvider.requestStream(
                                  vertx,

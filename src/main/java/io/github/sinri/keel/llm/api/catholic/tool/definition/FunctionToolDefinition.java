@@ -1,6 +1,7 @@
 package io.github.sinri.keel.llm.api.catholic.tool.definition;
 
 import io.github.sinri.keel.base.json.JsonifiableDataUnit;
+import io.github.sinri.keel.llm.api.internal.catholic.tool.CommonFunctionToolDefinition;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.json.schema.common.dsl.ObjectSchemaBuilder;
@@ -10,6 +11,10 @@ import org.jspecify.annotations.Nullable;
 import java.util.List;
 
 public interface FunctionToolDefinition extends JsonifiableDataUnit {
+    static FunctionToolDefinition create() {
+        return new CommonFunctionToolDefinition();
+    }
+
     /**
      * @return 工具函数的名称
      */

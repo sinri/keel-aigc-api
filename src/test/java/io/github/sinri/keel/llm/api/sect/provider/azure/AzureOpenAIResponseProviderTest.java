@@ -1,6 +1,7 @@
 package io.github.sinri.keel.llm.api.sect.provider.azure;
 
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
+import io.github.sinri.keel.llm.api.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.llm.api.catholic.LLMServiceFacade;
 import io.github.sinri.keel.llm.api.sect.ProviderConfigElement;
 import io.github.sinri.keel.llm.api.sect.dialect.openai.stateful.StatefulChatRequest;
@@ -14,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 @NullMarked
-class AzureOpenAIResponseProviderTest extends KeelJUnit5Test {
+class AzureOpenAIResponseProviderTest extends LLMServiceFacadeBasedUnitTest {
     private final AzureOpenAIResponseProvider azureOpenAIResponseProvider;
 
     public AzureOpenAIResponseProviderTest() throws NotConfiguredException {
@@ -22,11 +23,6 @@ class AzureOpenAIResponseProviderTest extends KeelJUnit5Test {
                 ProviderConfigElement.load().azure().openai(),
                 getUnitTestLogger()
         );
-    }
-
-    @BeforeAll
-    public static void beforeAll() {
-        LLMServiceFacade.getInstance().setVertx(rtoc.vertx());
     }
 
     private StatefulChatRequest createStatefulChatRequest() {
@@ -38,7 +34,7 @@ class AzureOpenAIResponseProviderTest extends KeelJUnit5Test {
     @Test
     void testRequest(VertxTestContext testContext) {
         azureOpenAIResponseProvider.request(
-                                           LLMServiceFacade.getInstance().getWebClient(),
+                                           LLMServiceFacade.getWebClient(),
                                            "gpt-5-chat",
                                            createStatefulChatRequest().toJsonObject(),
                                            UUID.randomUUID().toString()

@@ -1,6 +1,7 @@
 package io.github.sinri.keel.llm.api.sect.provider.dashscope;
 
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
+import io.github.sinri.keel.llm.api.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.llm.api.catholic.LLMServiceFacade;
 import io.github.sinri.keel.llm.api.catholic.message.MixChatVisionContentElement;
 import io.github.sinri.keel.llm.api.catholic.request.MixChatRequest;
@@ -15,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 @NullMarked
-class DashscopeMultimodalGenerationServiceTest extends KeelJUnit5Test {
+class DashscopeMultimodalGenerationServiceTest extends LLMServiceFacadeBasedUnitTest {
     private final DashscopeMultimodalGenerationService dashscopeMultimodalGenerationService;
 
     DashscopeMultimodalGenerationServiceTest() throws NotConfiguredException {
@@ -23,12 +24,6 @@ class DashscopeMultimodalGenerationServiceTest extends KeelJUnit5Test {
         dashscopeMultimodalGenerationService = new DashscopeMultimodalGenerationService(apiKey, getUnitTestLogger());
         getUnitTestLogger().visibleLevel(LogLevel.INFO);
     }
-
-    @BeforeAll
-    public static void beforeAll() {
-        LLMServiceFacade.getInstance().setVertx(rtoc.vertx());
-    }
-
     private MixChatRequest createMixChatRequest() {
         return MixChatRequest.create()
                              .setModel(DashscopeLargeLanguageModel.MODEL_CODE_QWEN3_VL_FLASH)

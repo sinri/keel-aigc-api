@@ -2,10 +2,13 @@ package io.github.sinri.keel.llm.api.sect.provider.dashscope;
 
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.llm.api.catholic.LLMService;
-import io.github.sinri.keel.llm.api.catholic.LLMServiceFacade;
 import io.github.sinri.keel.llm.api.catholic.LargeLanguageModel;
 import io.github.sinri.keel.llm.api.sect.ProviderConfigElement;
-import io.github.sinri.keel.logger.api.logger.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DashscopeLargeLanguageModel extends LargeLanguageModel {
 
@@ -16,10 +19,27 @@ public class DashscopeLargeLanguageModel extends LargeLanguageModel {
     public final static String MODEL_CODE_QWEN3_VL_PLUS = "qwen3-vl-plus";
     public final static String MODEL_CODE_QWEN3_VL_FLASH = "qwen3-vl-flash";
     public final static String MODEL_CODE_QWEN_VL_OCR = "qwen-vl-ocr";
+    private static final Map<String, DashscopeLargeLanguageModel> CACHE = new ConcurrentHashMap<>();
     private final String modelCode;
 
-    public DashscopeLargeLanguageModel(String modelCode) {
+    protected DashscopeLargeLanguageModel(String modelCode) {
         this.modelCode = modelCode;
+    }
+
+    public static List<DashscopeLargeLanguageModel> createCommonQwenSeriesLLMs() {
+        ArrayList<DashscopeLargeLanguageModel> list = new ArrayList<>();
+        list.add(factory(DashscopeLargeLanguageModel.MODEL_CODE_QWEN3_MAX));
+        list.add(factory(DashscopeLargeLanguageModel.MODEL_CODE_QWEN_PLUS));
+        list.add(factory(DashscopeLargeLanguageModel.MODEL_CODE_QWEN_FLASH));
+        list.add(factory(DashscopeLargeLanguageModel.MODEL_CODE_QWEN_LONG));
+        list.add(factory(DashscopeLargeLanguageModel.MODEL_CODE_QWEN3_VL_PLUS));
+        list.add(factory(DashscopeLargeLanguageModel.MODEL_CODE_QWEN3_VL_FLASH));
+        list.add(factory(DashscopeLargeLanguageModel.MODEL_CODE_QWEN_VL_OCR));
+        return list;
+    }
+
+    public static DashscopeLargeLanguageModel factory(String modelCode) {
+        return CACHE.computeIfAbsent(modelCode, DashscopeLargeLanguageModel::new);
     }
 
     public String getApiKey() throws NotConfiguredException {

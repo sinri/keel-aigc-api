@@ -1,6 +1,7 @@
 package io.github.sinri.keel.llm.api.sect.provider.azure;
 
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
+import io.github.sinri.keel.llm.api.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.llm.api.catholic.LLMServiceFacade;
 import io.github.sinri.keel.llm.api.sect.ProviderConfigElement;
 import io.github.sinri.keel.llm.api.sect.dialect.openai.OpenAIConfigElement;
@@ -17,19 +18,13 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 @NullMarked
-class AzureOpenAIClassicProviderTest extends KeelJUnit5Test {
+class AzureOpenAIClassicProviderTest extends LLMServiceFacadeBasedUnitTest {
     private final AzureOpenAIClassicProvider provider;
 
     public AzureOpenAIClassicProviderTest() throws NotConfiguredException {
         OpenAIConfigElement openai = ProviderConfigElement.load().azure().openai();
         provider = new AzureOpenAIClassicProvider(openai, getUnitTestLogger());
     }
-
-    @BeforeAll
-    public static void beforeAll() {
-        LLMServiceFacade.getInstance().setVertx(rtoc.vertx());
-    }
-
 
     private GPTRequest createGPTRequest() {
         return GPTRequest.create()
@@ -39,7 +34,7 @@ class AzureOpenAIClassicProviderTest extends KeelJUnit5Test {
 
     @Test
     void request(VertxTestContext testContext) {
-        var webClient = LLMServiceFacade.getInstance().getWebClient();
+        var webClient = LLMServiceFacade.getWebClient();
 
         provider.request(
                         webClient,
@@ -56,8 +51,8 @@ class AzureOpenAIClassicProviderTest extends KeelJUnit5Test {
 
     @Test
     void requestStream(VertxTestContext testContext) {
-        Vertx vertx = LLMServiceFacade.getInstance().getVertx();
-        HttpClient httpClient = LLMServiceFacade.getInstance().getHttpClient();
+        Vertx vertx = LLMServiceFacade.getVertx();
+        HttpClient httpClient = LLMServiceFacade.getHttpClient();
 
         provider.requestStream(
                         vertx,

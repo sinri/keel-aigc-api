@@ -1,14 +1,20 @@
 package io.github.sinri.keel.llm.api.catholic.tool.definition;
 
 import io.github.sinri.keel.base.json.JsonifiableDataUnit;
+import io.github.sinri.keel.llm.api.internal.catholic.tool.CommonToolDefinition;
 
 public interface ToolDefinition extends JsonifiableDataUnit {
+
+    static ToolDefinition create() {
+        return new CommonToolDefinition();
+    }
+
     /**
      * 工具的类型。
      * 一般来说，当前仅支持{@code function}。
      */
     default String type() {
-        return readString("type");
+        return readStringRequired("type");
     }
 
     /**

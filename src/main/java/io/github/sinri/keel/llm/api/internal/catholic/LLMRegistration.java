@@ -2,12 +2,27 @@ package io.github.sinri.keel.llm.api.internal.catholic;
 
 import io.github.sinri.keel.llm.api.catholic.LargeLanguageModel;
 
-public interface LLMRegistration {
-    static LLMRegistration shared() {
-        return LLMRegistrationImpl.getInstance();
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
+public final class LLMRegistration {
+    private static final LLMRegistration instance = new LLMRegistration();
+    private final Map<String, LargeLanguageModel> map = new ConcurrentHashMap<>();
+
+    public static LLMRegistration shared() {
+        return instance;
     }
 
-    LargeLanguageModel getModelWithCode(String code);
+    public static LLMRegistration getInstance() {
+        return instance;
+    }
 
-    void registerModel(LargeLanguageModel largeLanguageModel);
+    public LargeLanguageModel getModelWithCode(String code) {
+        return Objects.requireNonNull(map.get(code));
+    }
+
+    public void registerModel(LargeLanguageModel serviceSpecification) {
+        this.map.put(serviceSpecification.getCode(), serviceSpecification);
+    }
 }

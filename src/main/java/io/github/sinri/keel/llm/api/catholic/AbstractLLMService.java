@@ -19,16 +19,16 @@ public abstract class AbstractLLMService implements LLMService {
 
     @Override
     public final WebClient getWebClient() {
-        return LLMServiceFacade.getInstance().getWebClient();
+        return LLMServiceFacade.getWebClient();
     }
 
     @Override
     public final HttpClient getHttpClient() {
-        return LLMServiceFacade.getInstance().getHttpClient();
+        return LLMServiceFacade.getHttpClient();
     }
 
     @Override
     public final Vertx getVertx() {
-        return LLMServiceFacade.getInstance().getVertx();
+        return LLMServiceFacade.getVertx();
     }
 }

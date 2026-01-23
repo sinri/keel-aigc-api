@@ -24,10 +24,10 @@ val jspecifyVersion: String by project
 val vertxVersion: String by project
 val keelCoreVersion: String by project
 val keelTestVersion: String by project
-val keelWebVersion: String by project
-val keelMySQLVersion: String by project
-val keelAliyunVersion: String by project
-val keelLoggerExtVersion: String by project
+//val keelWebVersion: String by project
+//val keelMySQLVersion: String by project
+//val keelAliyunVersion: String by project
+//val keelLoggerExtVersion: String by project
 repositories {
     // Internal Nexus repository for dependencies
     maven {

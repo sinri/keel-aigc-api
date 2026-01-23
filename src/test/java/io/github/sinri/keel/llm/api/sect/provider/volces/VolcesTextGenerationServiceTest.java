@@ -1,10 +1,10 @@
 package io.github.sinri.keel.llm.api.sect.provider.volces;
 
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
+import io.github.sinri.keel.llm.api.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.llm.api.catholic.LLMServiceFacade;
 import io.github.sinri.keel.llm.api.sect.ProviderConfigElement;
-import io.github.sinri.keel.llm.api.sect.provider.MixChatRequestMock;
-import io.github.sinri.keel.tesuto.KeelJUnit5Test;
+import io.github.sinri.keel.llm.api.MixChatRequestMock;
 import io.vertx.core.Future;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @NullMarked
-class VolcesTextGenerationServiceTest extends KeelJUnit5Test implements MixChatRequestMock {
+class VolcesTextGenerationServiceTest extends LLMServiceFacadeBasedUnitTest implements MixChatRequestMock {
     private final VolcesTextGenerationService service;
 
     VolcesTextGenerationServiceTest() throws NotConfiguredException {
@@ -24,7 +24,7 @@ class VolcesTextGenerationServiceTest extends KeelJUnit5Test implements MixChatR
 
     @BeforeAll
     public static void beforeAll() {
-        LLMServiceFacade.getInstance().setVertx(rtoc.vertx());
+        LLMServiceFacade.setVertx(rtoc.vertx());
     }
 
     @Test
