@@ -3,7 +3,7 @@ package io.github.sinri.keel.llm.api.sect.dialect.doubao.message.vision;
 import io.github.sinri.keel.base.json.JsonifiableDataUnit;
 import io.github.sinri.keel.llm.api.internal.sect.dialect.doubao.ContentImageUrlImpl;
 import io.github.sinri.keel.llm.api.internal.sect.dialect.doubao.ImagePixelLimitImpl;
-import io.github.sinri.keel.llm.api.sect.dialect.openai.core.OpenAICompatibleVisionContentForImageUrl;
+import io.github.sinri.keel.llm.api.sect.dialect.openai.classic.core.OpenAICompatibleVisionContentForImageUrl;
 import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
 

@@ -1,7 +1,7 @@
 package io.github.sinri.keel.llm.api.sect.dialect.doubao.message.vision;
 
 import io.github.sinri.keel.llm.api.internal.sect.dialect.doubao.DoubaoVisionContentImpl;
-import io.github.sinri.keel.llm.api.sect.dialect.openai.core.OpenAICompatibleVisionContent;
+import io.github.sinri.keel.llm.api.sect.dialect.openai.classic.core.OpenAICompatibleVisionContent;
 import io.vertx.core.json.JsonObject;
 
 import java.util.Objects;
