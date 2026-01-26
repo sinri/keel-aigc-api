@@ -1,1 +1,1 @@
-rootProject.name = "keel-llm-api"
+rootProject.name = "keel-aigc-api"

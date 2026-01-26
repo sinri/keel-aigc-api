@@ -1,0 +1,12 @@
+package io.github.sinri.keel.aigc.api.internal.llm.sect.dialect.openai.classic.core;
+
+import io.github.sinri.keel.base.json.UnmodifiableJsonifiableEntityImpl;
+import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.classic.core.filter.OpenAIContentFilterDetectedWithCitationResult;
+import io.vertx.core.json.JsonObject;
+
+
+public final class ContentFilterDetectedWithCitationResultImpl extends UnmodifiableJsonifiableEntityImpl implements OpenAIContentFilterDetectedWithCitationResult {
+    public ContentFilterDetectedWithCitationResultImpl( JsonObject jsonObject) {
+        super(jsonObject);
+    }
+}

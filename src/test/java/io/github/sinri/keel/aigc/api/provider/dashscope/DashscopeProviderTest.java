@@ -1,0 +1,75 @@
+package io.github.sinri.keel.aigc.api.provider.dashscope;
+
+import io.github.sinri.keel.base.configuration.NotConfiguredException;
+import io.github.sinri.keel.aigc.api.llm.LLMServiceFacadeBasedUnitTest;
+import io.github.sinri.keel.aigc.api.llm.catholic.LLMServiceFacade;
+import io.github.sinri.keel.aigc.api.llm.sect.ProviderConfigElement;
+import io.github.sinri.keel.aigc.api.llm.sect.dialect.qwen.request.QwenRequest;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.junit5.VertxTestContext;
+import org.jspecify.annotations.NullMarked;
+import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+@NullMarked
+class DashscopeProviderTest extends LLMServiceFacadeBasedUnitTest {
+
+    private final DashscopeProvider dashscopeProvider;
+
+    public DashscopeProviderTest(VertxTestContext testContext) throws NotConfiguredException {
+        var apiKey = ProviderConfigElement.load().dashscope().qwen().apiKey();
+        getUnitTestLogger().info("Qwen API Key Got");
+        dashscopeProvider = new DashscopeProvider(apiKey, getUnitTestLogger());
+        testContext.completeNow();
+    }
+
+    private QwenRequest createQwenRequest() {
+        return QwenRequest.create()
+                          .input(input -> input
+                                  .addSystemMessage("你是一个同声传译，用户说中文，你翻译成日文")
+                                  .addUserChatMessage("今天的生活也是一样的苦涩")
+                          );
+    }
+
+    @Test
+    void testTextSync(VertxTestContext testContext) {
+        var webClient = LLMServiceFacade.getWebClient();
+        getUnitTestLogger().info("LLMServiceFacade WebClient Got");
+
+        dashscopeProvider.request(
+                                 webClient,
+                                 "qwen-plus",
+                                 createQwenRequest().toJsonObject(),
+                                 UUID.randomUUID().toString()
+                         )
+                         .compose(resp -> {
+                             getUnitTestLogger().info("resp:\n" + resp.encodePrettily());
+                             return Future.succeededFuture();
+                         })
+                         .onComplete(testContext.succeedingThenComplete());
+    }
+
+    @Test
+    void testTextStreamChunked(VertxTestContext testContext) {
+        Vertx vertx = LLMServiceFacade.getKeel();
+        var httpClient = LLMServiceFacade.getHttpClient();
+
+        dashscopeProvider.requestStream(
+                                 vertx,
+                                 httpClient,
+                                 "qwen-flash",
+                                 createQwenRequest()
+                                         .parameters(p -> p.stream(true).incrementalOutput(true))
+                                         .toJsonObject(),
+                                 s -> {
+                                     getUnitTestLogger().info("IN CHUNK:\n" + s);
+                                     return Future.succeededFuture();
+                                 },
+                                 180_000L,
+                                 UUID.randomUUID().toString()
+                         )
+                         .onComplete(testContext.succeedingThenComplete());
+    }
+
+}

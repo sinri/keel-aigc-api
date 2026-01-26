@@ -86,7 +86,7 @@ tasks.processResources {
 // Configure test task (matching Maven surefire configuration)
 tasks.test {
     useJUnitPlatform()
-    include("io/github/sinri/keel/llm/api/**/*Test.class")
+    include("io/github/sinri/keel/aigc/api/**/*Test.class")
 }
 
 // Configure JavaDoc (matching Maven javadoc plugin configuration)
