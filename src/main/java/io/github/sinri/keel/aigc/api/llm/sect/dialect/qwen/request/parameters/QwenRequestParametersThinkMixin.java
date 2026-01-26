@@ -3,7 +3,7 @@ package io.github.sinri.keel.aigc.api.llm.sect.dialect.qwen.request.parameters;
 import org.jspecify.annotations.Nullable;
 
 /**
- * @since 2.0.0
+ * @since 5.0.0
  */
 interface QwenRequestParametersThinkMixin<E> extends QwenRequestParametersCore<E> {
     /**

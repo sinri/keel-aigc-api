@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * @since 2.0.0
+ * @since 5.0.0
  */
 interface QwenRequestParametersToolCallMixin<E> extends QwenRequestParametersCore<E> {
     /**

@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.List;
 
 /**
- * @since 2.0.1
+ * @since 5.0.0
  */
 public interface StatefulChatResponseOutputItem extends UnmodifiableJsonifiableEntity {
     static StatefulChatResponseOutputItem wrap(JsonObject jsonObject) {

@@ -14,26 +14,68 @@ import io.vertx.ext.web.client.WebClient;
 
 import java.util.function.Function;
 
+/**
+ * Dashscope（阿里云通义千问）提供者实现。
+ * <p>
+ * 支持文本生成和多模态生成两种类型的请求。
+ *
+ * @since 5.0.0
+ */
 public class DashscopeProvider implements LLMProvider {
+    /**
+     * 提供者名称。
+     */
     public static final String PROVIDER_NAME = "Dashscope";
+    /**
+     * Dashscope 服务主机名。
+     */
     public final static String hostOfDashscope = "dashscope.aliyuncs.com";
+    /**
+     * 文本生成 API 路径。
+     */
     public final static String pathOfDashscopeQwenTextGenerate = "/api/v1/services/aigc/text-generation/generation";
+    /**
+     * 文本生成 API 端点。
+     */
     public final static String endpointOfDashscopeQwenTextGenerate = "https://" + hostOfDashscope + pathOfDashscopeQwenTextGenerate;
+    /**
+     * 多模态生成 API 路径。
+     */
     public final static String pathOfDashscopeQwenMultimodalGenerate = "/api/v1/services/aigc/multimodal-generation/generation";
+    /**
+     * 多模态生成 API 端点。
+     */
     public final static String endpointOfDashscopeQwenMultimodalGenerate = "https://" + hostOfDashscope + pathOfDashscopeQwenMultimodalGenerate;
 
     private final Logger logger;
     private final String apiKey;
 
+    /**
+     * 构造函数。
+     *
+     * @param apiKey API 密钥
+     * @param logger 日志记录器
+     */
     public DashscopeProvider(String apiKey, Logger logger) {
         this.apiKey = apiKey;
         this.logger = logger;
     }
 
+    /**
+     * 获取日志记录器。
+     *
+     * @return 日志记录器实例
+     */
     public Logger getLogger() {
         return logger;
     }
 
+    /**
+     * 判断是否为视觉相关请求（多模态请求）。
+     *
+     * @param requestPayload 请求负载
+     * @return 如果是视觉相关请求返回 true，否则返回 false
+     */
     private boolean isVisionSpecificRequest(JsonObject requestPayload) {
         try {
             JsonArray messages = requestPayload.getJsonObject("input").getJsonArray("messages");
@@ -50,6 +92,15 @@ public class DashscopeProvider implements LLMProvider {
         return false;
     }
 
+    /**
+     * 发起同步请求。
+     *
+     * @param webClient      Web 客户端
+     * @param chatModel      聊天模型名称
+     * @param requestPayload 请求负载
+     * @param requestId      请求 ID
+     * @return 响应结果的 Future
+     */
     @Override
     public Future<JsonObject> request(WebClient webClient, String chatModel, JsonObject requestPayload, String requestId) {
         requestPayload.put("model", chatModel);
@@ -86,6 +137,18 @@ public class DashscopeProvider implements LLMProvider {
                 });
     }
 
+    /**
+     * 发起流式请求。
+     *
+     * @param vertx            Vert.x 实例
+     * @param httpClient       HTTP 客户端
+     * @param chatModel        聊天模型名称
+     * @param requestPayload   请求负载
+     * @param cutterProcessFunc SSE 数据处理函数
+     * @param cutterTimeout    超时时间（毫秒）
+     * @param requestId        请求 ID
+     * @return 完成状态的 Future
+     */
     @Override
     public Future<Void> requestStream(
             Vertx vertx,

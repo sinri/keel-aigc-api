@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * @see <a
  *         href="https://learn.microsoft.com/en-us/azure/ai-services/openai/reference-preview-latest#azureresponse">AzureResponse</a>
- * @since 2.0.1
+ * @since 5.0.0
  */
 public interface StatefulChatResponse extends UnmodifiableJsonifiableEntity {
     static StatefulChatResponse wrap(JsonObject jsonObject) {

@@ -4,7 +4,7 @@ import io.github.sinri.keel.base.json.JsonifiableDataUnitImpl;
 import io.vertx.core.json.JsonObject;
 
 /**
- * @since 1.3.1
+ * @since 5.0.0
  */
 public class GenerateImageRequest extends JsonifiableDataUnitImpl {
     public GenerateImageRequest(JsonObject jsonObject) {

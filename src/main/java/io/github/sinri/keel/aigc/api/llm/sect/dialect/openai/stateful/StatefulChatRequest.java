@@ -10,7 +10,7 @@ import org.jspecify.annotations.Nullable;
  * @see <a
  *         href="https://learn.microsoft.com/en-us/azure/ai-services/openai/reference-preview-latest#create-response">Create
  *         response</a>
- * @since 2.0.1
+ * @since 5.0.0
  */
 public interface StatefulChatRequest extends JsonifiableDataUnit {
     static StatefulChatRequest create() {

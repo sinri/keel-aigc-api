@@ -20,7 +20,7 @@ public class SSEUtils {
      * @param cutterProcessFunc 处理流式响应片段的函数
      * @param cutterTimeout     流式响应处理超时时间(毫秒)
      * @return 处理完成的Future
-     * @since 2.0.0
+     * @since 5.0.0
      */
     @Deprecated(forRemoval = true)
     public static Future<Void> callStreamWithCutter(

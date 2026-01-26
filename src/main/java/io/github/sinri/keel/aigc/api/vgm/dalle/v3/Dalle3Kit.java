@@ -9,12 +9,26 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 
+/**
+ * Dalle3 图像生成工具类。
+ * <p>
+ * 用于通过 Azure OpenAI 服务生成图像。
+ *
+ * @since 5.0.0
+ */
 public class Dalle3Kit {
 
     private final WebClient webClient;
     private final Logger logger;
     private final OpenAIModelConfigElement openAIConfigElement;
 
+    /**
+     * 构造函数。
+     *
+     * @param openAIConfigElement OpenAI 模型配置元素
+     * @param webClient           Web 客户端
+     * @param logger              日志记录器
+     */
     public Dalle3Kit(
             OpenAIModelConfigElement openAIConfigElement,
             WebClient webClient,
@@ -25,19 +39,45 @@ public class Dalle3Kit {
         this.logger = logger;
     }
 
+    /**
+     * 获取日志记录器。
+     *
+     * @return 日志记录器实例
+     */
     public Logger getLogger() {
         return logger;
     }
 
+    /**
+     * 生成图像（使用 JSON 对象参数）。
+     *
+     * @param parameters 参数对象
+     * @param requestId  请求 ID
+     * @return 响应结果的 Future
+     */
     public Future<JsonObject> draw(JsonObject parameters, String requestId) {
         return request(parameters, requestId);
     }
 
+    /**
+     * 生成图像（使用 Dalle3Request 参数）。
+     *
+     * @param parameters Dalle3 请求对象
+     * @param requestId  请求 ID
+     * @return Dalle3 响应的 Future
+     */
     public Future<Dalle3Response> draw(Dalle3Request parameters, String requestId) {
         return this.draw(parameters.cloneAsJsonObject(), requestId)
                    .compose(jsonObject -> Future.succeededFuture(Dalle3Response.wrap(jsonObject)));
     }
 
+    /**
+     * 生成图像（使用处理器函数）。
+     *
+     * @param parametersHandler 参数处理器
+     * @param requestId         请求 ID
+     * @return Dalle3 响应的 Future
+     */
     public Future<Dalle3Response> draw(Handler<Dalle3Request> parametersHandler, String requestId) {
         Dalle3Request parameters = Dalle3Request.create();
         parametersHandler.handle(parameters);
@@ -73,6 +113,13 @@ public class Dalle3Kit {
         return "https://" + generateHost(configElement.resourceName()) + generateUri(configElement.deployment(), api, configElement.apiVersion());
     }
 
+    /**
+     * 发起图像生成请求。
+     *
+     * @param requestPayload 请求负载
+     * @param requestId      请求 ID
+     * @return 响应结果的 Future
+     */
     private Future<JsonObject> request(JsonObject requestPayload, String requestId) {
         OpenAIModelConfigElement configElement = this.openAIConfigElement;
 
@@ -119,11 +166,23 @@ public class Dalle3Kit {
                 });
     }
 
+    /**
+     * Dalle3 图像尺寸枚举。
+     */
     public enum Dalle3Size {
+        /**
+         * 横向（1792x1024）。
+         */
         LANDSCAPE("1792x1024"),
 
+        /**
+         * 正方形（1024x1024）。
+         */
         SQUARE("1024x1024"),
 
+        /**
+         * 纵向（1024x1792）。
+         */
         PORTRAIT("1024x1792");
         private final String size;
 
@@ -131,17 +190,42 @@ public class Dalle3Kit {
             this.size = size;
         }
 
+        /**
+         * 获取尺寸字符串。
+         *
+         * @return 尺寸字符串
+         */
         public String size() {
             return size;
         }
     }
 
+    /**
+     * Dalle3 图像质量枚举。
+     */
     public enum Dalle3Quality {
-        hd, standard
+        /**
+         * 高清质量。
+         */
+        hd,
+        /**
+         * 标准质量。
+         */
+        standard
     }
 
+    /**
+     * Dalle3 图像风格枚举。
+     */
     public enum Dalle3Style {
-        natural, vivid
+        /**
+         * 自然风格。
+         */
+        natural,
+        /**
+         * 生动风格。
+         */
+        vivid
     }
 
 }

@@ -4,7 +4,7 @@ import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
 
 /**
- * @since 2.0.0
+ * @since 5.0.0
  */
 interface QwenRequestParametersSearchMixin<E> extends QwenRequestParametersCore<E> {
     /**

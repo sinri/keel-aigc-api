@@ -6,7 +6,7 @@ import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
 
 /**
- * @since 2.0.1
+ * @since 5.0.0
  */
 public interface StatefulChatToolChoice extends UnmodifiableJsonifiableEntity {
     static StatefulChatToolChoice wrap(JsonObject jsonObject) {

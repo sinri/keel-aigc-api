@@ -6,7 +6,7 @@ import io.vertx.core.json.JsonObject;
 
 
 /**
- * @since 2.0.1
+ * @since 5.0.0
  */
 public class StatefulChatResponseImpl extends UnmodifiableJsonifiableEntityImpl implements StatefulChatResponse {
     public StatefulChatResponseImpl(JsonObject jsonObject) {

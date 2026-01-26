@@ -6,7 +6,7 @@ import org.jspecify.annotations.Nullable;
 
 
 /**
- * @since 1.3.3
+ * @since 5.0.0
  */
 public class GptImageResourceUsage extends UnmodifiableJsonifiableEntityImpl {
 

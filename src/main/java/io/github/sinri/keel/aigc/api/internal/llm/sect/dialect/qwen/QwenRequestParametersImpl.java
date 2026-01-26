@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
 
 
 /**
- * @since 2.0.0
+ * @since 5.0.0
  */
 public class QwenRequestParametersImpl extends JsonifiableDataUnitImpl implements QwenRequestParameters {
     public QwenRequestParametersImpl() {

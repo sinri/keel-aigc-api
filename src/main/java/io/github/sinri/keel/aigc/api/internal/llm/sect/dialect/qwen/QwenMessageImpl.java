@@ -10,7 +10,7 @@ import io.vertx.core.json.JsonObject;
  * QwenMessageImpl 实现了 QwenMessage、QwenMessageInRequest、QwenMessageInResponse 接口。
  * 用于封装 Qwen 消息的数据结构，支持 JSON 序列化与反序列化。
  *
- * @since 2.0.0
+ * @since 5.0.0
  */
 public class QwenMessageImpl extends JsonifiableDataUnitImpl
         implements QwenMessageInChatRequest, QwenMessageInResponse, QwenMessageInVisionRequest {

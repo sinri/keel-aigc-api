@@ -10,7 +10,7 @@ import org.jspecify.annotations.Nullable;
  * 大语言模型服务适配器运作过程中出现的回复报文异常。
  * 封装了状态码和响应体内容，支持JSON解析。
  *
- * @since 2.0.0
+ * @since 5.0.0
  */
 public class AbnormalResponse extends RuntimeException {
     /**

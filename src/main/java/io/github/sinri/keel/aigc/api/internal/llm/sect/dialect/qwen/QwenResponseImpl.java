@@ -5,7 +5,7 @@ import io.github.sinri.keel.aigc.api.llm.sect.dialect.qwen.response.sync.QwenRes
 import io.vertx.core.json.JsonObject;
 
 /**
- * @since 2.0.0
+ * @since 5.0.0
  */
 public class QwenResponseImpl extends UnmodifiableJsonifiableEntityImpl implements QwenResponse {
     public QwenResponseImpl(JsonObject jsonObject) {

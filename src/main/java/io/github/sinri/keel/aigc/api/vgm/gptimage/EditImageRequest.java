@@ -7,7 +7,7 @@ import java.io.File;
 import java.net.URLConnection;
 
 /**
- * @since 1.3.1
+ * @since 5.0.0
  */
 public class EditImageRequest {
     private final MultipartForm formDataParts;

@@ -8,7 +8,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * o-series models only.
  *
- * @since 2.0.1
+ * @since 5.0.0
  */
 public interface StatefulChatReasoning extends UnmodifiableJsonifiableEntity {
     static StatefulChatReasoning wrap(JsonObject jsonObject) {

@@ -17,10 +17,23 @@ import io.vertx.ext.web.client.WebClient;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * Azure OpenAI 经典提供者实现。
+ * <p>
+ * 用于与 Azure OpenAI 服务进行通信，支持同步和流式请求。
+ *
+ * @since 5.0.0
+ */
 public class AzureOpenAIClassicProvider implements LLMProvider {
     private final Logger logger;
     private final Map<String, OpenAIModelConfigElement> modelConfigElementMap;
 
+    /**
+     * 构造函数。
+     *
+     * @param openAIConfigElement OpenAI 配置元素
+     * @param logger              日志记录器
+     */
     public AzureOpenAIClassicProvider(OpenAIConfigElement openAIConfigElement, Logger logger) {
         this.logger = logger;
         this.modelConfigElementMap = openAIConfigElement.getModelMap();
@@ -58,9 +71,11 @@ public class AzureOpenAIClassicProvider implements LLMProvider {
     /**
      * 发起 ChatGPT 聊天补全请求。
      *
+     * @param webClient      Web 客户端
      * @param chatModel      聊天模型
      * @param requestPayload 请求体
      * @param requestId      请求 ID
+     * @return 响应结果的 Future
      */
     @Override
     public Future<JsonObject> request(WebClient webClient, String chatModel, JsonObject requestPayload, String requestId) {
@@ -108,11 +123,14 @@ public class AzureOpenAIClassicProvider implements LLMProvider {
     /**
      * 发起流式聊天补全请求。
      *
-     * @param chatModel         聊天模型
-     * @param requestPayload    请求参数
+     * @param vertx            Vert.x 实例
+     * @param httpClient       HTTP 客户端
+     * @param chatModel        聊天模型
+     * @param requestPayload   请求参数
      * @param cutterProcessFunc SSE 数据处理函数
-     * @param cutterTimeout     超时时间（毫秒）
-     * @param requestId         请求 ID
+     * @param cutterTimeout    超时时间（毫秒）
+     * @param requestId        请求 ID
+     * @return 完成状态的 Future
      */
     @Override
     public Future<Void> requestStream(
@@ -172,6 +190,11 @@ public class AzureOpenAIClassicProvider implements LLMProvider {
                   });
     }
 
+    /**
+     * 获取日志记录器。
+     *
+     * @return 日志记录器实例
+     */
     @Override
     public Logger getLogger() {
         return logger;

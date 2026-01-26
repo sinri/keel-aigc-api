@@ -7,7 +7,7 @@ import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
 
 /**
- * @since 2.0.0
+ * @since 5.0.0
  */
 public interface QwenResponseOutputChoice extends UnmodifiableJsonifiableEntity {
     static QwenResponseOutputChoice wrap(JsonObject jsonObject) {

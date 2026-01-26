@@ -33,7 +33,7 @@ import io.github.sinri.keel.base.json.JsonifiableDataUnit;
  *
  * @param <C> 内容对象的具体类型（用于链式 API）。
  * @param <P> image_url 内容的类型，需继承 OpenAICompatibleVisionContentForImageUrl。
- * @since 2.0.0
+ * @since 5.0.0
  */
 public interface OpenAICompatibleVisionContent<C, P extends OpenAICompatibleVisionContentForImageUrl<P>> extends JsonifiableDataUnit, SelfInterface<C> {
     default String getType() {

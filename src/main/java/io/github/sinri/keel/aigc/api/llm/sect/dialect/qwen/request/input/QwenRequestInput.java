@@ -13,7 +13,7 @@ import io.vertx.core.json.JsonObject;
 import java.util.List;
 
 /**
- * @since 2.0.0
+ * @since 5.0.0
  */
 public interface QwenRequestInput extends JsonifiableDataUnit {
     /**

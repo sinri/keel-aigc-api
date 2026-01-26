@@ -8,7 +8,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Its type is {@code output_text}.
  *
- * @since 2.0.1
+ * @since 5.0.0
  */
 public interface StatefulChatItemContentOutputText extends StatefulChatItemContent {
     String TYPE = "output_text";
