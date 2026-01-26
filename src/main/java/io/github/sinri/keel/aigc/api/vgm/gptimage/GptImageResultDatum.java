@@ -4,6 +4,7 @@ import io.github.sinri.keel.base.json.UnmodifiableJsonifiableEntityImpl;
 import io.github.sinri.keel.core.utils.StringUtils;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
+import org.jspecify.annotations.Nullable;
 
 
 /**
@@ -15,11 +16,14 @@ public class GptImageResultDatum extends UnmodifiableJsonifiableEntityImpl {
         super(jsonObject);
     }
 
-    public String getB64Json() {
+    public @Nullable String getB64Json() {
         return readString("b64_json");
     }
 
-    public Buffer transformToBuffer() {
-        return Buffer.buffer(StringUtils.decodeWithBase64ToBytes(getB64Json()));
+    public @Nullable Buffer transformToBuffer() {
+        String b64Json = getB64Json();
+        if (b64Json == null) return null;
+        byte[] bytes = StringUtils.decodeWithBase64ToBytes(b64Json);
+        return Buffer.buffer(bytes);
     }
 }

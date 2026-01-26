@@ -2,6 +2,7 @@ package io.github.sinri.keel.aigc.api.vgm.gptimage;
 
 import io.github.sinri.keel.base.json.UnmodifiableJsonifiableEntityImpl;
 import io.vertx.core.json.JsonObject;
+import org.jspecify.annotations.Nullable;
 
 
 /**
@@ -13,19 +14,19 @@ public class GptImageApiError extends UnmodifiableJsonifiableEntityImpl {
         super(jsonObject);
     }
 
-    public String getMessage() {
+    public @Nullable String getMessage() {
         return readString("message");
     }
 
-    public String getType() {
+    public @Nullable String getType() {
         return readString("type");
     }
 
-    public Object getParam() {
+    public @Nullable Object getParam() {
         return readValue("param");
     }
 
-    public String getCode() {
+    public @Nullable String getCode() {
         return readString("code");
     }
 }

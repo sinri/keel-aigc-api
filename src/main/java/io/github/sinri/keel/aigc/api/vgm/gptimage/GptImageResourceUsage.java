@@ -2,6 +2,7 @@ package io.github.sinri.keel.aigc.api.vgm.gptimage;
 
 import io.github.sinri.keel.base.json.UnmodifiableJsonifiableEntityImpl;
 import io.vertx.core.json.JsonObject;
+import org.jspecify.annotations.Nullable;
 
 
 /**
@@ -25,23 +26,23 @@ public class GptImageResourceUsage extends UnmodifiableJsonifiableEntityImpl {
       }
      */
 
-    public Integer getInputTokens() {
+    public @Nullable Integer getInputTokens() {
         return readInteger("input_tokens");
     }
 
-    public Integer getInputTokensForImage() {
+    public @Nullable Integer getInputTokensForImage() {
         return readInteger("input_tokens_details", "image_tokens");
     }
 
-    public Integer getInputTokensForText() {
+    public @Nullable Integer getInputTokensForText() {
         return readInteger("input_tokens_details", "text_tokens");
     }
 
-    public Integer getOutputTokens() {
+    public @Nullable Integer getOutputTokens() {
         return readInteger("output_tokens");
     }
 
-    public Integer getTotalTokens() {
+    public @Nullable Integer getTotalTokens() {
         return readInteger("total_tokens");
     }
 
