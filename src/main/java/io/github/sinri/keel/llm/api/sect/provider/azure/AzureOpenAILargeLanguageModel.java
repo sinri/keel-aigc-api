@@ -16,7 +16,7 @@ public class AzureOpenAILargeLanguageModel extends LargeLanguageModel {
     }
 
     @Override
-    public String getCode() {
+    public String getRegisterCode() {
         return code;
     }
 

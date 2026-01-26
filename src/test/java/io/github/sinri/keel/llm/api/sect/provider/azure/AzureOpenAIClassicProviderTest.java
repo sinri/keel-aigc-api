@@ -51,7 +51,7 @@ class AzureOpenAIClassicProviderTest extends LLMServiceFacadeBasedUnitTest {
 
     @Test
     void requestStream(VertxTestContext testContext) {
-        Vertx vertx = LLMServiceFacade.getVertx();
+        Vertx vertx = LLMServiceFacade.getKeel();
         HttpClient httpClient = LLMServiceFacade.getHttpClient();
 
         provider.requestStream(

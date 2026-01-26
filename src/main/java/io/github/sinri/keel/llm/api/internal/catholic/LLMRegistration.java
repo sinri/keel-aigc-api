@@ -23,6 +23,6 @@ public final class LLMRegistration {
     }
 
     public void registerModel(LargeLanguageModel serviceSpecification) {
-        this.map.put(serviceSpecification.getCode(), serviceSpecification);
+        this.map.put(serviceSpecification.getRegisterCode(), serviceSpecification);
     }
 }

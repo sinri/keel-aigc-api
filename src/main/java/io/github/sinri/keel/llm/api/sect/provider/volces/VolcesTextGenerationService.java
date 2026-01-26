@@ -40,7 +40,7 @@ public class VolcesTextGenerationService extends AbstractLLMService {
     public Future<Void> requestStreamRaw(MixChatRequest request, Function<JsonObject, Future<Void>> fragmentDataHandler) {
         request.setStream(true);
         return provider.requestStream(
-                getVertx(),
+                getKeel(),
                 getHttpClient(),
                 request.getModel(),
                 DoubaoUtils.toDoubaoRequest(request).toJsonObject(),
@@ -61,7 +61,7 @@ public class VolcesTextGenerationService extends AbstractLLMService {
 
         request.setStream(true);
         return provider.requestStream(
-                               getVertx(),
+                               getKeel(),
                                getHttpClient(),
                                request.getModel(),
                                DoubaoUtils.toDoubaoRequest(request).toJsonObject(),
@@ -99,7 +99,7 @@ public class VolcesTextGenerationService extends AbstractLLMService {
     public Future<Void> requestStream(MixChatRequest request, Function<MixChatResponseChunk, Future<Void>> chunkHandler) {
         request.setStream(true);
         return provider.requestStream(
-                getVertx(),
+                getKeel(),
                 getHttpClient(),
                 request.getModel(),
                 DoubaoUtils.toDoubaoRequest(request).toJsonObject(),

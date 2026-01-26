@@ -62,7 +62,7 @@ public class AzureOpenAITextGenerationService extends AbstractLLMService {
                                                       .stream(true)
                                                       .toJsonObject();
         return provider.requestStream(
-                getVertx(),
+                getKeel(),
                 getHttpClient(),
                 request.getModel(),
                 requestPayload,
@@ -90,7 +90,7 @@ public class AzureOpenAITextGenerationService extends AbstractLLMService {
                                                       .stream(true)
                                                       .toJsonObject();
         return provider.requestStream(
-                               getVertx(),
+                               getKeel(),
                                getHttpClient(),
                                request.getModel(),
                                requestPayload,
@@ -123,7 +123,7 @@ public class AzureOpenAITextGenerationService extends AbstractLLMService {
                                                       .stream(true)
                                                       .toJsonObject();
         return provider.requestStream(
-                getVertx(),
+                getKeel(),
                 getHttpClient(),
                 request.getModel(),
                 requestPayload,

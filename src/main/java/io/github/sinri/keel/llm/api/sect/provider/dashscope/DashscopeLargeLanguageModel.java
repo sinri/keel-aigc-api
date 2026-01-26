@@ -47,7 +47,7 @@ public class DashscopeLargeLanguageModel extends LargeLanguageModel {
     }
 
     @Override
-    public String getCode() {
+    public String getRegisterCode() {
         return modelCode;
     }
 

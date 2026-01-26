@@ -1,5 +1,6 @@
 package io.github.sinri.keel.llm.api.catholic;
 
+import io.github.sinri.keel.base.async.Keel;
 import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.llm.api.catholic.request.MixChatRequest;
@@ -75,12 +76,20 @@ public final class LLMServiceFacade {
         LLMRegistration.shared().registerModel(serviceSpecification);
     }
 
-    public static Vertx getVertx() {
-        return INSTANCE.getVertx();
+    public static Keel getKeel() {
+        return INSTANCE.getKeel();
     }
 
-    public static void setVertx(Vertx vertx) {
-        INSTANCE.setVertx(vertx);
+    public static void setKeel(Keel keel) {
+        INSTANCE.setKeel(keel);
+    }
+
+    public static void setKeel(Vertx vertx) {
+        if (vertx instanceof Keel keel) {
+            INSTANCE.setKeel(keel);
+        } else {
+            INSTANCE.setKeel(Keel.create(vertx));
+        }
     }
 
     public static WebClient getWebClient() {

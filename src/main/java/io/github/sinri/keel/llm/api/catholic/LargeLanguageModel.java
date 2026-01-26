@@ -11,16 +11,24 @@ import io.vertx.core.json.JsonObject;
  */
 public abstract class LargeLanguageModel implements JsonObjectConvertible {
     /**
-     * 对应大语言模型在 {@link LLMServiceFacade} 登记的代码标识
-     * @return
+     * 针对一个具体的大语言模型，提供一个代码标识，用于在 {@link LLMServiceFacade} 中进行登记和管理。
+     * <p>
+     * 注意，与各大语言模型服务所提供的模型代码（如参数中的 {@code model})具有不同的定义。
+     *
+     * @return 对应大语言模型在 {@link LLMServiceFacade} 登记的代码标识
      */
-    public abstract String getCode();
+    public abstract String getRegisterCode();
 
+    /**
+     * 构建当前大语言模型类实例所对应的大语言模型服务类实例。
+     * @return 对应的大语言模型服务类实例
+     * @throws NotConfiguredException 相关配置不全
+     */
     public abstract LLMService getService() throws NotConfiguredException;
 
     @Override
     public final JsonObject toJsonObject() {
-        return new JsonObject().put("code", getCode());
+        return new JsonObject().put("code", getRegisterCode());
     }
 
     @Override

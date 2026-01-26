@@ -1,6 +1,6 @@
 package io.github.sinri.keel.llm.api.catholic;
 
-import io.github.sinri.keel.base.VertxHolder;
+import io.github.sinri.keel.base.async.Keel;
 import io.github.sinri.keel.llm.api.catholic.request.MixChatRequest;
 import io.github.sinri.keel.llm.api.catholic.response.MixChatResponse;
 import io.github.sinri.keel.llm.api.catholic.response.stream.MixChatResponseBuffer;
@@ -13,7 +13,10 @@ import io.vertx.ext.web.client.WebClient;
 
 import java.util.function.Function;
 
-public interface LLMService extends VertxHolder {
+/**
+ * 大语言模型服务接口，定义了与大语言模型交互的基本操作。
+ */
+public interface LLMService {
     Future<MixChatResponse> request(MixChatRequest request);
 
     Future<Void> requestStreamRaw(MixChatRequest request,
@@ -35,7 +38,11 @@ public interface LLMService extends VertxHolder {
                    });
     }
 
+    Keel getKeel();
+
     WebClient getWebClient();
+
     HttpClient getHttpClient();
+
     Logger getLogger();
 }

@@ -53,7 +53,7 @@ class DashscopeProviderTest extends LLMServiceFacadeBasedUnitTest {
 
     @Test
     void testTextStreamChunked(VertxTestContext testContext) {
-        Vertx vertx = LLMServiceFacade.getVertx();
+        Vertx vertx = LLMServiceFacade.getKeel();
         var httpClient = LLMServiceFacade.getHttpClient();
 
         dashscopeProvider.requestStream(

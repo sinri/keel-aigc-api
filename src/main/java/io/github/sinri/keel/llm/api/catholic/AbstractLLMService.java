@@ -1,5 +1,6 @@
 package io.github.sinri.keel.llm.api.catholic;
 
+import io.github.sinri.keel.base.async.Keel;
 import io.github.sinri.keel.logger.api.logger.Logger;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
@@ -28,7 +29,7 @@ public abstract class AbstractLLMService implements LLMService {
     }
 
     @Override
-    public final Vertx getVertx() {
-        return LLMServiceFacade.getVertx();
+    public Keel getKeel() {
+        return LLMServiceFacade.getKeel();
     }
 }

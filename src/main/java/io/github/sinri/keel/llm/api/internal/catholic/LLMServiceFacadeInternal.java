@@ -1,5 +1,6 @@
 package io.github.sinri.keel.llm.api.internal.catholic;
 
+import io.github.sinri.keel.base.async.Keel;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.core.utils.value.ValueBox;
 import io.github.sinri.keel.llm.api.catholic.LLMService;
@@ -21,7 +22,8 @@ import io.vertx.ext.web.client.WebClient;
 import java.util.function.Function;
 
 public class LLMServiceFacadeInternal implements LLMService {
-    private final ValueBox<Vertx> lateVertx = new ValueBox<>();
+    private final ValueBox<Keel> lateKeel = new ValueBox<>();
+    //private final ValueBox<Vertx> lateVertx = new ValueBox<>();
     private final ValueBox<WebClient> lateWebClient = new ValueBox<>();
     private final ValueBox<HttpClient> lateHttpClient = new ValueBox<>();
     private final LateObject<Logger> lateLogger = new LateObject<>();
@@ -74,15 +76,16 @@ public class LLMServiceFacadeInternal implements LLMService {
         }
     }
 
-
     @Override
-    public Vertx getVertx() {
-        return lateVertx.getNonNullValue();
+    public Keel getKeel() {
+        return lateKeel.getNonNullValue();
     }
 
-    public void setVertx(Vertx vertx) {
+
+    public void setKeel(Keel keel) {
         // System.out.println("LLMServiceFacade setVertx " + vertx);
-        this.lateVertx.setValue(vertx);
+        //this.lateVertx.setValue(vertx);
+        this.lateKeel.setValue(keel);
         this.lateWebClient.clear();
         this.lateHttpClient.clear();
     }
@@ -90,7 +93,7 @@ public class LLMServiceFacadeInternal implements LLMService {
     @Override
     public WebClient getWebClient() {
         return lateWebClient.ensureNonNullValue(() -> {
-            return new ValueBox.EnsuredValueWithExpire<>(WebClient.create(getVertx()), 0);
+            return new ValueBox.EnsuredValueWithExpire<>(WebClient.create(getKeel()), 0);
         });
     }
 
@@ -98,7 +101,7 @@ public class LLMServiceFacadeInternal implements LLMService {
     public HttpClient getHttpClient() {
         return lateHttpClient.ensureNonNullValue(() -> {
             return new ValueBox.EnsuredValueWithExpire<>(
-                    getVertx().createHttpClient(new HttpClientOptions()
+                    getKeel().createHttpClient(new HttpClientOptions()
                             .setKeepAlive(true)
                             .setSsl(true)
                             .setDefaultPort(443)

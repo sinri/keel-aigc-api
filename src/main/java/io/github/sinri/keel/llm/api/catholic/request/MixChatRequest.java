@@ -36,7 +36,7 @@ public interface MixChatRequest extends JsonifiableDataUnit {
      * 定义本请求应运行在哪一个模型服务之上。
      *
      * @return 模型服务规格的 code
-     * @see LargeLanguageModel#getCode()
+     * @see LargeLanguageModel#getRegisterCode()
      */
     String getModel();
 
@@ -47,7 +47,7 @@ public interface MixChatRequest extends JsonifiableDataUnit {
      * @return 当前 MixChatRequest 实例
      */
     default MixChatRequest setModel(LargeLanguageModel largeLanguageModel) {
-        return setModel(largeLanguageModel.getCode());
+        return setModel(largeLanguageModel.getRegisterCode());
     }
 
     MixChatRequest setModel(String largeLanguageModelCode);

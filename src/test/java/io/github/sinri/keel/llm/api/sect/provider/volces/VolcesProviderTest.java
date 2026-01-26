@@ -5,19 +5,15 @@ import io.github.sinri.keel.llm.api.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.llm.api.catholic.LLMServiceFacade;
 import io.github.sinri.keel.llm.api.sect.ProviderConfigElement;
 import io.github.sinri.keel.llm.api.sect.dialect.doubao.request.DoubaoRequest;
-import io.github.sinri.keel.tesuto.KeelJUnit5Test;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 import io.vertx.ext.web.client.WebClient;
-import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import org.jspecify.annotations.NullMarked;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
-import java.util.function.Function;
 
 @NullMarked
 class VolcesProviderTest extends LLMServiceFacadeBasedUnitTest {
@@ -53,7 +49,7 @@ class VolcesProviderTest extends LLMServiceFacadeBasedUnitTest {
 
     @Test
     void requestStream(VertxTestContext testContext) {
-        Vertx vertx = LLMServiceFacade.getVertx();
+        Vertx vertx = LLMServiceFacade.getKeel();
         HttpClient httpClient = LLMServiceFacade.getHttpClient();
         provider.requestStream(
                         vertx,

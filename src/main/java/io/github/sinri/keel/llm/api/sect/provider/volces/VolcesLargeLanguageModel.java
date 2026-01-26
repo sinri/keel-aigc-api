@@ -13,7 +13,7 @@ public class VolcesLargeLanguageModel extends LargeLanguageModel {
     }
 
     @Override
-    public String getCode() {
+    public String getRegisterCode() {
         return code;
     }
 

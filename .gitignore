@@ -46,3 +46,4 @@ build/
 
 .idea
 config.properties
+/bin/

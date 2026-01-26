@@ -1,5 +1,6 @@
 package io.github.sinri.keel.llm.api;
 
+import io.github.sinri.keel.base.async.Keel;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.llm.api.catholic.LLMServiceFacade;
 import io.github.sinri.keel.tesuto.KeelJUnit5Test;
@@ -15,15 +16,20 @@ public abstract class LLMServiceFacadeBasedUnitTest extends KeelJUnit5Test {
 
     @BeforeAll
     public static void beforeAll() {
-        LLMServiceFacade.setVertx(rtoc.vertx());
+        LLMServiceFacade.setKeel(rtoc.vertx());
     }
 
     protected WebClient getWebClientForLLM() {
         return LLMServiceFacade.getWebClient();
     }
 
+    @Deprecated
     protected Vertx getVertxForLLM() {
-        return LLMServiceFacade.getVertx();
+        return LLMServiceFacade.getKeel();
+    }
+
+    protected Keel getKeelForLLM() {
+        return LLMServiceFacade.getKeel();
     }
 
     protected HttpClient getHttpClientForLLM() {

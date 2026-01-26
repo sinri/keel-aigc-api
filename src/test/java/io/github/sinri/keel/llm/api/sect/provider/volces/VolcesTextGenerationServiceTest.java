@@ -24,7 +24,7 @@ class VolcesTextGenerationServiceTest extends LLMServiceFacadeBasedUnitTest impl
 
     @BeforeAll
     public static void beforeAll() {
-        LLMServiceFacade.setVertx(rtoc.vertx());
+        LLMServiceFacade.setKeel(rtoc.vertx());
     }
 
     @Test

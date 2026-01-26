@@ -44,7 +44,7 @@ public class DashscopeMultimodalGenerationService extends AbstractLLMService {
         qwenRequest.parameters(p -> p.stream(true).incrementalOutput(true));
 
         return dashscopeProvider.requestStream(
-                getVertx(),
+                getKeel(),
                 getHttpClient(),
                 request.getModel(),
                 qwenRequest.toJsonObject(),
@@ -74,7 +74,7 @@ public class DashscopeMultimodalGenerationService extends AbstractLLMService {
         QwenRequest qwenRequest = QwenUtils.toQwenRequest(request);
         qwenRequest.parameters(p -> p.stream(true).incrementalOutput(true));
         return dashscopeProvider.requestStream(
-                                        getVertx(),
+                                        getKeel(),
                                         getHttpClient(),
                                         request.getModel(),
                                         qwenRequest.toJsonObject(),
@@ -114,7 +114,7 @@ public class DashscopeMultimodalGenerationService extends AbstractLLMService {
         QwenRequest qwenRequest = QwenUtils.toQwenRequest(request);
         qwenRequest.parameters(p -> p.stream(true).incrementalOutput(true));
         return dashscopeProvider.requestStream(
-                getVertx(),
+                getKeel(),
                 getHttpClient(),
                 request.getModel(),
                 qwenRequest.toJsonObject(),

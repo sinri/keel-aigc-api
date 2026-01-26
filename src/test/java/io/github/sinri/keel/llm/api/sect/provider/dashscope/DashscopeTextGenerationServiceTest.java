@@ -24,7 +24,7 @@ class DashscopeTextGenerationServiceTest extends LLMServiceFacadeBasedUnitTest i
 
     @BeforeAll
     public static void beforeAll() {
-        LLMServiceFacade.setVertx(rtoc.vertx());
+        LLMServiceFacade.setKeel(rtoc.vertx());
     }
 
     @Override
