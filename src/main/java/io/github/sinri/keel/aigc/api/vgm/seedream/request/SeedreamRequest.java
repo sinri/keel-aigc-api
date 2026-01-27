@@ -3,6 +3,7 @@ package io.github.sinri.keel.aigc.api.vgm.seedream.request;
 
 import io.github.sinri.keel.base.annotations.SelfInterface;
 import io.github.sinri.keel.base.json.JsonifiableDataUnit;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @since 5.0.0
@@ -13,7 +14,7 @@ public interface SeedreamRequest<R> extends JsonifiableDataUnit, SelfInterface<R
      *
      * @return 本次请求使用模型的 Model ID 或推理接入点 (Endpoint ID)。
      */
-    default String getModel() {
+    default @Nullable String getModel() {
         return readString("model");
     }
 
@@ -35,7 +36,7 @@ public interface SeedreamRequest<R> extends JsonifiableDataUnit, SelfInterface<R
      *
      * @return 用于生成图像的提示词，支持中英文。
      */
-    default String getPrompt() {
+    default @Nullable String getPrompt() {
         return readString("prompt");
     }
 
@@ -55,7 +56,7 @@ public interface SeedreamRequest<R> extends JsonifiableDataUnit, SelfInterface<R
      *
      * @return 输入的图片信息
      */
-    default String getImageSingle() {
+    default @Nullable String getImageSingle() {
         return readString("image");
     }
 
@@ -89,7 +90,7 @@ public interface SeedreamRequest<R> extends JsonifiableDataUnit, SelfInterface<R
      *
      * @return 指定生成图像的尺寸信息
      */
-    default String getSize() {
+    default @Nullable String getSize() {
         return readString("size");
     }
 
@@ -119,7 +120,7 @@ public interface SeedreamRequest<R> extends JsonifiableDataUnit, SelfInterface<R
      *         {@code url}：返回图片下载链接；链接在图片生成后24小时内有效，请及时下载图片。
      *         {@code b64_json}：以 Base64 编码字符串的 JSON 格式返回图像数据。
      */
-    default String getResponseFormat() {
+    default @Nullable String getResponseFormat() {
         return readString("response_format");
     }
 
@@ -141,7 +142,7 @@ public interface SeedreamRequest<R> extends JsonifiableDataUnit, SelfInterface<R
      * @return {@code false}：不添加水印。
      *         {@code true}：在图片右下角添加“AI生成”字样的水印标识。
      */
-    default Boolean getWatermark() {
+    default @Nullable Boolean getWatermark() {
         return readBoolean("watermark");
     }
 

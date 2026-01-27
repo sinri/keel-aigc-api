@@ -1,13 +1,13 @@
 package io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.classic.request;
 
-import io.github.sinri.keel.base.json.JsonifiableDataUnit;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.ToolCall;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.ToolDefinition;
 import io.github.sinri.keel.aigc.api.internal.llm.catholic.tool.CommonToolDefinition;
 import io.github.sinri.keel.aigc.api.internal.llm.sect.dialect.openai.classic.GPTRequestImpl;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.ToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.ToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.classic.message.GPTMessage;
 import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.classic.message.GPTMessageInResponse;
 import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.classic.message.GPTMessageInTextRequest;
+import io.github.sinri.keel.base.json.JsonifiableDataUnit;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
@@ -183,11 +183,13 @@ public interface GPTRequest extends JsonifiableDataUnit {
         return addTool(x);
     }
 
-    default List<CommonToolDefinition> tools() {
+    default List<ToolDefinition> tools() {
         List<JsonObject> tools = readJsonObjectArray("tools");
         if (tools == null)
             return List.of();
-        return tools.stream().map(CommonToolDefinition::new).toList();
+        return tools.stream().map(CommonToolDefinition::new)
+                    .map(x -> (ToolDefinition) x)
+                    .toList();
     }
 
     /**

@@ -10,6 +10,13 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
+/**
+ * 流式响应数据块选择项接口。
+ * <p>
+ * 表示流式响应数据块中的一个选择项，包含角色、内容、推理内容、工具调用等信息。
+ *
+ * @since 5.0.0
+ */
 public interface MixChatResponseChunkChoice extends JsonifiableDataUnit {
     static MixChatResponseChunkChoice create() {
         return new MixChatResponseChunkChoiceImpl();
@@ -68,7 +75,7 @@ public interface MixChatResponseChunkChoice extends JsonifiableDataUnit {
     default MixChatResponseChunkChoice setToolCalls(List<ToolCall> toolCalls) {
         JsonArray array = new JsonArray();
         toolCalls.stream().map(ToolCall::toJsonObject).forEach(array::add);
-        ensureEntry("tool_calls", new JsonArray(toolCalls.stream().map(ToolCall::toJsonObject).toList()));
+        ensureEntry("tool_calls", array);
         return this;
     }
 

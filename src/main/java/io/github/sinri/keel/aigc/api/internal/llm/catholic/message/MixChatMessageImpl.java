@@ -1,10 +1,10 @@
 package io.github.sinri.keel.aigc.api.internal.llm.catholic.message;
 
-import io.github.sinri.keel.base.json.JsonifiableDataUnitImpl;
+import io.github.sinri.keel.aigc.api.internal.llm.catholic.tool.CommonToolCall;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.MixChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.MixChatVisionContentElement;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.ToolCall;
-import io.github.sinri.keel.aigc.api.internal.llm.catholic.tool.CommonToolCall;
+import io.github.sinri.keel.base.json.JsonifiableDataUnitImpl;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
@@ -85,24 +85,27 @@ public class MixChatMessageImpl extends JsonifiableDataUnitImpl implements MixCh
     }
 
     @Override
-    public Integer getIndex() {
-        return readIntegerRequired("index");
+    public @Nullable Integer getIndex() {
+        return readInteger("index");
     }
 
     @Override
-    public MixChatMessage setIndex(Integer index) {
-        ensureEntry("index", index);
+    public MixChatMessage setIndex(@Nullable Integer index) {
+        if (index != null) {
+            ensureEntry("index", index);
+        }
         return this;
     }
 
     @Override
-    public String getFinishReason() {
-        return readStringRequired("finish_reason");
+    public @Nullable String getFinishReason() {
+        return readString("finish_reason");
     }
 
     @Override
-    public MixChatMessage setFinishReason(String finishReason) {
-        ensureEntry("finish_reason", finishReason);
+    public MixChatMessage setFinishReason(@Nullable String finishReason) {
+        if (finishReason != null)
+            ensureEntry("finish_reason", finishReason);
         return this;
     }
 
@@ -125,8 +128,8 @@ public class MixChatMessageImpl extends JsonifiableDataUnitImpl implements MixCh
 
     @Override
     public MixChatMessage setVisionContent(List<MixChatVisionContentElement> content) {
-        JsonArray array=new JsonArray();
-        content.forEach(element->array.add(element.toJsonObject()));
+        JsonArray array = new JsonArray();
+        content.forEach(element -> array.add(element.toJsonObject()));
         ensureEntry(KEY_VISION_CONTENT, array);
         return this;
     }

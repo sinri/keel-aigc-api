@@ -2,6 +2,7 @@ package io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.classic.core;
 
 import io.github.sinri.keel.base.annotations.SelfInterface;
 import io.github.sinri.keel.base.json.JsonifiableDataUnit;
+import org.jspecify.annotations.Nullable;
 
 /**
  * OpenAICompatibleVisionContentForImageUrl 接口用于描述兼容 OpenAI Vision API 的图片内容实体，
@@ -22,7 +23,7 @@ import io.github.sinri.keel.base.json.JsonifiableDataUnit;
  * @param <C> 实现类自身类型，用于链式调用
  */
 public interface OpenAICompatibleVisionContentForImageUrl<C> extends JsonifiableDataUnit, SelfInterface<C> {
-    default String getUrl() {
+    default @Nullable String getUrl() {
         return readString("url");
     }
 

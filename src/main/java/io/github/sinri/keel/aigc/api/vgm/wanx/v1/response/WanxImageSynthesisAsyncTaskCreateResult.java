@@ -1,6 +1,6 @@
-package io.github.sinri.keel.aigc.api.vgm.wanx.ImageSynthesis.response;
+package io.github.sinri.keel.aigc.api.vgm.wanx.v1.response;
 
-import io.github.sinri.keel.aigc.api.internal.vgm.wanx.WanxImageSynthesisAsyncTaskCreateResultImpl;
+import io.github.sinri.keel.aigc.api.internal.vgm.wanx.v1.WanxImageSynthesisAsyncTaskCreateResultImpl;
 import io.github.sinri.keel.base.json.UnmodifiableJsonifiableEntity;
 import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;

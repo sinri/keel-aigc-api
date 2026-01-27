@@ -3,6 +3,7 @@ package io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.classic.core;
 
 import io.github.sinri.keel.base.annotations.SelfInterface;
 import io.github.sinri.keel.base.json.JsonifiableDataUnit;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 本接口定义了与 OpenAI 视觉模型兼容的内容结构。
@@ -36,7 +37,7 @@ import io.github.sinri.keel.base.json.JsonifiableDataUnit;
  * @since 5.0.0
  */
 public interface OpenAICompatibleVisionContent<C, P extends OpenAICompatibleVisionContentForImageUrl<P>> extends JsonifiableDataUnit, SelfInterface<C> {
-    default String getType() {
+    default @Nullable String getType() {
         return readString("type");
     }
 
@@ -45,7 +46,7 @@ public interface OpenAICompatibleVisionContent<C, P extends OpenAICompatibleVisi
         return getImplementation();
     }
 
-    default String getText() {
+    default @Nullable String getText() {
         return readString("text");
     }
 

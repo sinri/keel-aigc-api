@@ -4,7 +4,6 @@ import io.github.sinri.keel.aigc.api.llm.sect.ProviderConfigElement;
 import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.OpenAIModelConfigElement;
 import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
-import io.github.sinri.keel.core.utils.FileUtils;
 import io.github.sinri.keel.tesuto.KeelJUnit5Test;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;

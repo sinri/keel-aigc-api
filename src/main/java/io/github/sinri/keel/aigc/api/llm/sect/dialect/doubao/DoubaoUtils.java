@@ -162,10 +162,7 @@ public class DoubaoUtils {
                                 x.setContent(delta.getContent());
                                 x.setReasoningContent(delta.getReasoningContent());
 
-                                x.setToolCalls(delta.getToolCalls()
-                                                    .stream()
-                                                    .map(tcc -> (ToolCall) tcc)
-                                                    .toList());
+                                x.setToolCalls(delta.getToolCalls());
 
                                 return x;
                             })

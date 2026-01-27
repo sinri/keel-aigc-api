@@ -4,15 +4,20 @@ import io.github.sinri.keel.core.utils.StringUtils;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.stream.StreamPieceCollector;
 import io.github.sinri.keel.aigc.api.internal.llm.catholic.tool.CommonToolCall;
 import io.vertx.core.json.JsonObject;
+import org.jspecify.annotations.Nullable;
 
-import java.util.Objects;
-
+/**
+ * 工具调用流式数据碎片聚合器。
+ * <p>
+ * 用于收集和聚合流式响应中的工具调用数据碎片，最终构建完整的 ToolCall 对象。
+ *
+ * @since 5.0.0
+ */
 public class ToolCallStreamPieceCollector implements StreamPieceCollector<ToolCall, ToolCall> {
     private final FunctionToolCallStreamPieceCollector functionToolCallBuffer = new FunctionToolCallStreamPieceCollector();
-    ;
-    private String toolCallId;
-    private Integer index;
-    private String type;
+    private @Nullable String toolCallId;
+    private @Nullable Integer index;
+    private @Nullable String type;
 
 
     public void accept(ToolCall toolCall) {
@@ -23,8 +28,9 @@ public class ToolCallStreamPieceCollector implements StreamPieceCollector<ToolCa
         index = toolCall.getIndex();
         type = toolCall.getType();
         FunctionToolCall function = toolCall.getFunction();
-        Objects.requireNonNull(function);
-        functionToolCallBuffer.accept(function);
+        if (function != null) {
+            functionToolCallBuffer.accept(function);
+        }
     }
 
     @Override

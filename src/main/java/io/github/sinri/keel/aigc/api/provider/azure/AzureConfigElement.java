@@ -11,9 +11,6 @@ public class AzureConfigElement extends ConfigElement {
 
     public OpenAIConfigElement openai() throws NotConfiguredException {
         ConfigElement openai = extract("openai");
-        if (openai == null) {
-            throw new NotConfiguredException(getAbsoluteKeyChain(), "openai");
-        }
         return new OpenAIConfigElement(openai);
     }
 }

@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.vgm.wanx.ImageSynthesis.request;
+package io.github.sinri.keel.aigc.api.vgm.wanx.v1.request;
 
 public enum WanxImageSynthesisModel {
     WanxV1("wanx-v1");

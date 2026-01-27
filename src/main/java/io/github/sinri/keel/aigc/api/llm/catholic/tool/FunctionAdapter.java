@@ -11,6 +11,14 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
+/**
+ * 函数适配器接口。
+ * <p>
+ * 用于将业务函数适配为 LLM 可以调用的工具函数，提供函数名称、描述、参数定义等信息，
+ * 并实现函数调用逻辑。
+ *
+ * @since 5.0.0
+ */
 public interface FunctionAdapter {
     /**
      * 获取工具名称。

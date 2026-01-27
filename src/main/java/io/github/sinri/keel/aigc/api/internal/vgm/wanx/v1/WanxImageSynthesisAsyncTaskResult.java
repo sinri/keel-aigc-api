@@ -1,6 +1,6 @@
-package io.github.sinri.keel.aigc.api.internal.vgm.wanx;
+package io.github.sinri.keel.aigc.api.internal.vgm.wanx.v1;
 
-import io.github.sinri.keel.aigc.api.vgm.wanx.task.WanxAsyncTaskResult;
+import io.github.sinri.keel.aigc.api.vgm.wanx.v1.task.WanxAsyncTaskResult;
 import io.github.sinri.keel.base.json.UnmodifiableJsonifiableEntityImpl;
 import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;

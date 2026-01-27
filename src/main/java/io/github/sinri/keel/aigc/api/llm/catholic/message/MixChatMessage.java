@@ -68,12 +68,12 @@ public interface MixChatMessage extends JsonObjectConvertible {
         return !this.getVisionContent().isEmpty();
     }
 
-    Integer getIndex();
+    @Nullable Integer getIndex();
 
-    MixChatMessage setIndex(Integer index);
+    MixChatMessage setIndex(@Nullable Integer index);
 
-    String getFinishReason();
+    @Nullable String getFinishReason();
 
-    MixChatMessage setFinishReason(String finishReason);
+    MixChatMessage setFinishReason(@Nullable String finishReason);
 
 }

@@ -9,6 +9,7 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.Test;
 
+import java.util.Objects;
 import java.util.UUID;
 
 class SeedreamKitTest extends KeelJUnit5Test {
@@ -29,7 +30,9 @@ class SeedreamKitTest extends KeelJUnit5Test {
                    )
                    .compose(resp -> {
                        getUnitTestLogger().info("resp", x -> x.put("resp", resp));
-                       resp.getData().forEach(datum -> {
+                       var data=resp.getData();
+                       Objects.requireNonNull(data);
+                       data.forEach(datum -> {
                            String url = datum.getUrl();
                            getUnitTestLogger().info("url", x -> x.put("url", url));
                        });

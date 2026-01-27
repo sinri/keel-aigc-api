@@ -14,9 +14,6 @@ public class OpenAIConfigElement extends ConfigElement {
 
     public OpenAIModelConfigElement model(String modelName) throws NotConfiguredException {
         var x = extract(modelName);
-        if (x == null) {
-            throw new NotConfiguredException(getAbsoluteKeyChain(), modelName);
-        }
         return new OpenAIModelConfigElement(x);
     }
 

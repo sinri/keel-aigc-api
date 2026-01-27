@@ -5,12 +5,20 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.MixChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.MixChatResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.ToolCall;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.ToolCallStreamPieceCollector;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 流式响应缓冲区。
+ * <p>
+ * 用于收集和聚合流式响应数据块，最终构建完整的 MixChatResponse。
+ *
+ * @since 5.0.0
+ */
 public class MixChatResponseBuffer implements StreamPieceCollector<MixChatResponseChunk, MixChatResponse> {
     private final MixChatResponseChunkChoiceBuffer choiceBuffer = new MixChatResponseChunkChoiceBuffer();
 
@@ -32,11 +40,11 @@ public class MixChatResponseBuffer implements StreamPieceCollector<MixChatRespon
     private static class MixChatResponseChunkChoiceBuffer
             implements StreamPieceCollector<MixChatResponseChunkChoice, MixChatMessage> {
 
-        private String role;
+        private @Nullable String role;
         private final StringBuilder contentBuffer = new StringBuilder();
         private final StringBuilder reasoningContentBuffer = new StringBuilder();
-        private Integer index;
-        private String finishReason;
+        private @Nullable Integer index;
+        private @Nullable String finishReason;
         private final Map<Integer, ToolCallStreamPieceCollector> tcMap = new HashMap<>();
 
         @Override
@@ -60,12 +68,10 @@ public class MixChatResponseBuffer implements StreamPieceCollector<MixChatRespon
             if (reasoningContent != null) {
                 this.reasoningContentBuffer.append(reasoningContent);
             }
-            if (toolCalls != null) {
-                for (int i = 0; i < toolCalls.size(); i++) {
-                    ToolCall toolCall = toolCalls.get(i);
-                    tcMap.computeIfAbsent(i, x -> new ToolCallStreamPieceCollector())
-                            .accept(toolCall);
-                }
+            for (int i = 0; i < toolCalls.size(); i++) {
+                ToolCall toolCall = toolCalls.get(i);
+                tcMap.computeIfAbsent(i, x -> new ToolCallStreamPieceCollector())
+                     .accept(toolCall);
             }
         }
 
@@ -73,8 +79,14 @@ public class MixChatResponseBuffer implements StreamPieceCollector<MixChatRespon
         public MixChatMessage build() {
             MixChatMessage message = MixChatMessage.create();
             message.setRole(role);
-            message.setTextContent(contentBuffer.toString());
-            message.setReasoningContent(reasoningContentBuffer.toString());
+            String textContent = contentBuffer.toString();
+            if (!textContent.isEmpty()) {
+                message.setTextContent(textContent);
+            }
+            String reasoningContent = reasoningContentBuffer.toString();
+            if (!reasoningContent.isEmpty()) {
+                message.setReasoningContent(reasoningContent);
+            }
             message.setIndex(index);
             message.setFinishReason(finishReason);
 

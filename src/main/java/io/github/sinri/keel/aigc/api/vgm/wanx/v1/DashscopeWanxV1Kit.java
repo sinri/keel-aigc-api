@@ -1,9 +1,9 @@
-package io.github.sinri.keel.aigc.api.vgm.wanx;
+package io.github.sinri.keel.aigc.api.vgm.wanx.v1;
 
-import io.github.sinri.keel.aigc.api.internal.vgm.wanx.WanxImageSynthesisAsyncTaskResult;
+import io.github.sinri.keel.aigc.api.internal.vgm.wanx.v1.WanxImageSynthesisAsyncTaskResult;
 import io.github.sinri.keel.aigc.api.llm.sect.AbnormalResponse;
-import io.github.sinri.keel.aigc.api.vgm.wanx.ImageSynthesis.request.WanxImageSynthesisRequest;
-import io.github.sinri.keel.aigc.api.vgm.wanx.ImageSynthesis.response.WanxImageSynthesisAsyncTaskCreateResult;
+import io.github.sinri.keel.aigc.api.vgm.wanx.v1.request.WanxImageSynthesisRequest;
+import io.github.sinri.keel.aigc.api.vgm.wanx.v1.response.WanxImageSynthesisAsyncTaskCreateResult;
 import io.github.sinri.keel.logger.api.logger.Logger;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
@@ -16,9 +16,10 @@ import java.util.Map;
  * <p>
  * 用于通过阿里云 Dashscope 服务进行图像合成，支持异步任务创建和查询。
  *
+ * @see <a href="https://help.aliyun.com/zh/model-studio/text-to-image-api-reference">通义万相-文生图V1版API参考</a>
  * @since 5.0.0
  */
-public class DashscopeWanxKit {
+public class DashscopeWanxV1Kit {
     /**
      * Dashscope 异步任务查询端点。
      */
@@ -39,7 +40,7 @@ public class DashscopeWanxKit {
      * @param webClient Web 客户端
      * @param logger   日志记录器
      */
-    public DashscopeWanxKit(String apiKey, WebClient webClient, Logger logger) {
+    public DashscopeWanxV1Kit(String apiKey, WebClient webClient, Logger logger) {
         this.apiKey = apiKey;
         this.webClient = webClient;
         this.logger = logger;

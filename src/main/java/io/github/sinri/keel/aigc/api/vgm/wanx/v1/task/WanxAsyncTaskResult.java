@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.vgm.wanx.task;
+package io.github.sinri.keel.aigc.api.vgm.wanx.v1.task;
 
 import org.jspecify.annotations.Nullable;
 

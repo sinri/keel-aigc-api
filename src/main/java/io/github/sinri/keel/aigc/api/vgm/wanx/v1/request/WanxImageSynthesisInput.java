@@ -1,6 +1,6 @@
-package io.github.sinri.keel.aigc.api.vgm.wanx.ImageSynthesis.request;
+package io.github.sinri.keel.aigc.api.vgm.wanx.v1.request;
 
-import io.github.sinri.keel.aigc.api.internal.vgm.wanx.WanxImageSynthesisInputImpl;
+import io.github.sinri.keel.aigc.api.internal.vgm.wanx.v1.WanxImageSynthesisInputImpl;
 import io.github.sinri.keel.base.json.JsonifiableDataUnit;
 import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;

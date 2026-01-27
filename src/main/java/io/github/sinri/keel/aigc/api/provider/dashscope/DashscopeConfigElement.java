@@ -11,9 +11,6 @@ public class DashscopeConfigElement extends ConfigElement {
 
     public QwenConfigElement qwen() throws NotConfiguredException {
         ConfigElement x = extract("qwen");
-        if (x == null) {
-            throw new NotConfiguredException(getAbsoluteKeyChain(), "qwen");
-        }
         return new QwenConfigElement(x);
     }
 }

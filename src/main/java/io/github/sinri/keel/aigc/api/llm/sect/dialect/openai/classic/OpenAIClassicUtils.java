@@ -166,10 +166,7 @@ public class OpenAIClassicUtils {
                                     x.setRole(delta.getRole());
                                     x.setContent(delta.getContent());
 
-                                    x.setToolCalls(delta.getToolCalls()
-                                                        .stream()
-                                                        .map(tcc -> (ToolCall) tcc)
-                                                        .toList());
+                                    x.setToolCalls(delta.getToolCalls());
                                 }
                                 return x;
                             })

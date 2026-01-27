@@ -24,6 +24,15 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.function.Function;
 
+/**
+ * LLM 服务门面类。
+ * <p>
+ * 提供统一的静态方法接口，用于管理 LLM 模型注册、函数适配器注册，以及执行聊天请求。
+ * <p>
+ * 该类使用单例模式管理内部状态，包括 Keel 实例、Web 客户端、HTTP 客户端和日志记录器。
+ *
+ * @since 5.0.0
+ */
 public final class LLMServiceFacade {
     private static final LLMServiceFacadeInternal INSTANCE = new LLMServiceFacadeInternal();
 

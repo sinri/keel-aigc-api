@@ -8,6 +8,14 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
+/**
+ * 流式响应数据块接口。
+ * <p>
+ * 表示从 LLM 流式响应中接收到的单个数据块，包含响应 ID、模型信息、创建时间等元数据，
+ * 以及一个或多个选择项（choices）。
+ *
+ * @since 5.0.0
+ */
 public interface MixChatResponseChunk extends JsonifiableDataUnit {
     static MixChatResponseChunk create() {
         return new MixChatResponseChunkImpl();
