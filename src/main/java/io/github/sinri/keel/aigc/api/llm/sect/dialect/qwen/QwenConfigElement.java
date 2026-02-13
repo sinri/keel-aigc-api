@@ -6,8 +6,16 @@ import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import java.util.List;
 
 public class QwenConfigElement extends ConfigElement {
+    public static final String CONFIG_ELEMENT_NAME = "qwen";
+
     public QwenConfigElement(ConfigElement another) {
         super(another);
+    }
+
+    public static QwenConfigElement create(String apiKey) {
+        ConfigElement x = new ConfigElement(CONFIG_ELEMENT_NAME);
+        x.ensureChild("apiKey").setElementValue(apiKey);
+        return new QwenConfigElement(x);
     }
 
     public String apiKey() throws NotConfiguredException {

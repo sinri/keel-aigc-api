@@ -1,6 +1,6 @@
 package io.github.sinri.keel.aigc.api.vgm.gptimage;
 
-import io.github.sinri.keel.aigc.api.llm.sect.ProviderConfigElement;
+import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
 import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.OpenAIModelConfigElement;
 import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;

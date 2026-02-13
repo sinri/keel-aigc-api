@@ -2,7 +2,7 @@ package io.github.sinri.keel.aigc.api.provider.azure;
 
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.aigc.api.llm.LLMServiceFacadeBasedUnitTest;
-import io.github.sinri.keel.aigc.api.llm.sect.ProviderConfigElement;
+import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
 import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.OpenAIConfigElement;
 import io.github.sinri.keel.aigc.api.llm.MixChatRequestMock;
 import io.vertx.core.Future;

@@ -4,7 +4,7 @@ import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.aigc.api.llm.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.MixChatVisionContentElement;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.MixChatRequest;
-import io.github.sinri.keel.aigc.api.llm.sect.ProviderConfigElement;
+import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
 import io.github.sinri.keel.logger.api.LogLevel;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxTestContext;

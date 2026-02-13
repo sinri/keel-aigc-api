@@ -3,7 +3,7 @@ package io.github.sinri.keel.aigc.api.provider.volces;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.aigc.api.llm.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.aigc.api.llm.catholic.LLMServiceFacade;
-import io.github.sinri.keel.aigc.api.llm.sect.ProviderConfigElement;
+import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
 import io.github.sinri.keel.aigc.api.llm.sect.dialect.doubao.request.DoubaoRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;

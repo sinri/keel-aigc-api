@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 public class VolcesConfigElement extends ConfigElement {
+    public static final String CONFIG_ELEMENT_NAME = "volces";
     public VolcesConfigElement(ConfigElement another) {
         super(another);
     }
@@ -31,5 +32,12 @@ public class VolcesConfigElement extends ConfigElement {
             }
         });
         return modelDeploymentMap;
+    }
+
+    public static VolcesConfigElement create(String apiKey, Map<String, String> modelMap) {
+        ConfigElement configElement = new ConfigElement(CONFIG_ELEMENT_NAME);
+        configElement.ensureChild("apiKey").setElementValue(apiKey);
+        modelMap.forEach((k, v) -> configElement.ensureChild("model").ensureChild(k).setElementValue(v));
+        return new VolcesConfigElement(configElement);
     }
 }

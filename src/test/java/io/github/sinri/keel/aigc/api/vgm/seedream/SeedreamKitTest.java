@@ -1,6 +1,6 @@
 package io.github.sinri.keel.aigc.api.vgm.seedream;
 
-import io.github.sinri.keel.aigc.api.llm.sect.ProviderConfigElement;
+import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
 import io.github.sinri.keel.aigc.api.provider.volces.VolcesConfigElement;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.tesuto.KeelJUnit5Test;

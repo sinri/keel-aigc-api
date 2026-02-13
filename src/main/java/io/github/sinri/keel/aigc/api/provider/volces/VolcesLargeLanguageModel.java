@@ -2,7 +2,7 @@ package io.github.sinri.keel.aigc.api.provider.volces;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.LLMService;
 import io.github.sinri.keel.aigc.api.llm.catholic.LargeLanguageModel;
-import io.github.sinri.keel.aigc.api.llm.sect.ProviderConfigElement;
+import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 
 public class VolcesLargeLanguageModel extends LargeLanguageModel {

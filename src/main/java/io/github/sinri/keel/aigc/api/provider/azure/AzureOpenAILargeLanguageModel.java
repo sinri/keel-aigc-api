@@ -3,7 +3,7 @@ package io.github.sinri.keel.aigc.api.provider.azure;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.aigc.api.llm.catholic.LLMService;
 import io.github.sinri.keel.aigc.api.llm.catholic.LargeLanguageModel;
-import io.github.sinri.keel.aigc.api.llm.sect.ProviderConfigElement;
+import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
 import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.OpenAIConfigElement;
 
 public class AzureOpenAILargeLanguageModel extends LargeLanguageModel {

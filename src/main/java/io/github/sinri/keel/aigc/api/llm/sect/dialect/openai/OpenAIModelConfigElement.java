@@ -25,4 +25,13 @@ public class OpenAIModelConfigElement extends ConfigElement {
     public String apiVersion() throws NotConfiguredException {
         return readString(List.of("apiVersion"));
     }
+
+    public static OpenAIModelConfigElement create(String modelCode,String apiKey, String resourceName, String deployment,String apiVersion) {
+        ConfigElement configElement = new ConfigElement(modelCode);
+        configElement.ensureChild("apiKey").setElementValue(apiKey);
+        configElement.ensureChild("resourceName").setElementValue(resourceName);
+        configElement.ensureChild("deployment").setElementValue(deployment);
+        configElement.ensureChild("apiVersion").setElementValue(apiVersion);
+        return new OpenAIModelConfigElement(configElement);
+    }
 }
