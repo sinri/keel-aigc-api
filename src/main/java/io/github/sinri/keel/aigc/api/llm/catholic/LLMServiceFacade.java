@@ -1,19 +1,20 @@
 package io.github.sinri.keel.aigc.api.llm.catholic;
 
-import io.github.sinri.keel.base.async.Keel;
-import io.github.sinri.keel.base.configuration.ConfigElement;
-import io.github.sinri.keel.base.configuration.NotConfiguredException;
+import io.github.sinri.keel.aigc.api.internal.llm.catholic.FunctionAdapterRegistration;
+import io.github.sinri.keel.aigc.api.internal.llm.catholic.LLMRegistration;
+import io.github.sinri.keel.aigc.api.internal.llm.catholic.LLMServiceFacadeInternal;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.MixChatRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.MixChatResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.stream.MixChatResponseChunk;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.FunctionAdapter;
-import io.github.sinri.keel.aigc.api.internal.llm.catholic.FunctionAdapterRegistration;
-import io.github.sinri.keel.aigc.api.internal.llm.catholic.LLMRegistration;
-import io.github.sinri.keel.aigc.api.internal.llm.catholic.LLMServiceFacadeInternal;
 import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
 import io.github.sinri.keel.aigc.api.provider.azure.AzureOpenAILargeLanguageModel;
-import io.github.sinri.keel.aigc.api.provider.dashscope.DashscopeLargeLanguageModel;
+import io.github.sinri.keel.aigc.api.provider.dashscope.DashscopeMultimodalLargeLanguageModel;
+import io.github.sinri.keel.aigc.api.provider.dashscope.DashscopeTextLargeLanguageModel;
 import io.github.sinri.keel.aigc.api.provider.volces.VolcesLargeLanguageModel;
+import io.github.sinri.keel.base.async.Keel;
+import io.github.sinri.keel.base.configuration.ConfigElement;
+import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.logger.api.logger.Logger;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -40,8 +41,10 @@ public final class LLMServiceFacade {
         ProviderConfigElement p = ProviderConfigElement.load();
         try {
             var apiKey = p.dashscope().qwen().apiKey();
-            DashscopeLargeLanguageModel.createCommonQwenSeriesLLMs()
-                                       .forEach(LLMServiceFacade::registerModel);
+            DashscopeTextLargeLanguageModel.createCommonQwenSeriesLLMs()
+                                           .forEach(LLMServiceFacade::registerModel);
+            DashscopeMultimodalLargeLanguageModel.createCommonQwenSeriesLLMs()
+                                                 .forEach(LLMServiceFacade::registerModel);
         } catch (NotConfiguredException ignored) {
         }
         try {

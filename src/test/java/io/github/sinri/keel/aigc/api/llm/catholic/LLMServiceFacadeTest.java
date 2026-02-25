@@ -5,7 +5,7 @@ import io.github.sinri.keel.aigc.api.llm.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.aigc.api.llm.MixChatRequestMock;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.FunctionAdapter;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionToolCall;
-import io.github.sinri.keel.aigc.api.provider.dashscope.DashscopeLargeLanguageModel;
+import io.github.sinri.keel.aigc.api.provider.dashscope.DashscopeTextLargeLanguageModel;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
@@ -25,7 +25,7 @@ class LLMServiceFacadeTest extends LLMServiceFacadeBasedUnitTest implements MixC
 
     @Override
     public String getModelForMixChatRequest() {
-        return DashscopeLargeLanguageModel.MODEL_CODE_QWEN_PLUS;
+        return DashscopeTextLargeLanguageModel.MODEL_CODE_QWEN_PLUS;
     }
 
     @Test

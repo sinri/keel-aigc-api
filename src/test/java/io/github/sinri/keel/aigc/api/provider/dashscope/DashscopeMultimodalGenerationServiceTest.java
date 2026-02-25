@@ -23,7 +23,7 @@ class DashscopeMultimodalGenerationServiceTest extends LLMServiceFacadeBasedUnit
     }
     private MixChatRequest createMixChatRequest() {
         return MixChatRequest.create()
-                             .setModel(DashscopeLargeLanguageModel.MODEL_CODE_QWEN3_VL_FLASH)
+                             .setModel(DashscopeMultimodalLargeLanguageModel.MODEL_CODE_QWEN3D5_PLUS)
                              .addMessage(msg -> msg
                                      .setRole("user")
                                      .setVisionContent(List.of(

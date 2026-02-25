@@ -29,7 +29,7 @@ class DashscopeTextGenerationServiceTest extends LLMServiceFacadeBasedUnitTest i
 
     @Override
     public String getModelForMixChatRequest() {
-        return DashscopeLargeLanguageModel.MODEL_CODE_QWEN_FLASH;
+        return DashscopeTextLargeLanguageModel.MODEL_CODE_QWEN_FLASH;
     }
 
     @Test
