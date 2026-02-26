@@ -1,7 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.catholic.tool.call;
 
 import io.vertx.core.json.JsonObject;
-import org.jspecify.annotations.Nullable;
 
 /**
  * 工具调用接口。
@@ -38,8 +37,9 @@ public interface ToolCall {
      * 当{@link ToolCall#getType()}返回非{@code function}时，本方法返回{@code null}，但这目前应该不可能发生。
      *
      * @return 函数工具调用实例，如果类型不是 function 则返回 null
+     * @throws NullPointerException 如果工具类型不是 function
      */
-    @Nullable FunctionToolCall getFunction();
+    FunctionToolCall getFunction();
 
     /**
      * 转换为 JSON 对象。

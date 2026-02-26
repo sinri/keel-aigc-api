@@ -68,6 +68,7 @@ public interface FunctionAdapter {
      *
      * @param arguments     the arguments parsed from LLM response
      * @param fixedArgument the argument object from context
+     * @return the execute result of this function
      */
     Future<String> call(@Nullable JsonObject arguments, @Nullable JsonObject fixedArgument);
 

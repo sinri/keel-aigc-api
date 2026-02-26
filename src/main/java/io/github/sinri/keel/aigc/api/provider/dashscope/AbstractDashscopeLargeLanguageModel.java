@@ -20,4 +20,8 @@ abstract class AbstractDashscopeLargeLanguageModel extends LargeLanguageModel {
     public final String getApiKey() throws NotConfiguredException {
         return ProviderConfigElement.load().dashscope().qwen().apiKey();
     }
+
+    public String getModelInRequest() {
+        return getRegisterCode();
+    }
 }

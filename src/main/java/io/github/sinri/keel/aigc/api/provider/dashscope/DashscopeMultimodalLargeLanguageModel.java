@@ -14,14 +14,14 @@ public class DashscopeMultimodalLargeLanguageModel extends AbstractDashscopeLarg
     public final static String MODEL_CODE_QWEN3_VL_FLASH = "qwen3-vl-flash";
     public final static String MODEL_CODE_QWEN_VL_OCR = "qwen-vl-ocr";
 
-    private static final Map<String, DashscopeTextLargeLanguageModel> CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, DashscopeMultimodalLargeLanguageModel> CACHE = new ConcurrentHashMap<>();
 
     public DashscopeMultimodalLargeLanguageModel(String modelCode) {
         super(modelCode);
     }
 
-    public static List<DashscopeTextLargeLanguageModel> createCommonQwenSeriesLLMs() {
-        ArrayList<DashscopeTextLargeLanguageModel> list = new ArrayList<>();
+    public static List<DashscopeMultimodalLargeLanguageModel> createCommonQwenSeriesLLMs() {
+        ArrayList<DashscopeMultimodalLargeLanguageModel> list = new ArrayList<>();
         list.add(factory(DashscopeMultimodalLargeLanguageModel.MODEL_CODE_QWEN3D5_PLUS));
         list.add(factory(DashscopeMultimodalLargeLanguageModel.MODEL_CODE_QWEN3_VL_PLUS));
         list.add(factory(DashscopeMultimodalLargeLanguageModel.MODEL_CODE_QWEN3_VL_FLASH));
@@ -29,8 +29,8 @@ public class DashscopeMultimodalLargeLanguageModel extends AbstractDashscopeLarg
         return list;
     }
 
-    public static DashscopeTextLargeLanguageModel factory(String modelCode) {
-        return CACHE.computeIfAbsent(modelCode, DashscopeTextLargeLanguageModel::new);
+    public static DashscopeMultimodalLargeLanguageModel factory(String modelCode) {
+        return CACHE.computeIfAbsent(modelCode, DashscopeMultimodalLargeLanguageModel::new);
     }
 
     @Override

@@ -77,6 +77,13 @@ public class DashscopeProvider implements LLMProvider {
      * @return 如果是视觉相关请求返回 true，否则返回 false
      */
     private boolean isVisionSpecificRequest(JsonObject requestPayload) {
+        var model = requestPayload.getString("model");
+        boolean anyMatch = DashscopeMultimodalLargeLanguageModel
+                .createCommonQwenSeriesLLMs()
+                .stream()
+                .anyMatch(llm -> llm.getModelInRequest().equals(model));
+        if (anyMatch) return true;
+
         try {
             JsonArray messages = requestPayload.getJsonObject("input").getJsonArray("messages");
             for (var message : messages) {
@@ -140,13 +147,13 @@ public class DashscopeProvider implements LLMProvider {
     /**
      * 发起流式请求。
      *
-     * @param vertx            Vert.x 实例
-     * @param httpClient       HTTP 客户端
-     * @param chatModel        聊天模型名称
-     * @param requestPayload   请求负载
+     * @param vertx             Vert.x 实例
+     * @param httpClient        HTTP 客户端
+     * @param chatModel         聊天模型名称
+     * @param requestPayload    请求负载
      * @param cutterProcessFunc SSE 数据处理函数
-     * @param cutterTimeout    超时时间（毫秒）
-     * @param requestId        请求 ID
+     * @param cutterTimeout     超时时间（毫秒）
+     * @param requestId         请求 ID
      * @return 完成状态的 Future
      */
     @Override

@@ -1,9 +1,11 @@
 package io.github.sinri.keel.aigc.api.internal.llm.catholic.tool;
 
-import io.github.sinri.keel.base.json.JsonifiableDataUnitImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionToolCall;
+import io.github.sinri.keel.base.json.JsonifiableDataUnitImpl;
 import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
+
+import java.util.Objects;
 
 public class CommonFunctionToolCall extends JsonifiableDataUnitImpl implements FunctionToolCall {
     public CommonFunctionToolCall(String name, String arguments) {
@@ -17,8 +19,8 @@ public class CommonFunctionToolCall extends JsonifiableDataUnitImpl implements F
     }
 
     @Override
-    public @Nullable String getName() {
-        return readString("name");
+    public String getName() {
+        return Objects.requireNonNull(readString("name"));
     }
 
     @Override

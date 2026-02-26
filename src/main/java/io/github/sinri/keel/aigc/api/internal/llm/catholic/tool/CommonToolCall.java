@@ -1,17 +1,19 @@
 package io.github.sinri.keel.aigc.api.internal.llm.catholic.tool;
 
-import io.github.sinri.keel.base.json.JsonifiableDataUnitImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionToolCall;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.ToolCall;
+import io.github.sinri.keel.base.json.JsonifiableDataUnitImpl;
 import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
+
+import java.util.Objects;
 
 public class CommonToolCall extends JsonifiableDataUnitImpl implements ToolCall {
     public CommonToolCall(JsonObject jsonObject) {
         super(jsonObject);
     }
 
-    public CommonToolCall(String id, Integer index,@Nullable FunctionToolCall functionToolCall) {
+    public CommonToolCall(String id, Integer index, @Nullable FunctionToolCall functionToolCall) {
         this(new JsonObject()
                 .put("id", id)
                 .put("index", index)
@@ -36,13 +38,10 @@ public class CommonToolCall extends JsonifiableDataUnitImpl implements ToolCall 
     }
 
     @Override
-    public @Nullable FunctionToolCall getFunction() {
+    public FunctionToolCall getFunction() {
         var a = readJsonObject("function");
-        if (a == null) {
-            return null;
-        } else {
-            return new CommonFunctionToolCall(a);
-        }
+        Objects.requireNonNull(a);
+        return new CommonFunctionToolCall(a);
     }
 
 }
