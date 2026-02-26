@@ -12,6 +12,7 @@ module io.github.sinri.keel.integration.llm.api {
     requires static org.jspecify;
     requires io.vertx.jsonschema;
     requires io.vertx.web.common;
+    requires org.yaml.snakeyaml;
 
     // io.github.sinri.keel.llm.api.internal 及其下子包均不对外透出
     exports io.github.sinri.keel.aigc.api.llm.catholic;

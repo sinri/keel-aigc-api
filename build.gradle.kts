@@ -52,6 +52,8 @@ dependencies {
     // Keel dependencies (from pom.xml)
     api("io.github.sinri:keel-core:${keelCoreVersion}")
 
+    implementation("org.yaml:snakeyaml:2.3")
+
     // API dependency (transitive)
     // https://mvnrepository.com/artifact/org.jspecify/jspecify
     compileOnly("org.jspecify:jspecify:${jspecifyVersion}")

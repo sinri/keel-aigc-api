@@ -52,13 +52,13 @@ public class SeekSkillFunctionAdapter implements FunctionAdapter {
                          return skill.getContent()
                                      .compose(skillContent -> {
                                          var s = """
-                                                 获取到提供的 Agent Skill，根目录位于 `%s`，其内容如下：
+                                                 Required Agent Skill is fetched, located at path `%s`, its content is:
                                                  
                                                  ```
                                                  %s
                                                  ```
                                                  
-                                                 请继续作业。
+                                                 Continue your job.
                                                  """
                                                  .formatted(rootPath, skillContent);
                                          return Future.succeededFuture(s);

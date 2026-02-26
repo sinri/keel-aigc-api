@@ -1,35 +1,28 @@
-package io.github.sinri.keel.aigc.api.llm.catholic.skill.alpha;
+package io.github.sinri.keel.aigc.api.llm.catholic.skill;
 
 import io.github.sinri.keel.aigc.api.llm.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.aigc.api.llm.catholic.LLMServiceFacade;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.MixChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.MixChatRequest;
-import io.github.sinri.keel.aigc.api.llm.catholic.skill.RunCommandFunctionAdapter;
-import io.github.sinri.keel.aigc.api.llm.catholic.skill.SeekSkillFunctionAdapter;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionToolCall;
 import io.github.sinri.keel.aigc.api.provider.dashscope.DashscopeMultimodalLargeLanguageModel;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.vertx.core.Future;
-import io.vertx.junit5.VertxTestContext;
-import org.jspecify.annotations.NullMarked;
-import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-@NullMarked
-public class AlphaSkillUsageTest extends LLMServiceFacadeBasedUnitTest {
-    public AlphaSkillUsageTest() throws NotConfiguredException {
+public abstract class AbstractSkillAgentUsageTest extends LLMServiceFacadeBasedUnitTest {
+    public AbstractSkillAgentUsageTest() throws NotConfiguredException {
         super();
-        //        LLMServiceFacade.getLogger().visibleLevel(LogLevel.DEBUG);
-        //        getUnitTestLogger().visibleLevel(LogLevel.DEBUG);
     }
 
+    abstract protected SkillProvider buildSkillProvider();
 
-    @Test
-    void test1(VertxTestContext testContext) {
-        SkillProviderImpl skillProvider = new SkillProviderImpl();
+    protected Future<Void> oneShot(String userPrompt) {
+        var skillProvider = buildSkillProvider();
+
         SeekSkillFunctionAdapter seekSkillFunctionAdapter = new SeekSkillFunctionAdapter(skillProvider);
         RunCommandFunctionAdapter runCommandFunctionAdapter = new RunCommandFunctionAdapter(getKeel());
         LLMServiceFacade.registerFunctionAdapter(seekSkillFunctionAdapter);
@@ -37,7 +30,7 @@ public class AlphaSkillUsageTest extends LLMServiceFacadeBasedUnitTest {
 
         List<MixChatMessage> context = new ArrayList<>();
 
-        skillProvider
+        return skillProvider
                 .getSkillStubs()
                 .compose(skillStubs -> {
                     StringBuilder sb = new StringBuilder();
@@ -58,7 +51,7 @@ public class AlphaSkillUsageTest extends LLMServiceFacadeBasedUnitTest {
                     );
                     context.add(MixChatMessage.create()
                                               .setRole("user")
-                                              .setTextContent("现在这台设备，访问互联网上的服务器的时候所使用的 IP 地址是什么？")
+                                              .setTextContent(userPrompt)
                     );
 
                     return getKeel().asyncCallRepeatedly(repeatedlyCallTask -> {
@@ -73,7 +66,7 @@ public class AlphaSkillUsageTest extends LLMServiceFacadeBasedUnitTest {
                         return LLMServiceFacade
                                 .request(request)
                                 .compose(response -> {
-                                    getUnitTestLogger().info("response:\n"+ response);
+                                    getUnitTestLogger().info("response:\n" + response);
                                     MixChatMessage message = response.getMessage();
                                     context.add(message);
 
@@ -109,8 +102,6 @@ public class AlphaSkillUsageTest extends LLMServiceFacadeBasedUnitTest {
                                     }
                                 });
                     });
-                })
-                .onComplete(testContext.succeedingThenComplete());
+                });
     }
-
 }
