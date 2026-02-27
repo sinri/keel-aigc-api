@@ -7,6 +7,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.request.MixChatRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.MixChatResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.stream.MixChatResponseChunk;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.FunctionAdapter;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.ToolDefinition;
 import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
 import io.github.sinri.keel.aigc.api.provider.azure.AzureOpenAILargeLanguageModel;
 import io.github.sinri.keel.aigc.api.provider.dashscope.DashscopeMultimodalLargeLanguageModel;
@@ -23,6 +24,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -37,6 +40,13 @@ import java.util.function.Function;
 public final class LLMServiceFacade {
     private static final LLMServiceFacadeInternal INSTANCE = new LLMServiceFacadeInternal();
 
+    /**
+     * 根据配置文件注册所有可用的 LLM 模型。
+     * <p>
+     * 本方法应在使用{@link LLMServiceFacade}实例的功能之前调用。
+     *
+     * @throws NotConfiguredException 如果配置文件未找到或未正确配置
+     */
     public static void registerLLMsFollowingConfig() throws NotConfiguredException {
         ProviderConfigElement p = ProviderConfigElement.load();
         try {
@@ -120,6 +130,14 @@ public final class LLMServiceFacade {
         FunctionAdapterRegistration.getInstance().registerFunctionAdapter(functionAdapter);
     }
 
+    public static Map<String, FunctionAdapter> getRegisteredFunctionAdapterMap() {
+        return FunctionAdapterRegistration.getInstance().getFunctionAdapters();
+    }
+
+    public static List<ToolDefinition> getRegisteredToolDefinitions() {
+        return getRegisteredFunctionAdapterMap().values().stream().map(FunctionAdapter::toToolDefinition).toList();
+    }
+
     public static @Nullable FunctionAdapter getFunctionAdapter(String functionName) {
         return FunctionAdapterRegistration.getInstance().getFunctionAdapter(functionName);
     }
@@ -127,5 +145,9 @@ public final class LLMServiceFacade {
     public static Future<String> callRegisteredFunction(String functionName, @Nullable JsonObject arguments, @Nullable JsonObject fixedArguments) {
         return FunctionAdapterRegistration.getInstance()
                                           .callRegisteredFunction(functionName, arguments, fixedArguments);
+    }
+
+    private LLMServiceFacade() {
+        // singleton
     }
 }

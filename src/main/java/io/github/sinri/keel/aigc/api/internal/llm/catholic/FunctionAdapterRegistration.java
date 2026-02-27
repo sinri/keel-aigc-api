@@ -5,6 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,5 +35,9 @@ public final class FunctionAdapterRegistration {
             return Future.failedFuture(new NullPointerException("No function adapter for " + functionName + " in FunctionAdapterRegistration"));
         }
         return functionAdapter.call(arguments, fixedArguments);
+    }
+
+    public Map<String, FunctionAdapter> getFunctionAdapters() {
+        return Collections.unmodifiableMap(fcMap);
     }
 }
