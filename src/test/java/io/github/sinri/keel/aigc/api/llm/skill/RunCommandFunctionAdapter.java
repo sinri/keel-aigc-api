@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.llm.catholic.skill;
+package io.github.sinri.keel.aigc.api.llm.skill;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.FunctionAdapter;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.FunctionParameterDefinition;

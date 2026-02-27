@@ -1,7 +1,7 @@
-package io.github.sinri.keel.aigc.api.llm.catholic.skill.local;
+package io.github.sinri.keel.aigc.api.llm.skill.local;
 
-import io.github.sinri.keel.aigc.api.llm.catholic.skill.AbstractSkillAgentUsageTest;
-import io.github.sinri.keel.aigc.api.llm.catholic.skill.SkillProvider;
+import io.github.sinri.keel.aigc.api.llm.skill.AbstractSkillAgentUsageTest;
+import io.github.sinri.keel.aigc.api.llm.skill.SkillProvider;
 import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.vertx.junit5.Timeout;

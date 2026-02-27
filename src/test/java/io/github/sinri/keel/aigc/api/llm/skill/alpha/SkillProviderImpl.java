@@ -1,8 +1,8 @@
-package io.github.sinri.keel.aigc.api.llm.catholic.skill.alpha;
+package io.github.sinri.keel.aigc.api.llm.skill.alpha;
 
-import io.github.sinri.keel.aigc.api.llm.catholic.skill.Skill;
-import io.github.sinri.keel.aigc.api.llm.catholic.skill.SkillProvider;
-import io.github.sinri.keel.aigc.api.llm.catholic.skill.SkillStub;
+import io.github.sinri.keel.aigc.api.llm.skill.Skill;
+import io.github.sinri.keel.aigc.api.llm.skill.SkillProvider;
+import io.github.sinri.keel.aigc.api.llm.skill.SkillStub;
 import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.vertx.core.Future;
 import org.jspecify.annotations.NullMarked;

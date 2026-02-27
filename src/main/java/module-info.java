@@ -50,6 +50,8 @@ module io.github.sinri.keel.integration.llm.api {
     exports io.github.sinri.keel.aigc.api.llm.sect.dialect.qwen.request.parameters;
     exports io.github.sinri.keel.aigc.api.llm.sect.dialect.qwen.response.stream;
     exports io.github.sinri.keel.aigc.api.llm.sect.dialect.qwen.response.sync;
+    exports io.github.sinri.keel.aigc.api.llm.skill;
+    exports io.github.sinri.keel.aigc.api.llm.rag;
     exports io.github.sinri.keel.aigc.api.provider;
     exports io.github.sinri.keel.aigc.api.provider.azure;
     exports io.github.sinri.keel.aigc.api.provider.dashscope;

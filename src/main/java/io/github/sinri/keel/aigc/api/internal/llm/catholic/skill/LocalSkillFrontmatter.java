@@ -1,6 +1,6 @@
 package io.github.sinri.keel.aigc.api.internal.llm.catholic.skill;
 
-import io.github.sinri.keel.aigc.api.llm.catholic.skill.SkillFrontmatter;
+import io.github.sinri.keel.aigc.api.llm.skill.SkillFrontmatter;
 import org.jspecify.annotations.Nullable;
 import org.yaml.snakeyaml.Yaml;
 

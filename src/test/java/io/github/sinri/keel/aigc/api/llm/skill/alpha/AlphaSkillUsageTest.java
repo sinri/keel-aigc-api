@@ -1,11 +1,11 @@
-package io.github.sinri.keel.aigc.api.llm.catholic.skill.alpha;
+package io.github.sinri.keel.aigc.api.llm.skill.alpha;
 
 import io.github.sinri.keel.aigc.api.llm.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.aigc.api.llm.catholic.LLMServiceFacade;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.MixChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.MixChatRequest;
-import io.github.sinri.keel.aigc.api.llm.catholic.skill.RunCommandFunctionAdapter;
-import io.github.sinri.keel.aigc.api.llm.catholic.skill.SeekSkillFunctionAdapter;
+import io.github.sinri.keel.aigc.api.llm.skill.RunCommandFunctionAdapter;
+import io.github.sinri.keel.aigc.api.llm.skill.SeekSkillFunctionAdapter;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionToolCall;
 import io.github.sinri.keel.aigc.api.provider.dashscope.DashscopeMultimodalLargeLanguageModel;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
