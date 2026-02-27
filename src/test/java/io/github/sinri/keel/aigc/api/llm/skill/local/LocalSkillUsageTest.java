@@ -38,7 +38,7 @@ public class LocalSkillUsageTest extends AbstractSkillAgentUsageTest {
     @Timeout(value = 10,timeUnit = TimeUnit.MINUTES)
     void test2(VertxTestContext testContext) {
         this.oneShot("""
-                     翻译下面的日语到英文
+                     翻译下面的日语到英文，然后直接输出译文，不要有其他内容和附加渲染。
                      ----
                      日本からの転生者、カーマイン・マロット公爵令嬢は教会で洗礼を受ける。
                      洗礼によって彼女はギフトを授かった。

@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.skill;
 
+import io.github.sinri.keel.aigc.api.llm.catholic.LLMServiceFacade;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.FunctionAdapter;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.FunctionParameterDefinition;
 import io.vertx.core.Future;
@@ -9,6 +10,18 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
+/**
+ * 技能查找函数适配器，用于在 LLM 模型中调用技能查找功能。
+ * <p>
+ * 如果你需要使用 Agent Skill 协议能力，
+ * 可以指定 {@link SkillProvider} 实例来构建此类的实例，
+ * 并将其注册到 {@link LLMServiceFacade} 中，
+ * 并在请求中
+ * （1）将此实例作为 Tool 添加；
+ * （2）在请求的 system prompt 中要求使用 Skill。
+ *
+ * @since 5.0.0
+ */
 public class SeekSkillFunctionAdapter implements FunctionAdapter {
     public static final String PARAMETER_SKILL_NAME = "skillName";
     public static final String FUNCTION_NAME = "seekSkill";
