@@ -23,6 +23,7 @@ module io.github.sinri.keel.integration.llm.api {
     exports io.github.sinri.keel.aigc.api.llm.catholic.tool;
     exports io.github.sinri.keel.aigc.api.llm.catholic.tool.call;
     exports io.github.sinri.keel.aigc.api.llm.catholic.tool.definition;
+    exports io.github.sinri.keel.aigc.api.llm.catholic.embedding;
     exports io.github.sinri.keel.aigc.api.llm.sect;
     exports io.github.sinri.keel.aigc.api.llm.sect.dialect.doubao;
     exports io.github.sinri.keel.aigc.api.llm.sect.dialect.doubao.message;
