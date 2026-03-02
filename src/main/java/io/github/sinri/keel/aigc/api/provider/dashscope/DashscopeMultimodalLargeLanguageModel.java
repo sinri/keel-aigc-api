@@ -13,6 +13,7 @@ public class DashscopeMultimodalLargeLanguageModel extends AbstractDashscopeLarg
     public final static String MODEL_CODE_QWEN3_VL_PLUS = "qwen3-vl-plus";
     public final static String MODEL_CODE_QWEN3_VL_FLASH = "qwen3-vl-flash";
     public final static String MODEL_CODE_QWEN_VL_OCR = "qwen-vl-ocr";
+    public final static String MODEL_CODE_QWEN3D5_FLASH = "qwen3.5-flash";
 
     private static final Map<String, DashscopeMultimodalLargeLanguageModel> CACHE = new ConcurrentHashMap<>();
 
@@ -26,6 +27,7 @@ public class DashscopeMultimodalLargeLanguageModel extends AbstractDashscopeLarg
         list.add(factory(DashscopeMultimodalLargeLanguageModel.MODEL_CODE_QWEN3_VL_PLUS));
         list.add(factory(DashscopeMultimodalLargeLanguageModel.MODEL_CODE_QWEN3_VL_FLASH));
         list.add(factory(DashscopeMultimodalLargeLanguageModel.MODEL_CODE_QWEN_VL_OCR));
+        list.add(factory(DashscopeMultimodalLargeLanguageModel.MODEL_CODE_QWEN3D5_FLASH));
         return list;
     }
 

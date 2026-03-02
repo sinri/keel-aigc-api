@@ -11,7 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DashscopeTextLargeLanguageModel extends AbstractDashscopeLargeLanguageModel {
 
     public final static String MODEL_CODE_QWEN_FLASH = "qwen-flash";
-    public final static String MODEL_CODE_QWEN3D5_FLASH = "qwen3.5-flash";
     public final static String MODEL_CODE_QWEN_PLUS = "qwen-plus";
     public final static String MODEL_CODE_QWEN3_MAX = "qwen3-max";
     public final static String MODEL_CODE_QWEN_LONG = "qwen-long";
@@ -28,7 +27,6 @@ public class DashscopeTextLargeLanguageModel extends AbstractDashscopeLargeLangu
         list.add(factory(DashscopeTextLargeLanguageModel.MODEL_CODE_QWEN3_MAX));
         list.add(factory(DashscopeTextLargeLanguageModel.MODEL_CODE_QWEN_PLUS));
         list.add(factory(DashscopeTextLargeLanguageModel.MODEL_CODE_QWEN_FLASH));
-        list.add(factory(DashscopeTextLargeLanguageModel.MODEL_CODE_QWEN3D5_FLASH));
         list.add(factory(DashscopeTextLargeLanguageModel.MODEL_CODE_QWEN_LONG));
         return list;
     }
