@@ -8,6 +8,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.file.FileSystem;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,7 +69,8 @@ public class LocalSkillProvider implements SkillProvider {
                     }
                     return fs.readFile(skillMdPath)
                             .compose(buf -> {
-                                LocalSkillFrontmatter fm = LocalSkillFrontmatter.parseFromContent(buf.toString());
+                                String string = buf.toString(StandardCharsets.UTF_8);
+                                LocalSkillFrontmatter fm = LocalSkillFrontmatter.parseFromContent(string);
                                 accumulated.add(new SkillStub(fm.getName(), fm.getDescription(), entryPath));
                                 return collectStubs(fs, entries, index + 1, accumulated);
                             });
