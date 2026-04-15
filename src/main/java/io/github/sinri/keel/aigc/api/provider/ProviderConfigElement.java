@@ -1,14 +1,17 @@
 package io.github.sinri.keel.aigc.api.provider;
 
-import io.github.sinri.keel.aigc.api.provider.azure.AzureConfigElement;
+//import io.github.sinri.keel.aigc.api.provider.azure.AzureConfigElement;
 import io.github.sinri.keel.aigc.api.provider.dashscope.DashscopeConfigElement;
+import io.github.sinri.keel.aigc.api.provider.vertex.VertexConfigElement;
 import io.github.sinri.keel.aigc.api.provider.volces.VolcesConfigElement;
 import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 
 /**
  * Load AIGC Provider Configuration from {@link io.github.sinri.keel.base.configuration.ConfigElement#root()}.
+ * @deprecated use {@link io.github.sinri.keel.aigc.api.provider.config.ProvidersConfigElement} instead
  */
+@Deprecated
 public class ProviderConfigElement extends ConfigElement {
     public static final String CONFIG_ELEMENT_NAME = "provider";
 
@@ -26,13 +29,19 @@ public class ProviderConfigElement extends ConfigElement {
         return new DashscopeConfigElement(x);
     }
 
-    public AzureConfigElement azure() throws NotConfiguredException {
-        ConfigElement x = extract(AzureConfigElement.CONFIG_ELEMENT_NAME);
-        return new AzureConfigElement(x);
-    }
+//    public AzureConfigElement azure() throws NotConfiguredException {
+//        ConfigElement x = extract(AzureConfigElement.CONFIG_ELEMENT_NAME);
+//        return new AzureConfigElement(x);
+//    }
 
     public VolcesConfigElement volces() throws NotConfiguredException {
         ConfigElement x = extract(VolcesConfigElement.CONFIG_ELEMENT_NAME);
         return new VolcesConfigElement(x);
     }
+
+    public VertexConfigElement vertex() throws NotConfiguredException {
+        ConfigElement x = extract(VertexConfigElement.CONFIG_ELEMENT_NAME);
+        return new VertexConfigElement(x);
+    }
+
 }
