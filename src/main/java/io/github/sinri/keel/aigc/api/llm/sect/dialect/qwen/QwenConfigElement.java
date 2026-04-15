@@ -5,6 +5,10 @@ import io.github.sinri.keel.base.configuration.NotConfiguredException;
 
 import java.util.List;
 
+/**
+ * @deprecated let `qwen` be a key identity
+ */
+@Deprecated
 public class QwenConfigElement extends ConfigElement {
     public static final String CONFIG_ELEMENT_NAME = "qwen";
 

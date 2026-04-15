@@ -4,7 +4,6 @@ import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.aigc.api.llm.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.aigc.api.llm.catholic.LLMServiceFacade;
 import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
-import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.OpenAIConfigElement;
 import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.classic.request.GPTRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -20,7 +19,7 @@ class AzureOpenAIClassicProviderTest extends LLMServiceFacadeBasedUnitTest {
     private final AzureOpenAIClassicProvider provider;
 
     public AzureOpenAIClassicProviderTest() throws NotConfiguredException {
-        OpenAIConfigElement openai = ProviderConfigElement.load().azure().openai();
+        AzureOpenAIProviderConfigElement openai = ProviderConfigElement.load().azure().openai();
         provider = new AzureOpenAIClassicProvider(openai, getUnitTestLogger());
     }
 

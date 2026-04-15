@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.sect;
 
+import io.github.sinri.keel.aigc.api.llm.catholic.LLMServiceFacade;
 import io.github.sinri.keel.core.cutter.IntravenouslyCutterOnString;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
@@ -27,7 +28,11 @@ public class SSEUtils {
                                  .handler(cutter::acceptFromStream)
                                  .endHandler(ended -> cutter.stopHere())
                                  .exceptionHandler(cutter::stopHere);
-                         return cutter.waitForAllHandled();
+                         return cutter.waitForAllHandled()
+                                      .onFailure(throwable -> {
+                                          LLMServiceFacade.getLogger().error(x -> x.exception(throwable)
+                                                                                   .message("SSE stream processing error"));
+                                      });
                      });
     }
 

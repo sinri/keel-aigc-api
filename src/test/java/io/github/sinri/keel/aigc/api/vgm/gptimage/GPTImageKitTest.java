@@ -1,7 +1,7 @@
 package io.github.sinri.keel.aigc.api.vgm.gptimage;
 
 import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
-import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.OpenAIModelConfigElement;
+import io.github.sinri.keel.aigc.api.provider.azure.OpenAIChatCompletionsModelConfigElement;
 import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.tesuto.KeelJUnit5Test;
@@ -23,7 +23,7 @@ class GPTImageKitTest extends KeelJUnit5Test {
         String runtimeDir = ConfigElement.root().readProperty("runtime_dir");
         Objects.requireNonNull(runtimeDir);
 
-        OpenAIModelConfigElement configElement = ProviderConfigElement.load().azure().openai().model("gpt-image-1");
+        OpenAIChatCompletionsModelConfigElement configElement = ProviderConfigElement.load().azure().openai(). model("gpt-image-1");
         WebClient webClient = WebClient.create(getVertx());
         GPTImageKit gptImageKit = new GPTImageKit(configElement, webClient);
         gptImageKit.generateImage(new GenerateImageRequest()

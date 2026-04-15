@@ -3,8 +3,6 @@ package io.github.sinri.keel.aigc.api.provider.azure;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.aigc.api.llm.sect.AbnormalResponse;
 import io.github.sinri.keel.aigc.api.llm.sect.SSEUtils;
-import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.OpenAIConfigElement;
-import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.OpenAIModelConfigElement;
 import io.github.sinri.keel.aigc.api.provider.LLMProvider;
 import io.github.sinri.keel.logger.api.logger.Logger;
 import io.vertx.core.Future;
@@ -26,17 +24,17 @@ import java.util.function.Function;
  */
 public class AzureOpenAIClassicProvider implements LLMProvider {
     private final Logger logger;
-    private final Map<String, OpenAIModelConfigElement> modelConfigElementMap;
+    private final Map<String, OpenAIChatCompletionsModelConfigElement> modelConfigElementMap;
 
     /**
      * 构造函数。
      *
-     * @param openAIConfigElement OpenAI 配置元素
+     * @param azureOpenAIProviderConfigElement OpenAI 配置元素
      * @param logger              日志记录器
      */
-    public AzureOpenAIClassicProvider(OpenAIConfigElement openAIConfigElement, Logger logger) {
+    public AzureOpenAIClassicProvider(AzureOpenAIProviderConfigElement azureOpenAIProviderConfigElement, Logger logger) {
         this.logger = logger;
-        this.modelConfigElementMap = openAIConfigElement.getModelMap();
+        this.modelConfigElementMap = azureOpenAIProviderConfigElement.getModelMap();
     }
 
     /**
@@ -64,7 +62,7 @@ public class AzureOpenAIClassicProvider implements LLMProvider {
      * @param api API 路径（以 / 开头）
      * @return 完整 URL
      */
-    private String generateUrl(OpenAIModelConfigElement configElement, String api) throws NotConfiguredException {
+    private String generateUrl(OpenAIChatCompletionsModelConfigElement configElement, String api) throws NotConfiguredException {
         return "https://" + generateHost(configElement.resourceName()) + generateUri(configElement.deployment(), api, configElement.apiVersion());
     }
 
@@ -79,7 +77,7 @@ public class AzureOpenAIClassicProvider implements LLMProvider {
      */
     @Override
     public Future<JsonObject> request(WebClient webClient, String chatModel, JsonObject requestPayload, String requestId) {
-        OpenAIModelConfigElement configElement = modelConfigElementMap.get(chatModel);
+        OpenAIChatCompletionsModelConfigElement configElement = modelConfigElementMap.get(chatModel);
 
         String url;
         String apiKey;
@@ -142,7 +140,7 @@ public class AzureOpenAIClassicProvider implements LLMProvider {
             long cutterTimeout,
             String requestId
     ) {
-        OpenAIModelConfigElement configElement = modelConfigElementMap.get(chatModel);
+        OpenAIChatCompletionsModelConfigElement configElement = modelConfigElementMap.get(chatModel);
         String deployment;
         String apiKey;
         String apiVersion;

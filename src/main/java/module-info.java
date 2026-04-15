@@ -31,7 +31,6 @@ module io.github.sinri.keel.integration.llm.api {
     exports io.github.sinri.keel.aigc.api.llm.sect.dialect.doubao.request;
     exports io.github.sinri.keel.aigc.api.llm.sect.dialect.doubao.response.stream;
     exports io.github.sinri.keel.aigc.api.llm.sect.dialect.doubao.response.sync;
-    exports io.github.sinri.keel.aigc.api.llm.sect.dialect.openai;
     exports io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.classic;
     exports io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.classic.core;
     exports io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.classic.core.error;
@@ -57,6 +56,8 @@ module io.github.sinri.keel.integration.llm.api {
     exports io.github.sinri.keel.aigc.api.provider.azure;
     exports io.github.sinri.keel.aigc.api.provider.dashscope;
     exports io.github.sinri.keel.aigc.api.provider.volces;
+    exports io.github.sinri.keel.aigc.api.provider.vertex;
+    exports io.github.sinri.keel.aigc.api.provider.config;
 
 
 }

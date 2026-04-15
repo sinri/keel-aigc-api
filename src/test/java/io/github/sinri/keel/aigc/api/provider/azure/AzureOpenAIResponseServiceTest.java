@@ -3,7 +3,6 @@ package io.github.sinri.keel.aigc.api.provider.azure;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.aigc.api.llm.LLMServiceFacadeBasedUnitTest;
 import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
-import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.OpenAIConfigElement;
 import io.github.sinri.keel.aigc.api.llm.MixChatRequestMock;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxTestContext;
@@ -15,7 +14,7 @@ class AzureOpenAIResponseServiceTest extends LLMServiceFacadeBasedUnitTest imple
     private final AzureOpenAIResponseService azureOpenAIResponseService;
 
     public AzureOpenAIResponseServiceTest() throws NotConfiguredException {
-        OpenAIConfigElement openai = ProviderConfigElement.load().azure().openai();
+        AzureOpenAIProviderConfigElement openai = ProviderConfigElement.load().azure().openai();
 
         this.azureOpenAIResponseService = new AzureOpenAIResponseService(openai, getUnitTestLogger());
     }

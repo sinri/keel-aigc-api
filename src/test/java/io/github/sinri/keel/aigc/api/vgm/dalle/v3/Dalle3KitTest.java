@@ -1,7 +1,7 @@
 package io.github.sinri.keel.aigc.api.vgm.dalle.v3;
 
 import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
-import io.github.sinri.keel.aigc.api.llm.sect.dialect.openai.OpenAIModelConfigElement;
+import io.github.sinri.keel.aigc.api.provider.azure.OpenAIChatCompletionsModelConfigElement;
 import io.github.sinri.keel.base.configuration.NotConfiguredException;
 import io.github.sinri.keel.tesuto.KeelJUnit5Test;
 import io.vertx.core.Future;
@@ -14,7 +14,7 @@ import java.util.UUID;
 class Dalle3KitTest extends KeelJUnit5Test {
     @Test
     void test(VertxTestContext testContext) throws NotConfiguredException {
-        OpenAIModelConfigElement configElement = ProviderConfigElement.load().azure().openai().model("dalle3");
+        OpenAIChatCompletionsModelConfigElement configElement = ProviderConfigElement.load().azure().openai().model("dalle3");
         WebClient webClient = WebClient.create(getVertx());
         Dalle3Kit dalle3Kit = new Dalle3Kit(configElement, webClient, getUnitTestLogger());
         dalle3Kit.draw(

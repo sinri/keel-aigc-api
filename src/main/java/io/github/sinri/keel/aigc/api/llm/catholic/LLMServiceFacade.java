@@ -10,6 +10,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.tool.FunctionAdapter;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.ToolDefinition;
 import io.github.sinri.keel.aigc.api.provider.ProviderConfigElement;
 import io.github.sinri.keel.aigc.api.provider.azure.AzureOpenAILargeLanguageModel;
+import io.github.sinri.keel.aigc.api.provider.config.ProvidersConfigElement;
 import io.github.sinri.keel.aigc.api.provider.dashscope.DashscopeMultimodalLargeLanguageModel;
 import io.github.sinri.keel.aigc.api.provider.dashscope.DashscopeTextLargeLanguageModel;
 import io.github.sinri.keel.aigc.api.provider.volces.VolcesLargeLanguageModel;
