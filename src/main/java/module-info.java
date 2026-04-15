@@ -15,7 +15,10 @@ module io.github.sinri.keel.integration.llm.api {
     requires org.yaml.snakeyaml;
 
     // io.github.sinri.keel.llm.api.internal 及其下子包均不对外透出
-    exports io.github.sinri.keel.aigc.api.llm;
-
-
+    // io.github.sinri.keel.aigc.api.llm 包为空，只导出 catholic 子包
+    exports io.github.sinri.keel.aigc.api.llm.catholic;
+    exports io.github.sinri.keel.aigc.api.llm.catholic.message;
+    exports io.github.sinri.keel.aigc.api.llm.catholic.tool;
+    exports io.github.sinri.keel.aigc.api.llm.catholic.request;
+    exports io.github.sinri.keel.aigc.api.llm.catholic.response;
 }

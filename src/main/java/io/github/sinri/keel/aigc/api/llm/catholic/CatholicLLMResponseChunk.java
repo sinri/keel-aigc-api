@@ -1,10 +1,65 @@
 package io.github.sinri.keel.aigc.api.llm.catholic;
 
+import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicLLMResponseChunkImpl;
+import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
+import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta;
+
+import java.util.List;
+
 /**
  * 一种通用 LLM 回复格式（{@link CatholicLLMResponse}）在 stream 方式调用时的输出片段的接口定义。
  * <p>
  * 在 stream 调用下,通过特定 LLM 回复报文片段转化而来。
  */
 public interface CatholicLLMResponseChunk {
-    // todo
+    /**
+     * 回复ID（同一流式回复的所有片段ID相同）
+     */
+    String id();
+
+    /**
+     * 片段序号（从0开始）
+     */
+    int index();
+
+    /**
+     * 增量文本内容（可能为空）
+     */
+    String deltaText();
+
+    /**
+     * 增量工具调用（可能为空）
+     */
+    List<CatholicToolCallChunkDelta> deltaToolCalls();
+
+    /**
+     * 是否为结束片段
+     */
+    boolean isFinished();
+
+    /**
+     * 结束时的usage统计（仅在结束片段有效）
+     */
+    CatholicLLMUsage usage();
+
+    /**
+     * 是否有文本增量
+     */
+    default boolean hasDeltaText() {
+        return deltaText() != null && !deltaText().isEmpty();
+    }
+
+    /**
+     * 是否有工具调用增量
+     */
+    default boolean hasDeltaToolCalls() {
+        return deltaToolCalls() != null && !deltaToolCalls().isEmpty();
+    }
+
+    /**
+     * 创建片段Builder
+     */
+    static CatholicLLMResponseChunkImpl.Builder builder() {
+        return CatholicLLMResponseChunkImpl.builder();
+    }
 }
