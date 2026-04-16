@@ -5,15 +5,16 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.vertx.core.Future;
-import io.vertx.core.MultiMap;
+import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.RequestOptions;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.WebClient;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 /**
@@ -21,7 +22,7 @@ import java.util.function.Function;
  */
 public class OpenAIChatCompletionsClient implements CatholicLLM {
 
-    private final WebClient webClient;
+    private final HttpClient httpClient;
     private final String apiKey;
     private final String baseUrl;
 
@@ -32,44 +33,35 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
     /**
      * 创建客户端
      *
-     * @param webClient Vert.x WebClient
+     * @param httpClient Vert.x HttpClient
      * @param apiKey    OpenAI API Key
      */
-    public OpenAIChatCompletionsClient(WebClient webClient, String apiKey) {
-        this(webClient, apiKey, DEFAULT_BASE_URL);
+    public OpenAIChatCompletionsClient(HttpClient httpClient, String apiKey) {
+        this(httpClient, apiKey, DEFAULT_BASE_URL);
     }
 
     /**
      * 创建客户端（支持自定义 baseUrl）
      *
-     * @param webClient Vert.x WebClient
+     * @param httpClient Vert.x HttpClient
      * @param apiKey    OpenAI API Key
      * @param baseUrl   API 基础 URL（支持 OpenAI 兼容的第三方服务）
      */
-    public OpenAIChatCompletionsClient(WebClient webClient, String apiKey, String baseUrl) {
-        this.webClient = webClient;
+    public OpenAIChatCompletionsClient(HttpClient httpClient, String apiKey, String baseUrl) {
+        this.httpClient = httpClient;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
     }
 
     @Override
     public Future<CatholicLLMResponse> call(CatholicLLMRequest request) {
-        // 强制设置 stream = false
         JsonObject openaiRequest = new OpenAIChatCompletionsRequestConverter()
             .convert(request);
         openaiRequest.put("stream", false);
 
-        return webClient.postAbs(baseUrl + CHAT_COMPLETIONS_PATH)
-            .putHeader("Content-Type", "application/json")
-            .putHeader("Authorization", "Bearer " + apiKey)
-            .sendJsonObject(openaiRequest)
-            .map(response -> {
-                if (response.statusCode() != 200) {
-                    throw new RuntimeException("OpenAI API error: " + response.statusCode() + " - " + response.bodyAsString());
-                }
-                JsonObject openaiResponse = response.bodyAsJsonObject();
-                return new OpenAIChatCompletionsResponseConverter().convert(openaiResponse);
-            });
+        return sendJsonPost(openaiRequest, false)
+            .compose(response -> requireSuccessAndReadBody(response, "OpenAI API error"))
+            .map(body -> new OpenAIChatCompletionsResponseConverter().convert(body.toJsonObject()));
     }
 
     @Override
@@ -83,41 +75,8 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
 
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
 
-        // 使用 HttpClient 进行 SSE 流式请求
-        return webClient.postAbs(baseUrl + CHAT_COMPLETIONS_PATH)
-            .putHeader("Content-Type", "application/json")
-            .putHeader("Authorization", "Bearer " + apiKey)
-            .putHeader("Accept", "text/event-stream")
-            .sendJsonObject(openaiRequest)
-            .compose(response -> {
-                // 处理 SSE 流
-                if (response.statusCode() != 200) {
-                    return Future.failedFuture(
-                        new RuntimeException("OpenAI API error: " + response.statusCode() + " - " + response.bodyAsString())
-                    );
-                }
-
-                // 解析 SSE 数据
-                Buffer body = response.body();
-                String sseContent = body.toString();
-                String[] lines = sseContent.split("\n");
-
-                // 处理每一行 SSE 数据
-                Future<Void> processFuture = Future.succeededFuture();
-                for (String line : lines) {
-                    if (line.isEmpty() || line.startsWith(":")) {
-                        // 空行或注释行跳过
-                        continue;
-                    }
-
-                    CatholicLLMResponseChunk chunk = streamHandler.processSseLine(line);
-                    if (chunk != null) {
-                        processFuture = processFuture.compose(v -> chunkAsyncProcessor.apply(chunk));
-                    }
-                }
-
-                return processFuture;
-            });
+        return sendJsonPost(openaiRequest, true)
+            .compose(response -> consumeOpenAiStream(response, streamHandler, chunkAsyncProcessor));
     }
 
     @Override
@@ -128,30 +87,108 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
 
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
 
-        return webClient.postAbs(baseUrl + CHAT_COMPLETIONS_PATH)
+        return sendJsonPost(openaiRequest, true)
+            .compose(response -> consumeOpenAiStream(response, streamHandler, chunk -> Future.succeededFuture()))
+            .map(v -> streamHandler.buildFinalResponse());
+    }
+
+    private Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, boolean stream) {
+        RequestOptions options = new RequestOptions()
+            .setMethod(HttpMethod.POST)
+            .setAbsoluteURI(baseUrl + CHAT_COMPLETIONS_PATH)
             .putHeader("Content-Type", "application/json")
-            .putHeader("Authorization", "Bearer " + apiKey)
-            .putHeader("Accept", "text/event-stream")
-            .sendJsonObject(openaiRequest)
-            .map(response -> {
-                if (response.statusCode() != 200) {
-                    throw new RuntimeException("OpenAI API error: " + response.statusCode() + " - " + response.bodyAsString());
-                }
+            .putHeader("Authorization", "Bearer " + apiKey);
 
-                // 解析 SSE 数据并收集
-                Buffer body = response.body();
-                String sseContent = body.toString();
-                String[] lines = sseContent.split("\n");
+        if (stream) {
+            options.putHeader("Accept", "text/event-stream");
+        }
 
-                for (String line : lines) {
-                    if (line.isEmpty() || line.startsWith(":")) {
-                        continue;
-                    }
-                    streamHandler.processSseLine(line);
-                }
+        return httpClient.request(options)
+            .compose(httpClientRequest -> sendJsonBody(httpClientRequest, requestBody));
+    }
 
-                return streamHandler.buildFinalResponse();
+    private Future<HttpClientResponse> sendJsonBody(HttpClientRequest httpClientRequest, JsonObject requestBody) {
+        return httpClientRequest.send(Buffer.buffer(requestBody.encode()));
+    }
+
+    private Future<Buffer> requireSuccessAndReadBody(HttpClientResponse response, String serviceName) {
+        if (response.statusCode() == 200) {
+            return response.body();
+        }
+        return response.body().compose(body -> Future.failedFuture(
+            new RuntimeException(serviceName + ": " + response.statusCode() + " - " + body)
+        ));
+    }
+
+    private Future<Void> consumeOpenAiStream(
+        HttpClientResponse response,
+        OpenAIChatCompletionsStreamHandler streamHandler,
+        Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
+    ) {
+        if (response.statusCode() != 200) {
+            return requireSuccessAndReadBody(response, "OpenAI API error").mapEmpty();
+        }
+
+        Promise<Void> promise = Promise.promise();
+        AtomicReference<Future<Void>> processingChain = new AtomicReference<>(Future.succeededFuture());
+        StringBuilder pendingLine = new StringBuilder();
+
+        response.exceptionHandler(promise::tryFail);
+        response.handler(buffer -> {
+            pendingLine.append(buffer);
+            drainLines(pendingLine, line -> {
+                CatholicLLMResponseChunk chunk = streamHandler.processSseLine(line);
+                enqueueChunk(processingChain, chunk, chunkAsyncProcessor, promise);
             });
+        });
+        response.endHandler(v -> {
+            if (!promise.future().isComplete() && pendingLine.length() > 0) {
+                CatholicLLMResponseChunk chunk = streamHandler.processSseLine(normalizeLine(pendingLine.toString()));
+                enqueueChunk(processingChain, chunk, chunkAsyncProcessor, promise);
+            }
+
+            processingChain.get().onComplete(ar -> {
+                if (ar.failed()) {
+                    promise.tryFail(ar.cause());
+                } else {
+                    promise.tryComplete();
+                }
+            });
+        });
+        response.resume();
+
+        return promise.future();
+    }
+
+    private void drainLines(StringBuilder pendingLine, java.util.function.Consumer<String> lineConsumer) {
+        int newlineIndex;
+        while ((newlineIndex = pendingLine.indexOf("\n")) >= 0) {
+            String line = pendingLine.substring(0, newlineIndex);
+            pendingLine.delete(0, newlineIndex + 1);
+            lineConsumer.accept(normalizeLine(line));
+        }
+    }
+
+    private String normalizeLine(String line) {
+        if (line.endsWith("\r")) {
+            return line.substring(0, line.length() - 1);
+        }
+        return line;
+    }
+
+    private void enqueueChunk(
+        AtomicReference<Future<Void>> processingChain,
+        CatholicLLMResponseChunk chunk,
+        Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor,
+        Promise<Void> promise
+    ) {
+        if (chunk == null || promise.future().isComplete()) {
+            return;
+        }
+
+        Future<Void> next = processingChain.get().compose(v -> chunkAsyncProcessor.apply(chunk));
+        next.onFailure(promise::tryFail);
+        processingChain.set(next);
     }
 
     // === Builder ===
@@ -167,12 +204,12 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
      * Builder 类
      */
     public static class Builder {
-        private WebClient webClient;
+        private HttpClient httpClient;
         private String apiKey;
         private String baseUrl = DEFAULT_BASE_URL;
 
-        public Builder webClient(WebClient webClient) {
-            this.webClient = webClient;
+        public Builder httpClient(HttpClient httpClient) {
+            this.httpClient = httpClient;
             return this;
         }
 
@@ -187,13 +224,13 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
         }
 
         public OpenAIChatCompletionsClient build() {
-            if (webClient == null) {
-                throw new IllegalArgumentException("webClient is required");
+            if (httpClient == null) {
+                throw new IllegalArgumentException("httpClient is required");
             }
             if (apiKey == null || apiKey.isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            return new OpenAIChatCompletionsClient(webClient, apiKey, baseUrl);
+            return new OpenAIChatCompletionsClient(httpClient, apiKey, baseUrl);
         }
     }
 }

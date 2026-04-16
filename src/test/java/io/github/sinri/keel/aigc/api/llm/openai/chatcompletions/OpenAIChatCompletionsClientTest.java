@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class OpenAIChatCompletionsClientTest {
 
     @Test
-    void testBuilderRequiresWebClient() {
+    void testBuilderRequiresHttpClient() {
         assertThrows(IllegalArgumentException.class, () -> {
             OpenAIChatCompletionsClient.builder()
                 .apiKey("test-key")
@@ -22,7 +22,7 @@ class OpenAIChatCompletionsClientTest {
     void testBuilderRequiresApiKey() {
         assertThrows(IllegalArgumentException.class, () -> {
             OpenAIChatCompletionsClient.builder()
-                .webClient(io.vertx.ext.web.client.WebClient.create(io.vertx.core.Vertx.vertx()))
+                .httpClient(io.vertx.core.Vertx.vertx().createHttpClient())
                 .build();
         });
     }
@@ -31,7 +31,7 @@ class OpenAIChatCompletionsClientTest {
     void testBuilderWithEmptyApiKey() {
         assertThrows(IllegalArgumentException.class, () -> {
             OpenAIChatCompletionsClient.builder()
-                .webClient(io.vertx.ext.web.client.WebClient.create(io.vertx.core.Vertx.vertx()))
+                .httpClient(io.vertx.core.Vertx.vertx().createHttpClient())
                 .apiKey("")
                 .build();
         });
@@ -40,7 +40,7 @@ class OpenAIChatCompletionsClientTest {
     @Test
     void testBuilderCreatesClientWithDefaults() {
         OpenAIChatCompletionsClient client = OpenAIChatCompletionsClient.builder()
-            .webClient(io.vertx.ext.web.client.WebClient.create(io.vertx.core.Vertx.vertx()))
+            .httpClient(io.vertx.core.Vertx.vertx().createHttpClient())
             .apiKey("test-api-key")
             .build();
 
@@ -50,7 +50,7 @@ class OpenAIChatCompletionsClientTest {
     @Test
     void testBuilderCreatesClientWithCustomBaseUrl() {
         OpenAIChatCompletionsClient client = OpenAIChatCompletionsClient.builder()
-            .webClient(io.vertx.ext.web.client.WebClient.create(io.vertx.core.Vertx.vertx()))
+            .httpClient(io.vertx.core.Vertx.vertx().createHttpClient())
             .apiKey("test-api-key")
             .baseUrl("https://custom.api.com/v1")
             .build();
@@ -61,7 +61,7 @@ class OpenAIChatCompletionsClientTest {
     @Test
     void testClientImplementsCatholicLLM() {
         OpenAIChatCompletionsClient client = OpenAIChatCompletionsClient.builder()
-            .webClient(io.vertx.ext.web.client.WebClient.create(io.vertx.core.Vertx.vertx()))
+            .httpClient(io.vertx.core.Vertx.vertx().createHttpClient())
             .apiKey("test-api-key")
             .build();
 

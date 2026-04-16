@@ -7,14 +7,14 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.tesuto.KeelInstantRunner;
 import io.vertx.core.Future;
-import io.vertx.ext.web.client.WebClient;
+import io.vertx.core.http.HttpClient;
 
 import java.util.Objects;
 
 public class OpenAIChatCompletionsClientChatTest extends KeelInstantRunner {
     @Override
     protected Future<Void> run() throws Exception {
-        WebClient webClient = WebClient.create(getKeel());
+        HttpClient httpClient = getKeel().createHttpClient();
 
         String baseUrl = ConfigElement.root().readProperty("openai.test1.api");
         String apiKey = ConfigElement.root().readProperty("openai.test1.key");
@@ -25,7 +25,7 @@ public class OpenAIChatCompletionsClientChatTest extends KeelInstantRunner {
         Objects.requireNonNull(baseUrl, "Base URL must be set");
 
         OpenAIChatCompletionsClient client = new OpenAIChatCompletionsClient(
-                webClient,
+                httpClient,
                 apiKey,
                 baseUrl
         );
