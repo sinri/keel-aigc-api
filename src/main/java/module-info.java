@@ -14,11 +14,15 @@ module io.github.sinri.keel.integration.llm.api {
     requires io.vertx.web.common;
     requires org.yaml.snakeyaml;
 
-    // io.github.sinri.keel.llm.api.internal 及其下子包均不对外透出
-    // io.github.sinri.keel.aigc.api.llm 包为空，只导出 catholic 子包
+    // io.github.sinri.keel.aigc.api.internal 及其下子包均不对外透出
+
+    // Catholic LLM 通用格式
     exports io.github.sinri.keel.aigc.api.llm.catholic;
     exports io.github.sinri.keel.aigc.api.llm.catholic.message;
     exports io.github.sinri.keel.aigc.api.llm.catholic.tool;
     exports io.github.sinri.keel.aigc.api.llm.catholic.request;
     exports io.github.sinri.keel.aigc.api.llm.catholic.response;
+
+    // OpenAI Chat Completions API
+    exports io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 }
