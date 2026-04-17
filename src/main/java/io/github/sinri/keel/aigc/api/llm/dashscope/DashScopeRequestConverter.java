@@ -42,8 +42,7 @@ public class DashScopeRequestConverter {
             parameters.put("tools", tools);
         }
 
-        System.out.println("[DEBUG] DashScopeRequestConverter.convert result: " + dashscopeRequest.encode());
-
+        
         return dashscopeRequest;
     }
 
@@ -209,5 +208,4 @@ public class DashScopeRequestConverter {
         return params;
     }
 
-    // removed getLogger() - using System.out.println directly
-}
+    }
