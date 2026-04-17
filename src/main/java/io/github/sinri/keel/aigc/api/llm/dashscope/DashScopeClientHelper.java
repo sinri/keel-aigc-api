@@ -41,7 +41,6 @@ public class DashScopeClientHelper {
      * @return HTTP 响应
      */
     public Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, String path, boolean stream) {
-        System.out.println("[DEBUG] DashScopeClientHelper.sendJsonPost to " + baseUrl + path + " stream=" + stream + " body=" + requestBody.encode());
         RequestOptions options = new RequestOptions()
             .setMethod(HttpMethod.POST)
             .setAbsoluteURI(baseUrl + path)
@@ -66,19 +65,13 @@ public class DashScopeClientHelper {
      * 要求响应成功（HTTP 200）并读取响应体
      */
     public Future<Buffer> requireSuccessAndReadBody(HttpClientResponse response, String serviceName) {
-        System.out.println("[DEBUG] DashScopeClientHelper.requireSuccessAndReadBody statusCode=" + response.statusCode());
         if (response.statusCode() == 200) {
-            return response.body().map(body -> {
-                System.out.println("[DEBUG] DashScopeClientHelper raw response body: " + body.toString());
-                return body;
-            });
+            return response.body();
         }
         return response.body().compose(body -> Future.failedFuture(
             new RuntimeException(serviceName + ": " + response.statusCode() + " - " + body)
         ));
     }
-
-    // removed getLogger() - using System.out.println directly
 
     /**
      * 消费 DashScope SSE 流式响应
@@ -98,33 +91,19 @@ public class DashScopeClientHelper {
 
         response.exceptionHandler(promise::tryFail);
         response.handler(buffer -> {
-            System.out.println("[DEBUG] DashScopeClientHelper.handler received buffer: " + buffer.toString());
             pendingLine.append(buffer);
             drainLines(pendingLine, line -> {
-                System.out.println("[DEBUG] DashScopeClientHelper.handler SSE line: " + line);
                 CatholicLLMResponseChunk chunk = streamHandler.processSseLine(line);
-                if (chunk != null) {
-                    System.out.println("[DEBUG] DashScopeClientHelper.handler chunk: id=" + chunk.id()
-                        + " index=" + chunk.index()
-                        + " hasDeltaText=" + chunk.hasDeltaText()
-                        + " deltaText=" + (chunk.hasDeltaText() ? chunk.deltaText() : "null")
-                        + " hasDeltaToolCalls=" + chunk.hasDeltaToolCalls()
-                        + " isFinished=" + chunk.isFinished());
-                }
                 enqueueChunk(processingChain, chunk, chunkAsyncProcessor, promise);
             });
         });
         response.endHandler(v -> {
-            System.out.println("[DEBUG] DashScopeClientHelper.endHandler stream ended");
             if (!promise.future().isComplete() && pendingLine.length() > 0) {
                 CatholicLLMResponseChunk chunk = streamHandler.processSseLine(normalizeLine(pendingLine.toString()));
                 enqueueChunk(processingChain, chunk, chunkAsyncProcessor, promise);
             }
 
             CatholicLLMResponseChunk finalChunk = streamHandler.flush();
-            if (finalChunk != null) {
-                System.out.println("[DEBUG] DashScopeClientHelper.endHandler flush chunk: isFinished=" + finalChunk.isFinished());
-            }
             enqueueChunk(processingChain, finalChunk, chunkAsyncProcessor, promise);
 
             processingChain.get().onComplete(ar -> {
