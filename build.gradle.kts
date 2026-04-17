@@ -54,6 +54,9 @@ dependencies {
 
     implementation("org.yaml:snakeyaml:2.3")
 
+    // macOS DNS resolver for Netty (fixes MacOSDnsServerAddressStreamProvider warning)
+    runtimeOnly("io.netty:netty-resolver-dns-native-macos:4.2.10.Final:osx-aarch_64")
+
     // API dependency (transitive)
     // https://mvnrepository.com/artifact/org.jspecify/jspecify
     compileOnly("org.jspecify:jspecify:${jspecifyVersion}")
