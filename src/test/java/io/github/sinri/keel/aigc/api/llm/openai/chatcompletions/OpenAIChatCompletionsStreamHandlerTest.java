@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 
+import io.github.sinri.keel.aigc.api.internal.openai.chatcompletions.OpenAIChatCompletionsStreamHandler;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.vertx.core.json.JsonArray;

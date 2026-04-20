@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.llm.dashscope;
+package io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.*;
@@ -8,12 +8,17 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 /**
- * 将 CatholicLLMRequest 转换为 DashScope API 请求格式。
+ * 将 CatholicLLMRequest 转换为 DashScope 多模态 API 请求格式。
+ * 多模态 API 端点：/services/aigc/multimodal-generation/generation
+ *
+ * 与文本 API 的主要区别：
+ * - 用户消息内容使用 DashScope 原生格式（{"text": "..."}, {"image": "url"}）
+ *   而非 OpenAI 兼容格式（{"type": "text", "text": "..."}, {"type": "image_url", "image_url": "url"}）
  */
-public class DashScopeRequestConverter {
+public class DashScopeMultimodalRequestConverter {
 
     /**
-     * 转换请求为 DashScope API JSON 格式
+     * 转换请求为 DashScope 多模态 API JSON 格式
      */
     public JsonObject convert(CatholicLLMRequest request) {
         JsonObject dashscopeRequest = new JsonObject();
@@ -29,6 +34,7 @@ public class DashScopeRequestConverter {
 
         // parameters
         JsonObject parameters = convertParameters(request.options());
+        parameters.put("result_format", "message");
         // stream 和 incremental_output 放入 parameters 中
         parameters.put("stream", request.stream());
         if (request.stream()) {
@@ -36,13 +42,12 @@ public class DashScopeRequestConverter {
         }
         dashscopeRequest.put("parameters", parameters);
 
-        // tools 放入 parameters 对象中（DashScope HTTP API 规范）
+        // tools (可选)
         if (request.hasTools()) {
             JsonArray tools = convertTools(request.tools());
             parameters.put("tools", tools);
         }
 
-        
         return dashscopeRequest;
     }
 
@@ -88,20 +93,8 @@ public class DashScopeRequestConverter {
             }
             default -> {
                 // 通用处理
-                JsonArray contentArray = new JsonArray();
-                for (CatholicChatContent content : message.contents()) {
-                    if (content instanceof CatholicTextContent textContent) {
-                        contentArray.add(new JsonObject()
-                            .put("type", "text")
-                            .put("text", textContent.text()));
-                    }
-                }
-                if (contentArray.size() == 1) {
-                    JsonObject first = contentArray.getJsonObject(0);
-                    msg.put("content", first.getString("text"));
-                } else {
-                    msg.put("content", contentArray);
-                }
+                Object content = convertContentArray(message.contents());
+                msg.put("content", content);
             }
         }
 
@@ -109,7 +102,9 @@ public class DashScopeRequestConverter {
     }
 
     /**
-     * 转换用户消息内容（多模态）
+     * 转换用户消息内容为 DashScope 多模态原生格式。
+     * DashScope 多模态 API 使用 {"text": "..."}, {"image": "url"} 格式，
+     * 而非 OpenAI 兼容的 {"type": "text", "text": "..."}, {"type": "image_url", "image_url": "url"}。
      */
     private Object convertUserContent(CatholicUserMessage userMessage) {
         java.util.List<CatholicChatContent> contents = userMessage.contents();
@@ -119,21 +114,38 @@ public class DashScopeRequestConverter {
             return textContent.text();
         }
 
-        // 多模态内容返回数组（DashScope 多模态格式）
+        // 多模态内容返回 DashScope 原生数组格式
         JsonArray contentArray = new JsonArray();
         for (CatholicChatContent content : contents) {
             if (content instanceof CatholicTextContent textContent) {
-                contentArray.add(new JsonObject()
-                    .put("type", "text")
-                    .put("text", textContent.text()));
+                contentArray.add(new JsonObject().put("text", textContent.text()));
             } else if (content instanceof CatholicImageByUrl imageByUrl) {
-                contentArray.add(new JsonObject()
-                    .put("type", "image_url")
-                    .put("image_url", imageByUrl.url()));
+                contentArray.add(new JsonObject().put("image", imageByUrl.url()));
             } else if (content instanceof CatholicImageByBase64 imageByBase64) {
-                contentArray.add(new JsonObject()
-                    .put("type", "image_url")
-                    .put("image_url", "data:" + imageByBase64.mediaType() + ";base64," + imageByBase64.base64Data()));
+                contentArray.add(new JsonObject().put("image",
+                    "data:" + imageByBase64.mediaType() + ";base64," + imageByBase64.base64Data()));
+            }
+        }
+        return contentArray;
+    }
+
+    /**
+     * 通用内容数组转换（DashScope 原生格式）
+     */
+    private Object convertContentArray(java.util.List<CatholicChatContent> contents) {
+        if (contents.size() == 1 && contents.get(0) instanceof CatholicTextContent textContent) {
+            return textContent.text();
+        }
+
+        JsonArray contentArray = new JsonArray();
+        for (CatholicChatContent content : contents) {
+            if (content instanceof CatholicTextContent textContent) {
+                contentArray.add(new JsonObject().put("text", textContent.text()));
+            } else if (content instanceof CatholicImageByUrl imageByUrl) {
+                contentArray.add(new JsonObject().put("image", imageByUrl.url()));
+            } else if (content instanceof CatholicImageByBase64 imageByBase64) {
+                contentArray.add(new JsonObject().put("image",
+                    "data:" + imageByBase64.mediaType() + ";base64," + imageByBase64.base64Data()));
             }
         }
         return contentArray;
@@ -167,7 +179,6 @@ public class DashScopeRequestConverter {
                     .put("name", tool.function().name())
                     .put("description", tool.function().description()));
 
-            // parameters
             if (tool.function().parameters() != null && !tool.function().parameters().isEmpty()) {
                 toolDef.getJsonObject("function").put("parameters", tool.function().parameters());
             }
@@ -182,10 +193,6 @@ public class DashScopeRequestConverter {
      */
     private JsonObject convertParameters(CatholicLLMRequestOptions options) {
         JsonObject params = new JsonObject();
-
-        // 必须设置 result_format 为 message，否则 DashScope 默认返回旧格式（output.text）
-        // 旧格式不含 choices/message 结构，无法正确解析
-        params.put("result_format", "message");
 
         if (options.temperature() != null) {
             params.put("temperature", options.temperature());
@@ -207,5 +214,4 @@ public class DashScopeRequestConverter {
 
         return params;
     }
-
-    }
+}

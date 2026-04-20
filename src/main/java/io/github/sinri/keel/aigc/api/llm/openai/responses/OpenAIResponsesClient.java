@@ -1,20 +1,18 @@
 package io.github.sinri.keel.aigc.api.llm.openai.responses;
 
+import io.github.sinri.keel.aigc.api.internal.openai.OpenAiVertxSupport;
+import io.github.sinri.keel.aigc.api.internal.openai.responses.OpenAIResponsesRequestConverter;
+import io.github.sinri.keel.aigc.api.internal.openai.responses.OpenAIResponsesResponseConverter;
+import io.github.sinri.keel.aigc.api.internal.openai.responses.OpenAIResponsesStreamHandler;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.RequestOptions;
 import io.vertx.core.json.JsonObject;
 
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 /**
@@ -28,6 +26,8 @@ public class OpenAIResponsesClient implements CatholicLLM {
 
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1";
     private static final String RESPONSES_PATH = "/responses";
+
+    private static final String RESPONSES_API_ERROR = "OpenAI Responses API error";
 
     public OpenAIResponsesClient(HttpClient httpClient, String apiKey) {
         this(httpClient, apiKey, DEFAULT_BASE_URL);
@@ -45,7 +45,7 @@ public class OpenAIResponsesClient implements CatholicLLM {
         responsesRequest.put("stream", false);
 
         return sendJsonPost(responsesRequest, false)
-            .compose(response -> requireSuccessAndReadBody(response, "OpenAI Responses API error"))
+            .compose(response -> OpenAiVertxSupport.requireSuccessAndReadBody(response, RESPONSES_API_ERROR))
             .map(body -> new OpenAIResponsesResponseConverter().convert(body.toJsonObject()));
     }
 
@@ -60,7 +60,12 @@ public class OpenAIResponsesClient implements CatholicLLM {
         OpenAIResponsesStreamHandler streamHandler = new OpenAIResponsesStreamHandler();
 
         return sendJsonPost(responsesRequest, true)
-            .compose(response -> consumeResponsesSseStream(response, streamHandler, chunkAsyncProcessor));
+            .compose(response -> OpenAiVertxSupport.consumeOpenAiStyleSseStream(
+                response,
+                RESPONSES_API_ERROR,
+                streamHandler::processSseLine,
+                chunkAsyncProcessor
+            ));
     }
 
     @Override
@@ -71,107 +76,23 @@ public class OpenAIResponsesClient implements CatholicLLM {
         OpenAIResponsesStreamHandler streamHandler = new OpenAIResponsesStreamHandler();
 
         return sendJsonPost(responsesRequest, true)
-            .compose(response -> consumeResponsesSseStream(response, streamHandler, chunk -> Future.succeededFuture()))
+            .compose(response -> OpenAiVertxSupport.consumeOpenAiStyleSseStream(
+                response,
+                RESPONSES_API_ERROR,
+                streamHandler::processSseLine,
+                chunk -> Future.succeededFuture()
+            ))
             .map(v -> streamHandler.buildFinalResponse());
     }
 
     private Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, boolean stream) {
-        RequestOptions options = new RequestOptions()
-            .setMethod(HttpMethod.POST)
-            .setAbsoluteURI(baseUrl + RESPONSES_PATH)
-            .putHeader("Content-Type", "application/json")
-            .putHeader("Authorization", "Bearer " + apiKey);
-
-        if (stream) {
-            options.putHeader("Accept", "text/event-stream");
-        }
-
-        return httpClient.request(options)
-            .compose(httpClientRequest -> sendJsonBody(httpClientRequest, requestBody));
-    }
-
-    private Future<HttpClientResponse> sendJsonBody(HttpClientRequest httpClientRequest, JsonObject requestBody) {
-        return httpClientRequest.send(Buffer.buffer(requestBody.encode()));
-    }
-
-    private Future<Buffer> requireSuccessAndReadBody(HttpClientResponse response, String serviceName) {
-        if (response.statusCode() == 200) {
-            return response.body();
-        }
-        return response.body().compose(body -> Future.failedFuture(
-            new RuntimeException(serviceName + ": " + response.statusCode() + " - " + body)
-        ));
-    }
-
-    private Future<Void> consumeResponsesSseStream(
-        HttpClientResponse response,
-        OpenAIResponsesStreamHandler streamHandler,
-        Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
-    ) {
-        if (response.statusCode() != 200) {
-            return requireSuccessAndReadBody(response, "OpenAI Responses API error").mapEmpty();
-        }
-
-        Promise<Void> promise = Promise.promise();
-        AtomicReference<Future<Void>> processingChain = new AtomicReference<>(Future.succeededFuture());
-        StringBuilder pendingLine = new StringBuilder();
-
-        response.exceptionHandler(promise::tryFail);
-        response.handler(buffer -> {
-            pendingLine.append(buffer);
-            drainLines(pendingLine, line -> {
-                CatholicLLMResponseChunk chunk = streamHandler.processSseLine(line);
-                enqueueChunk(processingChain, chunk, chunkAsyncProcessor, promise);
-            });
-        });
-        response.endHandler(v -> {
-            if (!promise.future().isComplete() && pendingLine.length() > 0) {
-                CatholicLLMResponseChunk chunk = streamHandler.processSseLine(normalizeLine(pendingLine.toString()));
-                enqueueChunk(processingChain, chunk, chunkAsyncProcessor, promise);
-            }
-
-            processingChain.get().onComplete(ar -> {
-                if (ar.failed()) {
-                    promise.tryFail(ar.cause());
-                } else {
-                    promise.tryComplete();
-                }
-            });
-        });
-        response.resume();
-
-        return promise.future();
-    }
-
-    private void drainLines(StringBuilder pendingLine, java.util.function.Consumer<String> lineConsumer) {
-        int newlineIndex;
-        while ((newlineIndex = pendingLine.indexOf("\n")) >= 0) {
-            String line = pendingLine.substring(0, newlineIndex);
-            pendingLine.delete(0, newlineIndex + 1);
-            lineConsumer.accept(normalizeLine(line));
-        }
-    }
-
-    private String normalizeLine(String line) {
-        if (line.endsWith("\r")) {
-            return line.substring(0, line.length() - 1);
-        }
-        return line;
-    }
-
-    private void enqueueChunk(
-        AtomicReference<Future<Void>> processingChain,
-        CatholicLLMResponseChunk chunk,
-        Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor,
-        Promise<Void> promise
-    ) {
-        if (chunk == null || promise.future().isComplete()) {
-            return;
-        }
-
-        Future<Void> next = processingChain.get().compose(v -> chunkAsyncProcessor.apply(chunk));
-        next.onFailure(promise::tryFail);
-        processingChain.set(next);
+        return OpenAiVertxSupport.sendJsonPost(
+            httpClient,
+            baseUrl + RESPONSES_PATH,
+            apiKey,
+            requestBody,
+            stream
+        );
     }
 
     public static Builder builder() {

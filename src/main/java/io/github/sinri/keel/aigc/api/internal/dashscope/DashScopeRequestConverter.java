@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
+package io.github.sinri.keel.aigc.api.internal.dashscope;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.*;
@@ -8,36 +8,42 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 /**
- * 将 CatholicLLMRequest 转换为 OpenAI Chat Completions API 请求格式。
+ * 将 CatholicLLMRequest 转换为 DashScope API 请求格式。
  */
-public class OpenAIChatCompletionsRequestConverter {
+public class DashScopeRequestConverter {
 
     /**
-     * 转换请求为 OpenAI API JSON 格式
+     * 转换请求为 DashScope API JSON 格式
      */
     public JsonObject convert(CatholicLLMRequest request) {
-        JsonObject openaiRequest = new JsonObject();
+        JsonObject dashscopeRequest = new JsonObject();
 
         // model
-        openaiRequest.put("model", request.model());
+        dashscopeRequest.put("model", request.model());
 
-        // messages
+        // input
+        JsonObject input = new JsonObject();
         JsonArray messages = convertMessages(request.messages());
-        openaiRequest.put("messages", messages);
+        input.put("messages", messages);
+        dashscopeRequest.put("input", input);
 
-        // tools (可选)
+        // parameters
+        JsonObject parameters = convertParameters(request.options());
+        // stream 和 incremental_output 放入 parameters 中
+        parameters.put("stream", request.stream());
+        if (request.stream()) {
+            parameters.put("incremental_output", true);
+        }
+        dashscopeRequest.put("parameters", parameters);
+
+        // tools 放入 parameters 对象中（DashScope HTTP API 规范）
         if (request.hasTools()) {
             JsonArray tools = convertTools(request.tools());
-            openaiRequest.put("tools", tools);
+            parameters.put("tools", tools);
         }
 
-        // options
-        convertOptions(openaiRequest, request.options());
-
-        // stream
-        openaiRequest.put("stream", request.stream());
-
-        return openaiRequest;
+        
+        return dashscopeRequest;
     }
 
     /**
@@ -60,21 +66,19 @@ public class OpenAIChatCompletionsRequestConverter {
 
         switch (message.role()) {
             case CatholicSystemMessage.ROLE -> {
-                // system 消息只有文本
                 msg.put("content", ((CatholicSystemMessage) message).text());
             }
             case CatholicUserMessage.ROLE -> {
-                // user 消息可能多模态
-                msg.put("content", convertUserContent((CatholicUserMessage) message));
+                Object content = convertUserContent((CatholicUserMessage) message);
+                msg.put("content", content);
             }
             case CatholicAssistantMessage.ROLE -> {
                 CatholicAssistantMessage assistantMsg = (CatholicAssistantMessage) message;
-                // assistant 可能有文本或工具调用
                 if (assistantMsg.hasText()) {
                     msg.put("content", assistantMsg.text());
                 }
                 if (assistantMsg.hasToolCalls()) {
-                    msg.put("tool_calls", convertToolCalls(assistantMsg.toolCalls()));
+                    msg.put("tool_calls", convertToolCallsForMessage(assistantMsg.toolCalls()));
                 }
             }
             case CatholicToolCallMessage.ROLE -> {
@@ -83,7 +87,7 @@ public class OpenAIChatCompletionsRequestConverter {
                 msg.put("content", toolMsg.content());
             }
             default -> {
-                // 未知角色，尝试通用处理
+                // 通用处理
                 JsonArray contentArray = new JsonArray();
                 for (CatholicChatContent content : message.contents()) {
                     if (content instanceof CatholicTextContent textContent) {
@@ -94,9 +98,7 @@ public class OpenAIChatCompletionsRequestConverter {
                 }
                 if (contentArray.size() == 1) {
                     JsonObject first = contentArray.getJsonObject(0);
-                    if (first.getString("type").equals("text")) {
-                        msg.put("content", first.getString("text"));
-                    }
+                    msg.put("content", first.getString("text"));
                 } else {
                     msg.put("content", contentArray);
                 }
@@ -117,7 +119,7 @@ public class OpenAIChatCompletionsRequestConverter {
             return textContent.text();
         }
 
-        // 多模态内容返回数组
+        // 多模态内容返回数组（DashScope 多模态格式）
         JsonArray contentArray = new JsonArray();
         for (CatholicChatContent content : contents) {
             if (content instanceof CatholicTextContent textContent) {
@@ -127,23 +129,20 @@ public class OpenAIChatCompletionsRequestConverter {
             } else if (content instanceof CatholicImageByUrl imageByUrl) {
                 contentArray.add(new JsonObject()
                     .put("type", "image_url")
-                    .put("image_url", new JsonObject()
-                        .put("url", imageByUrl.url())));
+                    .put("image_url", imageByUrl.url()));
             } else if (content instanceof CatholicImageByBase64 imageByBase64) {
-                String dataUrl = "data:" + imageByBase64.mediaType() + ";base64," + imageByBase64.base64Data();
                 contentArray.add(new JsonObject()
                     .put("type", "image_url")
-                    .put("image_url", new JsonObject()
-                        .put("url", dataUrl)));
+                    .put("image_url", "data:" + imageByBase64.mediaType() + ";base64," + imageByBase64.base64Data()));
             }
         }
         return contentArray;
     }
 
     /**
-     * 转换工具调用列表
+     * 转换消息中的工具调用列表
      */
-    private JsonArray convertToolCalls(java.util.List<io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall> toolCalls) {
+    private JsonArray convertToolCallsForMessage(java.util.List<io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall> toolCalls) {
         JsonArray array = new JsonArray();
         for (io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall toolCall : toolCalls) {
             array.add(new JsonObject()
@@ -162,35 +161,51 @@ public class OpenAIChatCompletionsRequestConverter {
     private JsonArray convertTools(java.util.List<CatholicTool> tools) {
         JsonArray array = new JsonArray();
         for (CatholicTool tool : tools) {
-            array.add(new JsonObject()
+            JsonObject toolDef = new JsonObject()
                 .put("type", tool.type())
                 .put("function", new JsonObject()
                     .put("name", tool.function().name())
-                    .put("description", tool.function().description())
-                    .put("parameters", tool.function().parameters())));
+                    .put("description", tool.function().description()));
+
+            // parameters
+            if (tool.function().parameters() != null && !tool.function().parameters().isEmpty()) {
+                toolDef.getJsonObject("function").put("parameters", tool.function().parameters());
+            }
+
+            array.add(toolDef);
         }
         return array;
     }
 
     /**
-     * 转换生成参数选项
+     * 转换生成参数
      */
-    private void convertOptions(JsonObject openaiRequest, CatholicLLMRequestOptions options) {
+    private JsonObject convertParameters(CatholicLLMRequestOptions options) {
+        JsonObject params = new JsonObject();
+
+        // 必须设置 result_format 为 message，否则 DashScope 默认返回旧格式（output.text）
+        // 旧格式不含 choices/message 结构，无法正确解析
+        params.put("result_format", "message");
+
         if (options.temperature() != null) {
-            openaiRequest.put("temperature", options.temperature());
+            params.put("temperature", options.temperature());
         }
         if (options.maxTokens() != null) {
-            openaiRequest.put("max_tokens", options.maxTokens());
+            params.put("max_tokens", options.maxTokens());
         }
         if (options.topP() != null) {
-            openaiRequest.put("top_p", options.topP());
+            params.put("top_p", options.topP());
         }
         if (options.stop() != null && !options.stop().isEmpty()) {
-            openaiRequest.put("stop", options.stop());
+            params.put("stop", options.stop());
         }
-        // extra 参数直接合并
+
+        // extra 参数合并到 parameters
         if (options.extra() != null && !options.extra().isEmpty()) {
-            openaiRequest.mergeIn(options.extra());
+            params.mergeIn(options.extra());
         }
+
+        return params;
     }
-}
+
+    }

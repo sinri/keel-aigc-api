@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.openai.responses;
 
+import io.github.sinri.keel.aigc.api.internal.openai.responses.OpenAIResponsesRequestConverter;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;

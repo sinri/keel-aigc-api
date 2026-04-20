@@ -12,7 +12,7 @@ module io.github.sinri.keel.integration.llm.api {
     requires io.vertx.jsonschema;
     requires org.yaml.snakeyaml;
 
-    // io.github.sinri.keel.aigc.api.internal 及其下子包均不对外透出
+    // io.github.sinri.keel.aigc.api.internal 及其下子包均不对外透出（含 OpenAI / DashScope / Anthropic 协议与 Vert.x 共用实现）
 
     // Catholic LLM 通用格式
     exports io.github.sinri.keel.aigc.api.llm.catholic;
@@ -24,6 +24,13 @@ module io.github.sinri.keel.integration.llm.api {
     // OpenAI Chat Completions API
     exports io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 
-    // DashScope API
-    exports io.github.sinri.keel.aigc.api.llm.dashscope;
+    // OpenAI Responses API
+    exports io.github.sinri.keel.aigc.api.llm.openai.responses;
+
+    // DashScope API（根包无公开类型，仅导出子包）
+    exports io.github.sinri.keel.aigc.api.llm.dashscope.textgeneration;
+    exports io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration;
+
+    // Anthropic Messages API
+    exports io.github.sinri.keel.aigc.api.llm.anthropic;
 }
