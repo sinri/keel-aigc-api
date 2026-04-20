@@ -33,4 +33,7 @@ module io.github.sinri.keel.integration.llm.api {
 
     // Anthropic Messages API
     exports io.github.sinri.keel.aigc.api.llm.anthropic;
+
+    // Agent（Catholic LLM 工具循环编排）
+    exports io.github.sinri.keel.aigc.api.agent;
 }

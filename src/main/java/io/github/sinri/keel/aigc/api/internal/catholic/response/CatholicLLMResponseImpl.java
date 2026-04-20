@@ -12,11 +12,13 @@ public class CatholicLLMResponseImpl implements CatholicLLMResponse {
     private final String id;
     private final CatholicAssistantMessage message;
     private final CatholicLLMUsage usage;
+    private final boolean finished;
 
-    public CatholicLLMResponseImpl(String id, CatholicAssistantMessage message, CatholicLLMUsage usage) {
+    public CatholicLLMResponseImpl(String id, CatholicAssistantMessage message, CatholicLLMUsage usage, boolean finished) {
         this.id = id;
         this.message = message;
         this.usage = usage != null ? usage : CatholicLLMUsage.empty();
+        this.finished = finished;
     }
 
     @Override
@@ -34,6 +36,11 @@ public class CatholicLLMResponseImpl implements CatholicLLMResponse {
         return usage;
     }
 
+    @Override
+    public boolean finished() {
+        return finished;
+    }
+
     /**
      * 创建Builder
      */
@@ -48,6 +55,7 @@ public class CatholicLLMResponseImpl implements CatholicLLMResponse {
         private String id;
         private CatholicAssistantMessage message;
         private CatholicLLMUsage usage = CatholicLLMUsage.empty();
+        private boolean finished = true;
 
         public Builder id(String id) {
             this.id = id;
@@ -69,11 +77,16 @@ public class CatholicLLMResponseImpl implements CatholicLLMResponse {
             return this;
         }
 
+        public Builder finished(boolean finished) {
+            this.finished = finished;
+            return this;
+        }
+
         public CatholicLLMResponseImpl build() {
             if (message == null) {
                 throw new IllegalArgumentException("message is required");
             }
-            return new CatholicLLMResponseImpl(id, message, usage);
+            return new CatholicLLMResponseImpl(id, message, usage, finished);
         }
     }
 }

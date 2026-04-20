@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 
+import io.github.sinri.keel.aigc.api.internal.openai.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
@@ -19,6 +20,7 @@ public class OpenAIChatCompletionsClientChatStreamTest extends KeelInstantRunner
         String baseUrl = ConfigElement.root().readProperty("openai.test1.api");
         String apiKey = ConfigElement.root().readProperty("openai.test1.key");
         String model = ConfigElement.root().readProperty("openai.test1.model");
+        AuthMethod authMethod = AuthMethod.valueOf(ConfigElement.root().readProperty("openai.test1.authMethod") != null ? ConfigElement.root().readProperty("openai.test1.authMethod") : "Bearer");
 
         Objects.requireNonNull(apiKey, "OpenAI API key must be set");
         Objects.requireNonNull(model, "OpenAI model must be set");
@@ -27,7 +29,8 @@ public class OpenAIChatCompletionsClientChatStreamTest extends KeelInstantRunner
         OpenAIChatCompletionsClient client = new OpenAIChatCompletionsClient(
                 httpClient,
                 apiKey,
-                baseUrl
+                baseUrl,
+                authMethod
         );
 
         // 构建请求：让 LLM 生成下个月从中国到日本的旅行计划
@@ -45,32 +48,42 @@ public class OpenAIChatCompletionsClientChatStreamTest extends KeelInstantRunner
         getLogger().info("Starting stream request (collecting all chunks)...");
 
         // 使用 callStream(request) 方法，收集所有片段后返回完整响应
-        return client.callStream(request)
-                .compose(response -> {
-                    // 打印响应结果
-                    getLogger().info("LLM Response ID: " + response.id());
+        Future<CatholicLLMResponse> streamFuture = client.callStream(request);
 
-                    if (response.hasText()) {
-                        String travelPlan = response.text();
-                        getLogger().info("Generated Travel Plan:\n" + travelPlan);
-                    } else if (response.hasToolCalls()) {
-                        getLogger().info("LLM requested tool calls: " + response.message().toolCalls().size());
-                        response.message().toolCalls().forEach(toolCall -> {
-                            getLogger().info("Tool: " + toolCall.functionName() + ", Args: " + toolCall.function().arguments());
-                        });
-                    }
+        streamFuture.onSuccess(response -> {
+            getLogger().info("LLM Response ID: " + response.id());
 
-                    // 打印 token 使用情况
-                    var usage = response.usage();
-                    if (usage.promptTokens() != null) {
-                        getLogger().info("Token Usage: prompt=" + usage.promptTokens() +
-                                ", completion=" + usage.completionTokens() +
-                                ", total=" + usage.totalTokens());
-                    }
+            if (!response.finished()) {
+                getLogger().warning("Stream was interrupted, response is partial");
+            }
 
-                    getLogger().info("Stream completed, all chunks collected.");
-
-                    return Future.succeededFuture();
+            if (response.hasText()) {
+                getLogger().info("Generated Travel Plan:\n" + response.text());
+            } else if (response.hasToolCalls()) {
+                getLogger().info("LLM requested tool calls: " + response.message().toolCalls().size());
+                response.message().toolCalls().forEach(toolCall -> {
+                    getLogger().info("Tool: " + toolCall.functionName() + ", Args: " + toolCall.function().arguments());
                 });
+            }
+
+            var usage = response.usage();
+            if (usage.promptTokens() != null) {
+                getLogger().info("Token Usage: prompt=" + usage.promptTokens() +
+                        ", completion=" + usage.completionTokens() +
+                        ", total=" + usage.totalTokens());
+            }
+
+            if (response.finished()) {
+                getLogger().info("Stream completed, all chunks collected.");
+            } else {
+                getLogger().warning("Stream incomplete, partial data shown above.");
+            }
+        });
+
+        streamFuture.onFailure(err -> {
+            getLogger().warning("Stream request itself failed before any response: " + err);
+        });
+
+        return streamFuture.mapEmpty();
     }
 }

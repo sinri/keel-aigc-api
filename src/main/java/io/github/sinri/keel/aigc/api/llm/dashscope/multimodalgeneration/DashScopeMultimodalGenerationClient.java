@@ -4,6 +4,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
+import io.github.sinri.keel.aigc.api.internal.SSE2Chunk;
 import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeClientHelper;
 import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeStreamHandler;
 import io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration.DashScopeMultimodalRequestConverter;
@@ -40,7 +41,7 @@ public class DashScopeMultimodalGenerationClient implements CatholicLLM {
         dashscopeRequest.getJsonObject("parameters").put("stream", false);
 
         return helper.sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, false)
-            .compose(response -> helper.requireSuccessAndReadBody(response, "DashScope Multimodal Generation API error"))
+            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, "DashScope Multimodal Generation API error"))
             .map(body -> new DashScopeMultimodalResponseConverter().convert(body.toJsonObject()));
     }
 
@@ -62,7 +63,9 @@ public class DashScopeMultimodalGenerationClient implements CatholicLLM {
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
 
         return helper.sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, true)
-            .compose(response -> helper.consumeDashScopeStream(response, streamHandler, chunkAsyncProcessor));
+            .compose(response -> SSE2Chunk.processDashScopeSSEStream(
+                helper.getKeel(), response, "DashScope Multimodal Generation API error", streamHandler, chunkAsyncProcessor
+            ));
     }
 
     @Override
@@ -75,8 +78,12 @@ public class DashScopeMultimodalGenerationClient implements CatholicLLM {
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
 
         return helper.sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, true)
-            .compose(response -> helper.consumeDashScopeStream(response, streamHandler, chunk -> Future.succeededFuture()))
-            .map(v -> streamHandler.buildFinalResponse());
+            .compose(response -> SSE2Chunk.processDashScopeSSEStream(
+                helper.getKeel(), response, "DashScope Multimodal Generation API error", streamHandler,
+                chunk -> Future.succeededFuture()
+            ))
+            .map(v -> streamHandler.buildFinalResponse())
+            .otherwise(err -> streamHandler.buildFinalResponse());
     }
 
     // === Builder ===

@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.openai.responses;
 
+import io.github.sinri.keel.aigc.api.internal.openai.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
@@ -21,6 +22,7 @@ public class OpenAIResponsesClientChatStreamChunkWithToolTest extends KeelInstan
         String baseUrl = ConfigElement.root().readProperty("openai.test1.api");
         String apiKey = ConfigElement.root().readProperty("openai.test1.key");
         String model = ConfigElement.root().readProperty("openai.test1.model");
+        AuthMethod authMethod = AuthMethod.valueOf(ConfigElement.root().readProperty("openai.test1.authMethod") != null ? ConfigElement.root().readProperty("openai.test1.authMethod") : "Bearer");
 
         Objects.requireNonNull(apiKey, "OpenAI API key must be set");
         Objects.requireNonNull(model, "OpenAI model must be set");
@@ -29,7 +31,8 @@ public class OpenAIResponsesClientChatStreamChunkWithToolTest extends KeelInstan
         OpenAIResponsesClient client = new OpenAIResponsesClient(
             httpClient,
             apiKey,
-            baseUrl
+            baseUrl,
+            authMethod
         );
 
         JsonObject weatherToolParams = new JsonObject()

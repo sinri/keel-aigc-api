@@ -1,10 +1,11 @@
 package io.github.sinri.keel.aigc.api.llm.anthropic;
 
+import io.github.sinri.keel.aigc.api.internal.SSE2Chunk;
 import io.github.sinri.keel.aigc.api.internal.anthropic.AnthropicRequestConverter;
 import io.github.sinri.keel.aigc.api.internal.anthropic.AnthropicResponseConverter;
 import io.github.sinri.keel.aigc.api.internal.anthropic.AnthropicStreamHandler;
 import io.github.sinri.keel.aigc.api.internal.anthropic.AnthropicVertxSupport;
-import io.github.sinri.keel.aigc.api.internal.openai.OpenAiVertxSupport;
+import io.github.sinri.keel.base.async.Keel;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
@@ -29,6 +30,7 @@ public class AnthropicClient implements CatholicLLM {
     private final String apiKey;
     private final String baseUrl;
     private final String anthropicVersion;
+    private final Keel keel;
 
     public AnthropicClient(HttpClient httpClient, String apiKey) {
         this(httpClient, apiKey, DEFAULT_BASE_URL, DEFAULT_ANTHROPIC_VERSION);
@@ -43,6 +45,7 @@ public class AnthropicClient implements CatholicLLM {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.anthropicVersion = anthropicVersion;
+        this.keel = Keel.shared();
     }
 
     public static Builder builder() {
@@ -55,7 +58,7 @@ public class AnthropicClient implements CatholicLLM {
         body.put("stream", false);
 
         return sendJsonPost(body, false)
-            .compose(response -> OpenAiVertxSupport.requireSuccessAndReadBody(response, ANTHROPIC_API_ERROR))
+            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, ANTHROPIC_API_ERROR))
             .map(buf -> new AnthropicResponseConverter().convert(buf.toJsonObject()));
     }
 
@@ -70,11 +73,8 @@ public class AnthropicClient implements CatholicLLM {
         AnthropicStreamHandler streamHandler = new AnthropicStreamHandler();
 
         return sendJsonPost(body, true)
-            .compose(response -> OpenAiVertxSupport.consumeOpenAiStyleSseStream(
-                response,
-                ANTHROPIC_API_ERROR,
-                streamHandler::processSseLine,
-                chunkAsyncProcessor
+            .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
+                keel, response, ANTHROPIC_API_ERROR, streamHandler::processSseLine, chunkAsyncProcessor
             ));
     }
 
@@ -86,13 +86,12 @@ public class AnthropicClient implements CatholicLLM {
         AnthropicStreamHandler streamHandler = new AnthropicStreamHandler();
 
         return sendJsonPost(body, true)
-            .compose(response -> OpenAiVertxSupport.consumeOpenAiStyleSseStream(
-                response,
-                ANTHROPIC_API_ERROR,
-                streamHandler::processSseLine,
+            .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
+                keel, response, ANTHROPIC_API_ERROR, streamHandler::processSseLine,
                 chunk -> Future.succeededFuture()
             ))
-            .map(v -> streamHandler.buildFinalResponse());
+            .map(v -> streamHandler.buildFinalResponse())
+            .otherwise(err -> streamHandler.buildFinalResponse());
     }
 
     private Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, boolean stream) {
