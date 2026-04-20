@@ -1,5 +1,7 @@
 package io.github.sinri.keel.aigc.api.llm.openai.responses;
 
+import io.github.sinri.keel.aigc.api.internal.SSE2Chunk;
+import io.github.sinri.keel.aigc.api.internal.openai.AuthMethod;
 import io.github.sinri.keel.aigc.api.internal.openai.OpenAiVertxSupport;
 import io.github.sinri.keel.aigc.api.internal.openai.responses.OpenAIResponsesRequestConverter;
 import io.github.sinri.keel.aigc.api.internal.openai.responses.OpenAIResponsesResponseConverter;
@@ -8,6 +10,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
+import io.github.sinri.keel.base.async.Keel;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientResponse;
@@ -23,20 +26,29 @@ public class OpenAIResponsesClient implements CatholicLLM {
     private final HttpClient httpClient;
     private final String apiKey;
     private final String baseUrl;
+    private final AuthMethod authMethod;
+    private final Keel keel;
 
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1";
+    private static final AuthMethod DEFAULT_AUTH_METHOD = AuthMethod.Bearer;
     private static final String RESPONSES_PATH = "/responses";
 
     private static final String RESPONSES_API_ERROR = "OpenAI Responses API error";
 
     public OpenAIResponsesClient(HttpClient httpClient, String apiKey) {
-        this(httpClient, apiKey, DEFAULT_BASE_URL);
+        this(httpClient, apiKey, DEFAULT_BASE_URL, DEFAULT_AUTH_METHOD);
     }
 
     public OpenAIResponsesClient(HttpClient httpClient, String apiKey, String baseUrl) {
+        this(httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
+    }
+
+    public OpenAIResponsesClient(HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
         this.httpClient = httpClient;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
+        this.authMethod = authMethod;
+        this.keel = Keel.shared();
     }
 
     @Override
@@ -45,7 +57,7 @@ public class OpenAIResponsesClient implements CatholicLLM {
         responsesRequest.put("stream", false);
 
         return sendJsonPost(responsesRequest, false)
-            .compose(response -> OpenAiVertxSupport.requireSuccessAndReadBody(response, RESPONSES_API_ERROR))
+            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, RESPONSES_API_ERROR))
             .map(body -> new OpenAIResponsesResponseConverter().convert(body.toJsonObject()));
     }
 
@@ -60,11 +72,8 @@ public class OpenAIResponsesClient implements CatholicLLM {
         OpenAIResponsesStreamHandler streamHandler = new OpenAIResponsesStreamHandler();
 
         return sendJsonPost(responsesRequest, true)
-            .compose(response -> OpenAiVertxSupport.consumeOpenAiStyleSseStream(
-                response,
-                RESPONSES_API_ERROR,
-                streamHandler::processSseLine,
-                chunkAsyncProcessor
+            .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
+                keel, response, RESPONSES_API_ERROR, streamHandler::processSseLine, chunkAsyncProcessor
             ));
     }
 
@@ -76,13 +85,12 @@ public class OpenAIResponsesClient implements CatholicLLM {
         OpenAIResponsesStreamHandler streamHandler = new OpenAIResponsesStreamHandler();
 
         return sendJsonPost(responsesRequest, true)
-            .compose(response -> OpenAiVertxSupport.consumeOpenAiStyleSseStream(
-                response,
-                RESPONSES_API_ERROR,
-                streamHandler::processSseLine,
+            .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
+                keel, response, RESPONSES_API_ERROR, streamHandler::processSseLine,
                 chunk -> Future.succeededFuture()
             ))
-            .map(v -> streamHandler.buildFinalResponse());
+            .map(v -> streamHandler.buildFinalResponse())
+            .otherwise(err -> streamHandler.buildFinalResponse());
     }
 
     private Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, boolean stream) {
@@ -90,6 +98,7 @@ public class OpenAIResponsesClient implements CatholicLLM {
             httpClient,
             baseUrl + RESPONSES_PATH,
             apiKey,
+            authMethod,
             requestBody,
             stream
         );
@@ -103,6 +112,7 @@ public class OpenAIResponsesClient implements CatholicLLM {
         private HttpClient httpClient;
         private String apiKey;
         private String baseUrl = DEFAULT_BASE_URL;
+        private AuthMethod authMethod = DEFAULT_AUTH_METHOD;
 
         public Builder httpClient(HttpClient httpClient) {
             this.httpClient = httpClient;
@@ -119,6 +129,11 @@ public class OpenAIResponsesClient implements CatholicLLM {
             return this;
         }
 
+        public Builder authMethod(AuthMethod authMethod) {
+            this.authMethod = authMethod;
+            return this;
+        }
+
         public OpenAIResponsesClient build() {
             if (httpClient == null) {
                 throw new IllegalArgumentException("httpClient is required");
@@ -126,7 +141,7 @@ public class OpenAIResponsesClient implements CatholicLLM {
             if (apiKey == null || apiKey.isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            return new OpenAIResponsesClient(httpClient, apiKey, baseUrl);
+            return new OpenAIResponsesClient(httpClient, apiKey, baseUrl, authMethod);
         }
     }
 }

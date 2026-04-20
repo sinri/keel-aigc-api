@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 
+import io.github.sinri.keel.aigc.api.internal.openai.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
@@ -26,6 +27,7 @@ public class OpenAIChatCompletionsClientChatWithToolTest extends KeelInstantRunn
         String baseUrl = ConfigElement.root().readProperty("openai.test1.api");
         String apiKey = ConfigElement.root().readProperty("openai.test1.key");
         String model = ConfigElement.root().readProperty("openai.test1.model");
+        AuthMethod authMethod = AuthMethod.valueOf(ConfigElement.root().readProperty("openai.test1.authMethod") != null ? ConfigElement.root().readProperty("openai.test1.authMethod") : "Bearer");
 
         Objects.requireNonNull(apiKey, "OpenAI API key must be set");
         Objects.requireNonNull(model, "OpenAI model must be set");
@@ -34,7 +36,8 @@ public class OpenAIChatCompletionsClientChatWithToolTest extends KeelInstantRunn
         OpenAIChatCompletionsClient client = new OpenAIChatCompletionsClient(
                 httpClient,
                 apiKey,
-                baseUrl
+                baseUrl,
+                authMethod
         );
 
         // 定义工具：获取天气信息

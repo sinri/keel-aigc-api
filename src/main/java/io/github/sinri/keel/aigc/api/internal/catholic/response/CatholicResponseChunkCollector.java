@@ -60,16 +60,14 @@ public class CatholicResponseChunkCollector {
         List<CatholicToolCall> toolCalls = null;
         if (!toolCallCollectors.isEmpty()) {
             toolCalls = new ArrayList<>();
-            for (int i = 0; i < toolCallCollectors.size(); i++) {
+            for (int i = 0; toolCallCollectors.containsKey(i); i++) {
                 ToolCallCollector collector = toolCallCollectors.get(i);
-                if (collector != null) {
-                    toolCalls.add(collector.build());
-                }
+                toolCalls.add(collector.build());
             }
         }
 
         CatholicAssistantMessage message = new CatholicAssistantMessage(text, toolCalls);
-        return new CatholicLLMResponseImpl(id, message, usage != null ? usage : CatholicLLMUsage.empty());
+        return new CatholicLLMResponseImpl(id, message, usage != null ? usage : CatholicLLMUsage.empty(), finished);
     }
 
     /**

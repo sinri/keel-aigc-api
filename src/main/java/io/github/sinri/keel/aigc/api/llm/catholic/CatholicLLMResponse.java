@@ -48,6 +48,11 @@ public interface CatholicLLMResponse {
     }
 
     /**
+     * 流式回复是否完整收完（收到 [DONE] 标记或 finish_reason）。若为 false，表示连接中断导致数据不完整。
+     */
+    boolean finished();
+
+    /**
      * 创建回复Builder
      */
     static CatholicLLMResponseImpl.Builder builder() {

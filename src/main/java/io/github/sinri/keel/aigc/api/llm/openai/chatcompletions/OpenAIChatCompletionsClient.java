@@ -1,5 +1,7 @@
 package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 
+import io.github.sinri.keel.aigc.api.internal.SSE2Chunk;
+import io.github.sinri.keel.aigc.api.internal.openai.AuthMethod;
 import io.github.sinri.keel.aigc.api.internal.openai.OpenAiVertxSupport;
 import io.github.sinri.keel.aigc.api.internal.openai.chatcompletions.OpenAIChatCompletionsRequestConverter;
 import io.github.sinri.keel.aigc.api.internal.openai.chatcompletions.OpenAIChatCompletionsResponseConverter;
@@ -8,6 +10,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
+import io.github.sinri.keel.base.async.Keel;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientResponse;
@@ -23,34 +26,29 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
     private final HttpClient httpClient;
     private final String apiKey;
     private final String baseUrl;
+    private final AuthMethod authMethod;
+    private final Keel keel;
 
-    // 默认 OpenAI API 端点
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1";
+    private static final AuthMethod DEFAULT_AUTH_METHOD = AuthMethod.Bearer;
     private static final String CHAT_COMPLETIONS_PATH = "/chat/completions";
 
     private static final String CHAT_API_ERROR = "OpenAI API error";
 
-    /**
-     * 创建客户端
-     *
-     * @param httpClient Vert.x HttpClient
-     * @param apiKey    OpenAI API Key
-     */
     public OpenAIChatCompletionsClient(HttpClient httpClient, String apiKey) {
-        this(httpClient, apiKey, DEFAULT_BASE_URL);
+        this(httpClient, apiKey, DEFAULT_BASE_URL, DEFAULT_AUTH_METHOD);
     }
 
-    /**
-     * 创建客户端（支持自定义 baseUrl）
-     *
-     * @param httpClient Vert.x HttpClient
-     * @param apiKey    OpenAI API Key
-     * @param baseUrl   API 基础 URL（支持 OpenAI 兼容的第三方服务）
-     */
     public OpenAIChatCompletionsClient(HttpClient httpClient, String apiKey, String baseUrl) {
+        this(httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
+    }
+
+    public OpenAIChatCompletionsClient(HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
         this.httpClient = httpClient;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
+        this.authMethod = authMethod;
+        this.keel = Keel.shared();
     }
 
     @Override
@@ -60,7 +58,7 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
         openaiRequest.put("stream", false);
 
         return sendJsonPost(openaiRequest, false)
-            .compose(response -> OpenAiVertxSupport.requireSuccessAndReadBody(response, CHAT_API_ERROR))
+            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, CHAT_API_ERROR))
             .map(body -> new OpenAIChatCompletionsResponseConverter().convert(body.toJsonObject()));
     }
 
@@ -76,11 +74,8 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
 
         return sendJsonPost(openaiRequest, true)
-            .compose(response -> OpenAiVertxSupport.consumeOpenAiStyleSseStream(
-                response,
-                CHAT_API_ERROR,
-                streamHandler::processSseLine,
-                chunkAsyncProcessor
+            .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
+                keel, response, CHAT_API_ERROR, streamHandler::processSseLine, chunkAsyncProcessor
             ));
     }
 
@@ -93,13 +88,12 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
 
         return sendJsonPost(openaiRequest, true)
-            .compose(response -> OpenAiVertxSupport.consumeOpenAiStyleSseStream(
-                response,
-                CHAT_API_ERROR,
-                streamHandler::processSseLine,
+            .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
+                keel, response, CHAT_API_ERROR, streamHandler::processSseLine,
                 chunk -> Future.succeededFuture()
             ))
-            .map(v -> streamHandler.buildFinalResponse());
+            .map(v -> streamHandler.buildFinalResponse())
+            .otherwise(err -> streamHandler.buildFinalResponse());
     }
 
     private Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, boolean stream) {
@@ -107,6 +101,7 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
             httpClient,
             baseUrl + CHAT_COMPLETIONS_PATH,
             apiKey,
+            authMethod,
             requestBody,
             stream
         );
@@ -128,6 +123,7 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
         private HttpClient httpClient;
         private String apiKey;
         private String baseUrl = DEFAULT_BASE_URL;
+        private AuthMethod authMethod = DEFAULT_AUTH_METHOD;
 
         public Builder httpClient(HttpClient httpClient) {
             this.httpClient = httpClient;
@@ -144,6 +140,11 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
             return this;
         }
 
+        public Builder authMethod(AuthMethod authMethod) {
+            this.authMethod = authMethod;
+            return this;
+        }
+
         public OpenAIChatCompletionsClient build() {
             if (httpClient == null) {
                 throw new IllegalArgumentException("httpClient is required");
@@ -151,7 +152,7 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
             if (apiKey == null || apiKey.isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            return new OpenAIChatCompletionsClient(httpClient, apiKey, baseUrl);
+            return new OpenAIChatCompletionsClient(httpClient, apiKey, baseUrl, authMethod);
         }
     }
 

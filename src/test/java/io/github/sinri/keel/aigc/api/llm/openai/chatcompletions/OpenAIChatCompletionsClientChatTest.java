@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 
+import io.github.sinri.keel.aigc.api.internal.openai.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
@@ -19,6 +20,7 @@ public class OpenAIChatCompletionsClientChatTest extends KeelInstantRunner {
         String baseUrl = ConfigElement.root().readProperty("openai.test1.api");
         String apiKey = ConfigElement.root().readProperty("openai.test1.key");
         String model = ConfigElement.root().readProperty("openai.test1.model");
+        AuthMethod authMethod = AuthMethod.valueOf(ConfigElement.root().readProperty("openai.test1.authMethod") != null ? ConfigElement.root().readProperty("openai.test1.authMethod") : "Bearer");
 
         Objects.requireNonNull(apiKey, "OpenAI API key must be set");
         Objects.requireNonNull(model, "OpenAI model must be set");
@@ -27,7 +29,8 @@ public class OpenAIChatCompletionsClientChatTest extends KeelInstantRunner {
         OpenAIChatCompletionsClient client = new OpenAIChatCompletionsClient(
                 httpClient,
                 apiKey,
-                baseUrl
+                baseUrl,
+                authMethod
         );
 
         // 构建请求：让 LLM 生成下个月从中国到日本的旅行计划
