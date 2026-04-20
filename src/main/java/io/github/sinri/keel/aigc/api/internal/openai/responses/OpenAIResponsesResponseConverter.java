@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.llm.openai.responses;
+package io.github.sinri.keel.aigc.api.internal.openai.responses;
 
 import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicLLMResponseImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;

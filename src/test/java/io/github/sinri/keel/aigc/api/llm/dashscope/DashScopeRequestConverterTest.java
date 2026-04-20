@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.dashscope;
 
+import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeRequestConverter;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.*;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;

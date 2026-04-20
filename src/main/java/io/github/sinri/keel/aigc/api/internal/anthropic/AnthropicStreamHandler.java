@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.llm.anthropic;
+package io.github.sinri.keel.aigc.api.internal.anthropic;
 
 import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicLLMResponseChunkImpl;
 import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicResponseChunkCollector;

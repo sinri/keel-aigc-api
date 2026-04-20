@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 
+import io.github.sinri.keel.aigc.api.internal.openai.chatcompletions.OpenAIChatCompletionsResponseConverter;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
 import io.vertx.core.json.JsonArray;

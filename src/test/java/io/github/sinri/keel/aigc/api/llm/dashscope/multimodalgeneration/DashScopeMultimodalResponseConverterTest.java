@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration;
 
+import io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration.DashScopeMultimodalResponseConverter;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.Test;

@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration;
 
+import io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration.DashScopeMultimodalRequestConverter;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;

@@ -1,6 +1,7 @@
-package io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration;
+package io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration;
 
 import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicLLMResponseImpl;
+import io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration.DashScopeMultimodalResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;

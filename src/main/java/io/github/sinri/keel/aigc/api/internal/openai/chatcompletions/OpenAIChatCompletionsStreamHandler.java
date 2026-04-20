@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
+package io.github.sinri.keel.aigc.api.internal.openai.chatcompletions;
 
 import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicLLMResponseChunkImpl;
 import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicResponseChunkCollector;

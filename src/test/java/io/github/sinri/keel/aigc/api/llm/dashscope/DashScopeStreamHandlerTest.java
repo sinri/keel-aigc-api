@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.dashscope;
 
+import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeStreamHandler;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.vertx.core.json.JsonArray;
