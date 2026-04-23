@@ -12,6 +12,13 @@ import java.util.List;
  */
 public interface CatholicLLMRequest {
     /**
+     * 创建请求Builder
+     */
+    static Builder builder() {
+        return CatholicLLMRequestImpl.builder();
+    }
+
+    /**
      * 模型标识（如 "gpt-4o", "claude-3-5-sonnet", "qwen-max"）
      */
     String model();
@@ -22,7 +29,10 @@ public interface CatholicLLMRequest {
     List<CatholicChatMessage> messages();
 
     /**
-     * 工具定义列表（可选）
+     * 工具定义列表。
+     * 本身工具清单是可选的，如果不使用工具调用不提供候选工具，那么就提供一个空列表。
+     *
+     * @return 一个被预期为只读的列表，非 null ，包含候选工具。
      */
     List<CatholicTool> tools();
 
@@ -40,13 +50,29 @@ public interface CatholicLLMRequest {
      * 是否有工具定义
      */
     default boolean hasTools() {
-        return tools() != null && !tools().isEmpty();
+        return !tools().isEmpty();
     }
 
     /**
-     * 创建请求Builder
+     * Builder接口，将构造逻辑暴露给外部模块。
      */
-    static CatholicLLMRequestImpl.Builder builder() {
-        return CatholicLLMRequestImpl.builder();
+    interface Builder {
+        Builder model(String model);
+
+        Builder addMessage(CatholicChatMessage message);
+
+        Builder messages(List<CatholicChatMessage> messages);
+
+        Builder addTool(CatholicTool tool);
+
+        Builder tools(List<CatholicTool> tools);
+
+        Builder options(CatholicLLMRequestOptions options);
+
+        Builder stream(boolean stream);
+
+        Builder enableStream();
+
+        CatholicLLMRequest build();
     }
 }

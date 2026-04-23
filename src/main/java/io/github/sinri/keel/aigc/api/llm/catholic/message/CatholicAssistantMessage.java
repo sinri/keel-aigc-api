@@ -1,6 +1,7 @@
 package io.github.sinri.keel.aigc.api.llm.catholic.message;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
@@ -57,6 +58,7 @@ public class CatholicAssistantMessage implements CatholicChatMessage {
     /**
      * 获取文本内容
      */
+    @Nullable
     public String text() {
         return text;
     }

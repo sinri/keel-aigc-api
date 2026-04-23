@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.catholic.tool;
 
+import org.jspecify.annotations.Nullable;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -8,14 +9,14 @@ import io.vertx.core.json.JsonObject;
 public record CatholicToolCall(
     String id,
     String type,
-    CatholicToolCallFunction function
+    @Nullable CatholicToolCallFunction function
 ) {
     /**
      * 工具调用的函数信息
      */
     public record CatholicToolCallFunction(
         String name,
-        String arguments
+        @Nullable String arguments
     ) {
     }
 

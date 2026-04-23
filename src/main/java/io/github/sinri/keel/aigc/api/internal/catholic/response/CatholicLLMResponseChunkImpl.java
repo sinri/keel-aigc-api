@@ -91,7 +91,7 @@ public class CatholicLLMResponseChunkImpl implements CatholicLLMResponseChunk {
     /**
      * Builder类
      */
-    public static class Builder {
+    public static class Builder implements CatholicLLMResponseChunk.Builder {
         private String id;
         private int index;
         private String deltaText;

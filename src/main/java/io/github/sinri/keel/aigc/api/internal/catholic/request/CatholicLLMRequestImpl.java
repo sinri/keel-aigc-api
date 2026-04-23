@@ -78,7 +78,7 @@ public class CatholicLLMRequestImpl implements CatholicLLMRequest {
     /**
      * Builder类
      */
-    public static class Builder {
+    public static class Builder implements CatholicLLMRequest.Builder {
         private String model;
         private final List<CatholicChatMessage> messages = new ArrayList<>();
         private final List<CatholicTool> tools = new ArrayList<>();

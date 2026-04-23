@@ -1,6 +1,7 @@
 package io.github.sinri.keel.aigc.api.llm.catholic.request;
 
 import io.github.sinri.keel.aigc.api.internal.catholic.request.CatholicLLMRequestOptionsImpl;
+import org.jspecify.annotations.Nullable;
 import io.vertx.core.json.JsonObject;
 
 import java.util.List;
@@ -12,22 +13,22 @@ public interface CatholicLLMRequestOptions {
     /**
      * 温度参数（0-2）
      */
-    Double temperature();
+    @Nullable Double temperature();
 
     /**
      * 最大生成token数
      */
-    Integer maxTokens();
+    @Nullable Integer maxTokens();
 
     /**
      * Top-p采样
      */
-    Double topP();
+    @Nullable Double topP();
 
     /**
      * 停止词列表
      */
-    List<String> stop();
+    @Nullable List<String> stop();
 
     /**
      * 其他厂商特有参数（扩展用）
@@ -44,7 +45,28 @@ public interface CatholicLLMRequestOptions {
     /**
      * 创建Builder
      */
-    static CatholicLLMRequestOptionsImpl.Builder builder() {
+    static Builder builder() {
         return CatholicLLMRequestOptionsImpl.builder();
+    }
+
+    /**
+     * Builder接口，将构造逻辑暴露给外部模块。
+     */
+    interface Builder {
+        Builder temperature(Double temperature);
+
+        Builder maxTokens(Integer maxTokens);
+
+        Builder topP(Double topP);
+
+        Builder stop(List<String> stop);
+
+        Builder stop(String... stopSequences);
+
+        Builder extra(JsonObject extra);
+
+        Builder putExtra(String key, Object value);
+
+        CatholicLLMRequestOptions build();
     }
 }

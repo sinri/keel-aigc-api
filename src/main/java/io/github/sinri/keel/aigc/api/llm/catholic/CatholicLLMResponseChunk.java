@@ -3,6 +3,7 @@ package io.github.sinri.keel.aigc.api.llm.catholic;
 import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicLLMResponseChunkImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
@@ -25,12 +26,12 @@ public interface CatholicLLMResponseChunk {
     /**
      * 增量文本内容（可能为空）
      */
-    String deltaText();
+    @Nullable String deltaText();
 
     /**
      * 增量工具调用（可能为空）
      */
-    List<CatholicToolCallChunkDelta> deltaToolCalls();
+    @Nullable List<CatholicToolCallChunkDelta> deltaToolCalls();
 
     /**
      * 是否为结束片段
@@ -40,7 +41,7 @@ public interface CatholicLLMResponseChunk {
     /**
      * 结束时的usage统计（仅在结束片段有效）
      */
-    CatholicLLMUsage usage();
+    @Nullable CatholicLLMUsage usage();
 
     /**
      * 是否有文本增量
@@ -59,7 +60,30 @@ public interface CatholicLLMResponseChunk {
     /**
      * 创建片段Builder
      */
-    static CatholicLLMResponseChunkImpl.Builder builder() {
+    static Builder builder() {
         return CatholicLLMResponseChunkImpl.builder();
+    }
+
+    /**
+     * Builder接口，将构造逻辑暴露给外部模块。
+     */
+    interface Builder {
+        Builder id(String id);
+
+        Builder index(int index);
+
+        Builder deltaText(String deltaText);
+
+        Builder deltaToolCalls(List<CatholicToolCallChunkDelta> deltaToolCalls);
+
+        Builder finished(boolean finished);
+
+        Builder markFinished();
+
+        Builder usage(CatholicLLMUsage usage);
+
+        Builder usage(Integer promptTokens, Integer completionTokens, Integer totalTokens);
+
+        CatholicLLMResponseChunk build();
     }
 }
