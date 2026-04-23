@@ -51,7 +51,7 @@ public class CatholicLLMResponseImpl implements CatholicLLMResponse {
     /**
      * Builder类
      */
-    public static class Builder {
+    public static class Builder implements CatholicLLMResponse.Builder {
         private String id;
         private CatholicAssistantMessage message;
         private CatholicLLMUsage usage = CatholicLLMUsage.empty();

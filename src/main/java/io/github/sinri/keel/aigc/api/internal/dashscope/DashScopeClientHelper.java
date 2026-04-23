@@ -1,6 +1,6 @@
 package io.github.sinri.keel.aigc.api.internal.dashscope;
 
-import io.github.sinri.keel.aigc.api.internal.openai.AuthMethod;
+import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
 import io.github.sinri.keel.base.async.Keel;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;

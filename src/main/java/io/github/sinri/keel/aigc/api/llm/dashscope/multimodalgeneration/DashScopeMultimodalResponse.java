@@ -1,6 +1,7 @@
 package io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
+import org.jspecify.annotations.Nullable;
 import io.vertx.core.json.JsonArray;
 
 /**
@@ -9,11 +10,11 @@ import io.vertx.core.json.JsonArray;
  */
 public record DashScopeMultimodalResponse(
     CatholicLLMResponse catholicResponse,
-    String reasoningContent,
+    @Nullable String reasoningContent,
     JsonArray imageHw,
-    Integer imageTokens,
-    Integer videoTokens,
-    Integer audioTokens
+    @Nullable Integer imageTokens,
+    @Nullable Integer videoTokens,
+    @Nullable Integer audioTokens
 ) {
     private static final JsonArray EMPTY_ARRAY = new JsonArray();
 

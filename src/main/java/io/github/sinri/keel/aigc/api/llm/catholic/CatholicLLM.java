@@ -7,11 +7,11 @@ import java.util.function.Function;
 /**
  * 一种通用 LLM 调用类的接口定义，用于调用 LLM 模型并获取回复。
  * <p>
- * 需要（逐步）支持以下协议：
- * - OpenAI: Chat Completions
- * - DashScope
- * - Anthropic
- * - OpenAI: Responses
+ * 需要（逐步）支持以下协议：<br>
+ * - OpenAI: Chat Completions<br>
+ * - DashScope<br>
+ * - Anthropic<br>
+ * - OpenAI: Responses<br>
  */
 public interface CatholicLLM {
     /**

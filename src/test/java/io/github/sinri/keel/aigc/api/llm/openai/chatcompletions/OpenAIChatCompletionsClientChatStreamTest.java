@@ -1,6 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 
-import io.github.sinri.keel.aigc.api.internal.openai.AuthMethod;
+import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;

@@ -1,7 +1,7 @@
 package io.github.sinri.keel.aigc.api.llm.openai.responses;
 
 import io.github.sinri.keel.aigc.api.internal.SSE2Chunk;
-import io.github.sinri.keel.aigc.api.internal.openai.AuthMethod;
+import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
 import io.github.sinri.keel.aigc.api.internal.openai.OpenAiVertxSupport;
 import io.github.sinri.keel.aigc.api.internal.openai.responses.OpenAIResponsesRequestConverter;
 import io.github.sinri.keel.aigc.api.internal.openai.responses.OpenAIResponsesResponseConverter;

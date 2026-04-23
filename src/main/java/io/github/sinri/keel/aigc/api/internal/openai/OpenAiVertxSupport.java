@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.internal.openai;
 
+import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;

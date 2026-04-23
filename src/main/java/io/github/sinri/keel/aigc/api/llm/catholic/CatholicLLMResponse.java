@@ -3,6 +3,7 @@ package io.github.sinri.keel.aigc.api.llm.catholic;
 import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicLLMResponseImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 一种通用 LLM 回复格式的接口定义，可能为文本回复或工具调用。
@@ -30,21 +31,24 @@ public interface CatholicLLMResponse {
      * 是否包含工具调用
      */
     default boolean hasToolCalls() {
-        return message() != null && message().hasToolCalls();
+        return message().hasToolCalls();
     }
 
     /**
      * 获取纯文本回复（如果有）
      */
+    @Nullable
     default String text() {
-        return message() != null ? message().text() : null;
+        message();
+        return message().text();
     }
 
     /**
      * 是否有文本内容
      */
     default boolean hasText() {
-        return message() != null && message().hasText();
+        message();
+        return message().hasText();
     }
 
     /**
@@ -55,7 +59,24 @@ public interface CatholicLLMResponse {
     /**
      * 创建回复Builder
      */
-    static CatholicLLMResponseImpl.Builder builder() {
+    static Builder builder() {
         return CatholicLLMResponseImpl.builder();
+    }
+
+    /**
+     * Builder接口，将构造逻辑暴露给外部模块。
+     */
+    interface Builder {
+        Builder id(String id);
+
+        Builder message(CatholicAssistantMessage message);
+
+        Builder usage(CatholicLLMUsage usage);
+
+        Builder usage(Integer promptTokens, Integer completionTokens, Integer totalTokens);
+
+        Builder finished(boolean finished);
+
+        CatholicLLMResponse build();
     }
 }

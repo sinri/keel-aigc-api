@@ -33,7 +33,7 @@ public record CatholicLLMRequestOptionsImpl(
     /**
      * Builder类
      */
-    public static class Builder {
+    public static class Builder implements CatholicLLMRequestOptions.Builder {
         private Double temperature;
         private Integer maxTokens;
         private Double topP;
