@@ -3,7 +3,7 @@ package io.github.sinri.keel.aigc.api.llm.catholic;
 import io.github.sinri.keel.aigc.api.internal.catholic.request.CatholicLLMRequestImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 
 import java.util.List;
 
@@ -34,7 +34,7 @@ public interface CatholicLLMRequest {
      *
      * @return 一个被预期为只读的列表，非 null ，包含候选工具。
      */
-    List<CatholicTool> tools();
+    List<CatholicToolDefinition> tools();
 
     /**
      * 生成参数选项
@@ -63,9 +63,9 @@ public interface CatholicLLMRequest {
 
         Builder messages(List<CatholicChatMessage> messages);
 
-        Builder addTool(CatholicTool tool);
+        Builder addTool(CatholicToolDefinition tool);
 
-        Builder tools(List<CatholicTool> tools);
+        Builder tools(List<CatholicToolDefinition> tools);
 
         Builder options(CatholicLLMRequestOptions options);
 

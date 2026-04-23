@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.llm.catholic.tool;
+package io.github.sinri.keel.aigc.api.llm.catholic.tool.call;
 
 /**
  * 工具调用结果，包含执行结果用于反馈给LLM。

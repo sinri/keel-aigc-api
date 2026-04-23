@@ -6,8 +6,8 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.tesuto.KeelInstantRunner;
 import io.vertx.core.Future;
@@ -48,7 +48,7 @@ public class OpenAIResponsesClientChatStreamWithToolTest extends KeelInstantRunn
                     .put("description", "城市名称，如：北京、上海、东京")))
             .put("required", new JsonArray().add("city"));
 
-        CatholicTool weatherTool = CatholicTool.function(
+        CatholicToolDefinition weatherTool = CatholicToolDefinition.function(
             "get_weather",
             "获取指定城市的当前天气信息，包括温度、天气状况等",
             weatherToolParams
@@ -83,8 +83,8 @@ public class OpenAIResponsesClientChatStreamWithToolTest extends KeelInstantRunn
         if (response.hasToolCalls()) {
             getLogger().info("Tool calls requested: " + response.message().toolCalls().size());
 
-            List<CatholicToolCall> toolCalls = response.message().toolCalls();
-            for (CatholicToolCall toolCall : toolCalls) {
+            List<CatholicFunctionToolCall> toolCalls = response.message().toolCalls();
+            for (CatholicFunctionToolCall toolCall : toolCalls) {
                 getLogger().info("Tool: " + toolCall.functionName() +
                     ", Args: " + toolCall.function().arguments());
 

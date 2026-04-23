@@ -4,7 +4,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.tesuto.KeelInstantRunner;
 import io.vertx.core.Future;
@@ -43,7 +43,7 @@ public class OpenAIChatCompletionsClientChatStreamChunkWithToolTest extends Keel
                                 .put("description", "城市名称，如：北京、上海、东京")))
                 .put("required", new io.vertx.core.json.JsonArray().add("city"));
 
-        CatholicTool weatherTool = CatholicTool.function(
+        CatholicToolDefinition weatherTool = CatholicToolDefinition.function(
                 "get_weather",
                 "获取指定城市的当前天气信息，包括温度、天气状况等",
                 weatherToolParams

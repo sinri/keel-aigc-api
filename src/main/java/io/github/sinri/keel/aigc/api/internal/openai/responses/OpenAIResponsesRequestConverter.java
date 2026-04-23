@@ -3,8 +3,8 @@ package io.github.sinri.keel.aigc.api.internal.openai.responses;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.*;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -58,7 +58,7 @@ public class OpenAIResponsesRequestConverter {
                     input.add(easyMessage("assistant", assistant.text()));
                 }
                 if (assistant.hasToolCalls()) {
-                    for (CatholicToolCall toolCall : assistant.toolCalls()) {
+                    for (CatholicFunctionToolCall toolCall : assistant.toolCalls()) {
                         input.add(functionCallInputItem(toolCall));
                     }
                 }
@@ -96,7 +96,7 @@ public class OpenAIResponsesRequestConverter {
         return easyMessage(message.role(), content);
     }
 
-    private JsonObject functionCallInputItem(CatholicToolCall toolCall) {
+    private JsonObject functionCallInputItem(CatholicFunctionToolCall toolCall) {
         return new JsonObject()
             .put("type", "function_call")
             .put("call_id", toolCall.id())
@@ -129,9 +129,9 @@ public class OpenAIResponsesRequestConverter {
         return contentArray;
     }
 
-    private JsonArray convertTools(List<CatholicTool> tools) {
+    private JsonArray convertTools(List<CatholicToolDefinition> tools) {
         JsonArray array = new JsonArray();
-        for (CatholicTool tool : tools) {
+        for (CatholicToolDefinition tool : tools) {
             if (!"function".equals(tool.type())) {
                 continue;
             }

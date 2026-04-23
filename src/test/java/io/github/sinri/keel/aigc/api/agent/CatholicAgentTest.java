@@ -5,9 +5,9 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall.CatholicToolCallFunction;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.Future;
 import org.junit.jupiter.api.Test;
 
@@ -38,10 +38,10 @@ class CatholicAgentTest {
     @Test
     void toolLoopRunsTwiceThenFinishes() {
         CountingLlm llm = new CountingLlm();
-        CatholicToolCall call = new CatholicToolCall(
+        CatholicFunctionToolCall call = new CatholicFunctionToolCall(
             "call-1",
             "function",
-            new CatholicToolCallFunction("get_x", "{}")
+            new FunctionCall("get_x", "{}")
         );
         llm.queue.add(toolOnlyResponse(call));
         llm.queue.add(textOnlyResponse("done"));
@@ -49,7 +49,7 @@ class CatholicAgentTest {
         CatholicAgent agent = CatholicAgent.builder()
             .llm(llm)
             .model("m")
-            .tools(List.of(CatholicTool.function("get_x", "desc")))
+            .tools(List.of(CatholicToolDefinition.function("get_x", "desc")))
             .toolHandler(tc -> Future.succeededFuture("{\"ok\":true}"))
             .build();
 
@@ -61,10 +61,10 @@ class CatholicAgentTest {
     @Test
     void maxToolRoundsFails() {
         CountingLlm llm = new CountingLlm();
-        CatholicToolCall call = new CatholicToolCall(
+        CatholicFunctionToolCall call = new CatholicFunctionToolCall(
             "c",
             "function",
-            new CatholicToolCallFunction("f", "{}")
+            new FunctionCall("f", "{}")
         );
         llm.queue.add(toolOnlyResponse(call));
         llm.queue.add(toolOnlyResponse(call));
@@ -73,7 +73,7 @@ class CatholicAgentTest {
             .llm(llm)
             .model("m")
             .maxToolRounds(1)
-            .tools(List.of(CatholicTool.function("f", "d")))
+            .tools(List.of(CatholicToolDefinition.function("f", "d")))
             .toolHandler(tc -> Future.succeededFuture("{}"))
             .build();
 
@@ -93,7 +93,7 @@ class CatholicAgentTest {
     /**
      * 助手仅含工具调用（无正文），第二轮由队列给出纯文本。
      */
-    private static CatholicLLMResponse toolOnlyResponse(CatholicToolCall call) {
+    private static CatholicLLMResponse toolOnlyResponse(CatholicFunctionToolCall call) {
         return CatholicLLMResponse.builder()
             .id("id")
             .message(CatholicAssistantMessage.ofToolCalls(List.of(call)))

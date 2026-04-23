@@ -7,9 +7,9 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall.CatholicToolCallFunction;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.Test;
@@ -59,7 +59,7 @@ class AnthropicRequestConverterTest {
         CatholicLLMRequest request = CatholicLLMRequest.builder()
             .model("claude-3-5-haiku-20241022")
             .addMessage(CatholicUserMessage.ofText("Go"))
-            .addTool(CatholicTool.function("f", "d", schema))
+            .addTool(CatholicToolDefinition.function("f", "d", schema))
             .build();
 
         JsonArray tools = converter.convert(request).getJsonArray("tools");
@@ -95,10 +95,10 @@ class AnthropicRequestConverterTest {
             .addMessage(CatholicUserMessage.ofText("Weather?"))
             .addMessage(new CatholicAssistantMessage(
                 null,
-                java.util.List.of(new CatholicToolCall(
+                java.util.List.of(new CatholicFunctionToolCall(
                     "toolu_01",
                     "function",
-                    new CatholicToolCallFunction("get_weather", "{\"city\":\"NYC\"}")
+                    new FunctionCall("get_weather", "{\"city\":\"NYC\"}")
                 ))
             ))
             .addMessage(CatholicToolCallMessage.of("toolu_01", "{\"t\":1}"))

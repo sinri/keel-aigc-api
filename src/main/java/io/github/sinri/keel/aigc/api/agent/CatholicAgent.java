@@ -9,8 +9,8 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.vertx.core.Future;
 
 import java.util.ArrayList;
@@ -26,7 +26,7 @@ public final class CatholicAgent {
 
     private final CatholicLLM llm;
     private final String model;
-    private final List<CatholicTool> tools;
+    private final List<CatholicToolDefinition> tools;
     private final CatholicLLMRequestOptions options;
     private final CatholicToolInvocationHandler toolHandler;
     private final int maxToolRounds;
@@ -35,7 +35,7 @@ public final class CatholicAgent {
     private CatholicAgent(
         CatholicLLM llm,
         String model,
-        List<CatholicTool> tools,
+        List<CatholicToolDefinition> tools,
         CatholicLLMRequestOptions options,
         CatholicToolInvocationHandler toolHandler,
         int maxToolRounds,
@@ -93,17 +93,17 @@ public final class CatholicAgent {
                 return Future.succeededFuture(response);
             }
 
-            List<CatholicToolCall> calls = assistant.toolCalls();
+            List<CatholicFunctionToolCall> calls = assistant.toolCalls();
             return appendToolResultsSequential(calls, 0)
                 .compose(v -> executeToolLoop(toolRoundIndex + 1));
         });
     }
 
-    private Future<Void> appendToolResultsSequential(List<CatholicToolCall> calls, int index) {
+    private Future<Void> appendToolResultsSequential(List<CatholicFunctionToolCall> calls, int index) {
         if (index >= calls.size()) {
             return Future.succeededFuture();
         }
-        CatholicToolCall call = calls.get(index);
+        CatholicFunctionToolCall call = calls.get(index);
         return toolHandler.handle(call).compose(result -> {
             messages.add(CatholicToolCallMessage.of(call.id(), result));
             return appendToolResultsSequential(calls, index + 1);
@@ -111,7 +111,7 @@ public final class CatholicAgent {
     }
 
     private static CatholicAssistantMessage copyAssistant(CatholicAssistantMessage source) {
-        List<CatholicToolCall> tc = source.hasToolCalls()
+        List<CatholicFunctionToolCall> tc = source.hasToolCalls()
             ? new ArrayList<>(source.toolCalls())
             : Collections.emptyList();
         return CatholicAssistantMessage.ofMixed(source.text(), tc.isEmpty() ? null : tc);
@@ -127,7 +127,7 @@ public final class CatholicAgent {
     public static final class Builder {
         private CatholicLLM llm;
         private String model;
-        private final List<CatholicTool> tools = new ArrayList<>();
+        private final List<CatholicToolDefinition> tools = new ArrayList<>();
         private CatholicLLMRequestOptions options = CatholicLLMRequestOptions.defaultOptions();
         private CatholicToolInvocationHandler toolHandler;
         private int maxToolRounds = 32;
@@ -143,12 +143,12 @@ public final class CatholicAgent {
             return this;
         }
 
-        public Builder addTool(CatholicTool tool) {
+        public Builder addTool(CatholicToolDefinition tool) {
             this.tools.add(tool);
             return this;
         }
 
-        public Builder tools(List<CatholicTool> tools) {
+        public Builder tools(List<CatholicToolDefinition> tools) {
             this.tools.clear();
             if (tools != null) {
                 this.tools.addAll(tools);

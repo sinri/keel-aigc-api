@@ -1,13 +1,12 @@
 package io.github.sinri.keel.aigc.api.agent;
 
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration.DashScopeMultimodalGenerationLLM;
 import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.tesuto.KeelInstantRunner;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClientAgent;
 import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.json.JsonObject;
 
 public class CatholicAgentSampleTest extends KeelInstantRunner {
     private String getBaseUrl() {
@@ -22,14 +21,10 @@ public class CatholicAgentSampleTest extends KeelInstantRunner {
         return ConfigElement.root().readProperty("dashscope.test2.model");
     }
 
-    private CatholicTool getToolA() {
-        return new CatholicTool(
-                "function",
-                new CatholicTool.CatholicToolFunction(
-                        "function_name",
-                        "function_description",
-                        new JsonObject()
-                )
+    private CatholicToolDefinition getToolA() {
+        return CatholicToolDefinition.function(
+                "function_name",
+                "function_description"
         );
     }
 
@@ -46,7 +41,7 @@ public class CatholicAgentSampleTest extends KeelInstantRunner {
                                                                                .httpClient(httpClientAgent)
                                                                                .build();
 
-        CatholicTool toolA = getToolA();
+        CatholicToolDefinition toolA = getToolA();
         CatholicAgent.builder()
                      .llm(llm)
                      .model(getModel())

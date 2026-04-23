@@ -1,6 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.catholic.message;
 
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
@@ -15,7 +15,7 @@ public class CatholicAssistantMessage implements CatholicChatMessage {
     public static final String ROLE = "assistant";
 
     private final String text;
-    private final List<CatholicToolCall> toolCalls;
+    private final List<CatholicFunctionToolCall> toolCalls;
 
     /**
      * 构造助手消息
@@ -23,7 +23,7 @@ public class CatholicAssistantMessage implements CatholicChatMessage {
      * @param text      文本内容（可能为null或空）
      * @param toolCalls 工具调用列表（可能为null或空）
      */
-    public CatholicAssistantMessage(String text, List<CatholicToolCall> toolCalls) {
+    public CatholicAssistantMessage(String text, List<CatholicFunctionToolCall> toolCalls) {
         this.text = text;
         this.toolCalls = toolCalls != null ? toolCalls : Collections.emptyList();
     }
@@ -38,7 +38,7 @@ public class CatholicAssistantMessage implements CatholicChatMessage {
     /**
      * 构造工具调用助手消息
      */
-    public CatholicAssistantMessage(List<CatholicToolCall> toolCalls) {
+    public CatholicAssistantMessage(List<CatholicFunctionToolCall> toolCalls) {
         this(null, toolCalls);
     }
 
@@ -66,7 +66,7 @@ public class CatholicAssistantMessage implements CatholicChatMessage {
     /**
      * 获取工具调用列表
      */
-    public List<CatholicToolCall> toolCalls() {
+    public List<CatholicFunctionToolCall> toolCalls() {
         return toolCalls;
     }
 
@@ -96,14 +96,14 @@ public class CatholicAssistantMessage implements CatholicChatMessage {
     /**
      * 创建工具调用回复
      */
-    public static CatholicAssistantMessage ofToolCalls(List<CatholicToolCall> toolCalls) {
+    public static CatholicAssistantMessage ofToolCalls(List<CatholicFunctionToolCall> toolCalls) {
         return new CatholicAssistantMessage(toolCalls);
     }
 
     /**
      * 创建混合回复（文本+工具调用）
      */
-    public static CatholicAssistantMessage ofMixed(String text, List<CatholicToolCall> toolCalls) {
+    public static CatholicAssistantMessage ofMixed(String text, List<CatholicFunctionToolCall> toolCalls) {
         return new CatholicAssistantMessage(text, toolCalls);
     }
 }

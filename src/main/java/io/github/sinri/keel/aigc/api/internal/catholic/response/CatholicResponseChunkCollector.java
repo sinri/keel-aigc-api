@@ -3,8 +3,8 @@ package io.github.sinri.keel.aigc.api.internal.catholic.response;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall.CatholicToolCallFunction;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,7 +57,7 @@ public class CatholicResponseChunkCollector {
     public CatholicLLMResponseImpl build() {
         String text = textBuilder.length() > 0 ? textBuilder.toString() : null;
 
-        List<CatholicToolCall> toolCalls = null;
+        List<CatholicFunctionToolCall> toolCalls = null;
         if (!toolCallCollectors.isEmpty()) {
             toolCalls = new ArrayList<>();
             for (int i = 0; toolCallCollectors.containsKey(i); i++) {
@@ -115,11 +115,11 @@ public class CatholicResponseChunkCollector {
             }
         }
 
-        CatholicToolCall build() {
-            return new CatholicToolCall(
+        CatholicFunctionToolCall build() {
+            return new CatholicFunctionToolCall(
                 id,
                 type != null ? type : "function",
-                new CatholicToolCallFunction(name, argumentsBuilder.toString())
+                new FunctionCall(name, argumentsBuilder.toString())
             );
         }
     }
