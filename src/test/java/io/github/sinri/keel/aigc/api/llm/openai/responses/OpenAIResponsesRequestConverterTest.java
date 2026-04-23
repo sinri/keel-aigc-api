@@ -7,9 +7,9 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall.CatholicToolCallFunction;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.Test;
@@ -79,7 +79,7 @@ class OpenAIResponsesRequestConverterTest {
         CatholicLLMRequest request = CatholicLLMRequest.builder()
             .model("gpt-4.1")
             .addMessage(CatholicUserMessage.ofText("Weather?"))
-            .addTool(CatholicTool.function("get_weather", "Get weather info", toolParams))
+            .addTool(CatholicToolDefinition.function("get_weather", "Get weather info", toolParams))
             .build();
 
         JsonObject body = converter.convert(request);
@@ -119,10 +119,10 @@ class OpenAIResponsesRequestConverterTest {
             .addMessage(CatholicUserMessage.ofText("What's the weather?"))
             .addMessage(new CatholicAssistantMessage(
                 null,
-                java.util.List.of(new CatholicToolCall(
+                java.util.List.of(new CatholicFunctionToolCall(
                     "call_123",
                     "function",
-                    new CatholicToolCallFunction("get_weather", "{\"location\": \"Beijing\"}")
+                    new FunctionCall("get_weather", "{\"location\": \"Beijing\"}")
                 ))
             ))
             .addMessage(CatholicToolCallMessage.of("call_123", "{\"temp\":25}"))
@@ -165,10 +165,10 @@ class OpenAIResponsesRequestConverterTest {
             .addMessage(CatholicUserMessage.ofText("Go"))
             .addMessage(CatholicAssistantMessage.ofMixed(
                 "Checking.",
-                java.util.List.of(new CatholicToolCall(
+                java.util.List.of(new CatholicFunctionToolCall(
                     "call_1",
                     "function",
-                    new CatholicToolCallFunction("f", "{}")
+                    new FunctionCall("f", "{}")
                 ))
             ))
             .build();

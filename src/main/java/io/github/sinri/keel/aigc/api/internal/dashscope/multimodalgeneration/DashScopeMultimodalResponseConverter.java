@@ -5,8 +5,8 @@ import io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration.DashScop
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall.CatholicToolCallFunction;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -103,16 +103,16 @@ public class DashScopeMultimodalResponseConverter {
         String textContent = extractTextContent(message);
         JsonArray toolCalls = message.getJsonArray("tool_calls");
 
-        List<CatholicToolCall> catholicToolCalls = null;
+        List<CatholicFunctionToolCall> catholicFunctionToolCalls = null;
         if (toolCalls != null && !toolCalls.isEmpty()) {
-            catholicToolCalls = new ArrayList<>();
+            catholicFunctionToolCalls = new ArrayList<>();
             for (int i = 0; i < toolCalls.size(); i++) {
                 JsonObject toolCall = toolCalls.getJsonObject(i);
-                catholicToolCalls.add(convertToolCall(toolCall));
+                catholicFunctionToolCalls.add(convertToolCall(toolCall));
             }
         }
 
-        return CatholicAssistantMessage.ofMixed(textContent, catholicToolCalls);
+        return CatholicAssistantMessage.ofMixed(textContent, catholicFunctionToolCalls);
     }
 
     /**
@@ -152,7 +152,7 @@ public class DashScopeMultimodalResponseConverter {
     /**
      * 转换 DashScope tool_call 为 CatholicToolCall
      */
-    private CatholicToolCall convertToolCall(JsonObject toolCall) {
+    private CatholicFunctionToolCall convertToolCall(JsonObject toolCall) {
         String id = toolCall.getString("id");
         String type = toolCall.getString("type", "function");
         JsonObject function = toolCall.getJsonObject("function");
@@ -160,10 +160,10 @@ public class DashScopeMultimodalResponseConverter {
         String name = function.getString("name");
         String arguments = function.getString("arguments", "{}");
 
-        return new CatholicToolCall(
+        return new CatholicFunctionToolCall(
             id,
             type,
-            new CatholicToolCallFunction(name, arguments)
+            new FunctionCall(name, arguments)
         );
     }
 

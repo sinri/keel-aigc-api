@@ -4,7 +4,9 @@ import io.github.sinri.keel.aigc.api.internal.openai.chatcompletions.OpenAIChatC
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.*;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.Test;
@@ -82,7 +84,7 @@ class OpenAIChatCompletionsRequestConverterTest {
         CatholicLLMRequest request = CatholicLLMRequest.builder()
             .model("gpt-4o")
             .addMessage(CatholicUserMessage.ofText("What's the weather in Beijing?"))
-            .addTool(CatholicTool.function("get_weather", "Get weather info", toolParams))
+            .addTool(CatholicToolDefinition.function("get_weather", "Get weather info", toolParams))
             .build();
 
         JsonObject openaiRequest = converter.convert(request);
@@ -129,10 +131,10 @@ class OpenAIChatCompletionsRequestConverterTest {
             .addMessage(CatholicUserMessage.ofText("What's the weather?"))
             .addMessage(new CatholicAssistantMessage(
                 null,
-                java.util.List.of(new io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall(
+                java.util.List.of(new CatholicFunctionToolCall(
                     "call_123",
                     "function",
-                    new io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall.CatholicToolCallFunction(
+                    new FunctionCall(
                         "get_weather",
                         "{\"location\": \"Beijing\"}"
                     )

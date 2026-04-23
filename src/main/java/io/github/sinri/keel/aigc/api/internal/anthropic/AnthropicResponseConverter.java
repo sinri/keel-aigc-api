@@ -4,8 +4,8 @@ import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicLLMRespo
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall.CatholicToolCallFunction;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -25,7 +25,7 @@ public class AnthropicResponseConverter {
 
         JsonArray content = anthropicResponse.getJsonArray("content");
         StringBuilder textBuilder = new StringBuilder();
-        List<CatholicToolCall> toolCalls = new ArrayList<>();
+        List<CatholicFunctionToolCall> toolCalls = new ArrayList<>();
 
         if (content != null) {
             for (int i = 0; i < content.size(); i++) {
@@ -49,7 +49,7 @@ public class AnthropicResponseConverter {
         }
 
         String text = textBuilder.length() > 0 ? textBuilder.toString() : null;
-        List<CatholicToolCall> calls = toolCalls.isEmpty() ? null : toolCalls;
+        List<CatholicFunctionToolCall> calls = toolCalls.isEmpty() ? null : toolCalls;
         CatholicAssistantMessage assistant = CatholicAssistantMessage.ofMixed(text, calls);
         if (!assistant.hasText() && !assistant.hasToolCalls()) {
             assistant = CatholicAssistantMessage.ofText("");
@@ -64,7 +64,7 @@ public class AnthropicResponseConverter {
             .build();
     }
 
-    private CatholicToolCall convertToolUse(JsonObject block) {
+    private CatholicFunctionToolCall convertToolUse(JsonObject block) {
         String id = block.getString("id");
         String name = block.getString("name");
         Object input = block.getValue("input");
@@ -78,10 +78,10 @@ public class AnthropicResponseConverter {
         } else {
             arguments = "{}";
         }
-        return new CatholicToolCall(
+        return new CatholicFunctionToolCall(
             id,
             "tool_use",
-            new CatholicToolCallFunction(name, arguments)
+            new FunctionCall(name, arguments)
         );
     }
 

@@ -3,8 +3,8 @@ package io.github.sinri.keel.aigc.api.internal.anthropic;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.*;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -99,7 +99,7 @@ public class AnthropicRequestConverter {
             content.add(textBlock(assistant.text()));
         }
         if (assistant.hasToolCalls()) {
-            for (CatholicToolCall toolCall : assistant.toolCalls()) {
+            for (CatholicFunctionToolCall toolCall : assistant.toolCalls()) {
                 content.add(toolUseBlock(toolCall));
             }
         }
@@ -143,7 +143,7 @@ public class AnthropicRequestConverter {
             .put("text", text);
     }
 
-    private static JsonObject toolUseBlock(CatholicToolCall toolCall) {
+    private static JsonObject toolUseBlock(CatholicFunctionToolCall toolCall) {
         JsonObject input = parseToolInput(toolCall.function().arguments());
         return new JsonObject()
             .put("type", "tool_use")
@@ -163,9 +163,9 @@ public class AnthropicRequestConverter {
         }
     }
 
-    private JsonArray convertTools(List<CatholicTool> tools) {
+    private JsonArray convertTools(List<CatholicToolDefinition> tools) {
         JsonArray array = new JsonArray();
-        for (CatholicTool tool : tools) {
+        for (CatholicToolDefinition tool : tools) {
             if (!"function".equals(tool.type())) {
                 continue;
             }

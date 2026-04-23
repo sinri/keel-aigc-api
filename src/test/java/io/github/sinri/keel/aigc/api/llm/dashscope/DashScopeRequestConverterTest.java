@@ -4,7 +4,7 @@ import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeRequestConverte
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.*;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.Test;
@@ -80,7 +80,7 @@ class DashScopeRequestConverterTest {
         CatholicLLMRequest request = CatholicLLMRequest.builder()
             .model("qwen-max")
             .addMessage(CatholicUserMessage.ofText("What's the weather?"))
-            .addTool(CatholicTool.function("get_weather", "Get weather", toolParams))
+            .addTool(CatholicToolDefinition.function("get_weather", "Get weather", toolParams))
             .build();
 
         JsonObject dashscopeRequest = converter.convert(request);

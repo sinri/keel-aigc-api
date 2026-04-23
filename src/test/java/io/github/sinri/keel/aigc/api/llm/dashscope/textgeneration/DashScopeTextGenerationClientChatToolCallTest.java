@@ -4,8 +4,8 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
 import io.github.sinri.keel.base.configuration.ConfigElement;
@@ -58,8 +58,8 @@ public class DashScopeTextGenerationClientChatToolCallTest extends KeelInstantRu
 
         JsonObject getTimeParams = new JsonObject();
 
-        CatholicTool getWeatherTool = CatholicTool.function("get_current_weather", "当你想查询指定城市的天气时非常有用。", getWeatherParams);
-        CatholicTool getTimeTool = CatholicTool.function("get_current_time", "当你想知道现在的时间时非常有用。", getTimeParams);
+        CatholicToolDefinition getWeatherTool = CatholicToolDefinition.function("get_current_weather", "当你想查询指定城市的天气时非常有用。", getWeatherParams);
+        CatholicToolDefinition getTimeTool = CatholicToolDefinition.function("get_current_time", "当你想知道现在的时间时非常有用。", getTimeParams);
 
         // 步骤1: 发送带 tools 的请求
         CatholicLLMRequest request1 = CatholicLLMRequest.builder()
@@ -78,10 +78,10 @@ public class DashScopeTextGenerationClientChatToolCallTest extends KeelInstantRu
                     getLogger().info("Response 1 has tool calls: " + response1.hasToolCalls());
 
                     if (response1.hasToolCalls()) {
-                        List<CatholicToolCall> toolCalls = response1.message().toolCalls();
+                        List<CatholicFunctionToolCall> toolCalls = response1.message().toolCalls();
                         getLogger().info("Tool calls count: " + toolCalls.size());
 
-                        for (CatholicToolCall tc : toolCalls) {
+                        for (CatholicFunctionToolCall tc : toolCalls) {
                             getLogger().info("ToolCall: id=" + tc.id()
                                     + " type=" + tc.type()
                                     + " function.name=" + tc.function().name()
@@ -93,7 +93,7 @@ public class DashScopeTextGenerationClientChatToolCallTest extends KeelInstantRu
                         messages.add(CatholicUserMessage.ofText("杭州天气怎么样"));
                         messages.add(response1.message());
 
-                        for (CatholicToolCall tc : toolCalls) {
+                        for (CatholicFunctionToolCall tc : toolCalls) {
                             String toolResult = simulateToolExecution(tc);
                             getLogger().info("Tool result for " + tc.function().name() + ": " + toolResult);
                             messages.add(new CatholicToolCallMessage(tc.id(), toolResult));
@@ -140,7 +140,7 @@ public class DashScopeTextGenerationClientChatToolCallTest extends KeelInstantRu
     /**
      * 模拟工具执行，返回结果字符串
      */
-    private String simulateToolExecution(CatholicToolCall toolCall) {
+    private String simulateToolExecution(CatholicFunctionToolCall toolCall) {
         String functionName = toolCall.function().name();
         switch (functionName) {
             case "get_current_weather" -> {

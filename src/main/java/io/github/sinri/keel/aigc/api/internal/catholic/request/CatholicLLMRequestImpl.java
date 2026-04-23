@@ -3,7 +3,7 @@ package io.github.sinri.keel.aigc.api.internal.catholic.request;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,14 +16,14 @@ public class CatholicLLMRequestImpl implements CatholicLLMRequest {
 
     private final String model;
     private final List<CatholicChatMessage> messages;
-    private final List<CatholicTool> tools;
+    private final List<CatholicToolDefinition> tools;
     private final CatholicLLMRequestOptions options;
     private final boolean stream;
 
     public CatholicLLMRequestImpl(
         String model,
         List<CatholicChatMessage> messages,
-        List<CatholicTool> tools,
+        List<CatholicToolDefinition> tools,
         CatholicLLMRequestOptions options,
         boolean stream
     ) {
@@ -45,7 +45,7 @@ public class CatholicLLMRequestImpl implements CatholicLLMRequest {
     }
 
     @Override
-    public List<CatholicTool> tools() {
+    public List<CatholicToolDefinition> tools() {
         return tools;
     }
 
@@ -81,7 +81,7 @@ public class CatholicLLMRequestImpl implements CatholicLLMRequest {
     public static class Builder implements CatholicLLMRequest.Builder {
         private String model;
         private final List<CatholicChatMessage> messages = new ArrayList<>();
-        private final List<CatholicTool> tools = new ArrayList<>();
+        private final List<CatholicToolDefinition> tools = new ArrayList<>();
         private CatholicLLMRequestOptions options = CatholicLLMRequestOptionsImpl.defaultOptions();
         private boolean stream = false;
 
@@ -101,12 +101,12 @@ public class CatholicLLMRequestImpl implements CatholicLLMRequest {
             return this;
         }
 
-        public Builder addTool(CatholicTool tool) {
+        public Builder addTool(CatholicToolDefinition tool) {
             this.tools.add(tool);
             return this;
         }
 
-        public Builder tools(List<CatholicTool> tools) {
+        public Builder tools(List<CatholicToolDefinition> tools) {
             this.tools.clear();
             this.tools.addAll(tools);
             return this;

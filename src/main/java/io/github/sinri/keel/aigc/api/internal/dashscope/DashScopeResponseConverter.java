@@ -4,8 +4,8 @@ import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicLLMRespo
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall.CatholicToolCallFunction;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -75,22 +75,22 @@ public class DashScopeResponseConverter {
         JsonArray toolCalls = message.getJsonArray("tool_calls");
         
         // 处理工具调用
-        List<CatholicToolCall> catholicToolCalls = null;
+        List<CatholicFunctionToolCall> catholicFunctionToolCalls = null;
         if (toolCalls != null && !toolCalls.isEmpty()) {
-            catholicToolCalls = new ArrayList<>();
+            catholicFunctionToolCalls = new ArrayList<>();
             for (int i = 0; i < toolCalls.size(); i++) {
                 JsonObject toolCall = toolCalls.getJsonObject(i);
-                catholicToolCalls.add(convertToolCall(toolCall));
+                catholicFunctionToolCalls.add(convertToolCall(toolCall));
             }
         }
 
-        return CatholicAssistantMessage.ofMixed(content, catholicToolCalls);
+        return CatholicAssistantMessage.ofMixed(content, catholicFunctionToolCalls);
     }
 
     /**
      * 转换 DashScope tool_call 为 CatholicToolCall
      */
-    private CatholicToolCall convertToolCall(JsonObject toolCall) {
+    private CatholicFunctionToolCall convertToolCall(JsonObject toolCall) {
         String id = toolCall.getString("id");
         String type = toolCall.getString("type", "function");
         JsonObject function = toolCall.getJsonObject("function");
@@ -98,10 +98,10 @@ public class DashScopeResponseConverter {
         String name = function.getString("name");
         String arguments = function.getString("arguments", "{}");
 
-        return new CatholicToolCall(
+        return new CatholicFunctionToolCall(
             id,
             type,
-            new CatholicToolCallFunction(name, arguments)
+            new FunctionCall(name, arguments)
         );
     }
 

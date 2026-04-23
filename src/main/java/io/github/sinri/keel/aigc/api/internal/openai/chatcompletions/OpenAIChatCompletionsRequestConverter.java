@@ -3,7 +3,8 @@ package io.github.sinri.keel.aigc.api.internal.openai.chatcompletions;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.*;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
-import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -143,9 +144,9 @@ public class OpenAIChatCompletionsRequestConverter {
     /**
      * 转换工具调用列表
      */
-    private JsonArray convertToolCalls(java.util.List<io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall> toolCalls) {
+    private JsonArray convertToolCalls(java.util.List<CatholicFunctionToolCall> toolCalls) {
         JsonArray array = new JsonArray();
-        for (io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicToolCall toolCall : toolCalls) {
+        for (CatholicFunctionToolCall toolCall : toolCalls) {
             array.add(new JsonObject()
                 .put("id", toolCall.id())
                 .put("type", toolCall.type())
@@ -159,9 +160,9 @@ public class OpenAIChatCompletionsRequestConverter {
     /**
      * 转换工具定义列表
      */
-    private JsonArray convertTools(java.util.List<CatholicTool> tools) {
+    private JsonArray convertTools(java.util.List<CatholicToolDefinition> tools) {
         JsonArray array = new JsonArray();
-        for (CatholicTool tool : tools) {
+        for (CatholicToolDefinition tool : tools) {
             array.add(new JsonObject()
                 .put("type", tool.type())
                 .put("function", new JsonObject()
