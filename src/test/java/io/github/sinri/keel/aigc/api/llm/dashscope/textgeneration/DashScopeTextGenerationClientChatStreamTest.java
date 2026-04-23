@@ -1,7 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.dashscope.textgeneration;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
-import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.base.configuration.ConfigElement;
@@ -27,11 +26,11 @@ public class DashScopeTextGenerationClientChatStreamTest extends KeelInstantRunn
             baseUrl = "https://dashscope.aliyuncs.com/api/v1";
         }
 
-        DashScopeTextGenerationClient client = DashScopeTextGenerationClient.builder()
-                .httpClient(httpClient)
-                .apiKey(apiKey)
-                .baseUrl(baseUrl)
-                .build();
+        DashScopeTextGenerationLLM client = DashScopeTextGenerationLLM.builder()
+                                                                      .httpClient(httpClient)
+                                                                      .apiKey(apiKey)
+                                                                      .baseUrl(baseUrl)
+                                                                      .build();
 
         CatholicLLMRequest request = CatholicLLMRequest.builder()
                 .model(model)

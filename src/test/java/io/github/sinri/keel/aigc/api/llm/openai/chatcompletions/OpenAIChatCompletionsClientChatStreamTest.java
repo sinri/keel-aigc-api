@@ -26,7 +26,7 @@ public class OpenAIChatCompletionsClientChatStreamTest extends KeelInstantRunner
         Objects.requireNonNull(model, "OpenAI model must be set");
         Objects.requireNonNull(baseUrl, "Base URL must be set");
 
-        OpenAIChatCompletionsClient client = new OpenAIChatCompletionsClient(
+        OpenAIChatCompletionsLLM client = new OpenAIChatCompletionsLLM(
                 httpClient,
                 apiKey,
                 baseUrl,

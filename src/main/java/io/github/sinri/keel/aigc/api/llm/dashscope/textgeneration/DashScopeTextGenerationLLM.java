@@ -19,14 +19,14 @@ import java.util.function.Function;
  * DashScope 文→文 API 客户端，对应端点 /services/aigc/text-generation/generation。
  * 适用于纯文本模型（如 qwen-plus, qwen-turbo, qwen-max）。
  */
-public class DashScopeTextGenerationClient implements CatholicLLM {
+public class DashScopeTextGenerationLLM implements CatholicLLM {
 
     private static final String TEXT_GENERATION_PATH = "/services/aigc/text-generation/generation";
     private static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/api/v1";
 
     private final DashScopeClientHelper helper;
 
-    public DashScopeTextGenerationClient(DashScopeClientHelper helper) {
+    public DashScopeTextGenerationLLM(DashScopeClientHelper helper) {
         this.helper = helper;
     }
 
@@ -102,13 +102,13 @@ public class DashScopeTextGenerationClient implements CatholicLLM {
             return this;
         }
 
-        public DashScopeTextGenerationClient build() {
+        public DashScopeTextGenerationLLM build() {
             DashScopeClientHelper helper = DashScopeClientHelper.builder()
                 .httpClient(httpClient)
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)
                 .build();
-            return new DashScopeTextGenerationClient(helper);
+            return new DashScopeTextGenerationLLM(helper);
         }
     }
 }

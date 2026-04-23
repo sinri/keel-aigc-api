@@ -41,11 +41,11 @@ public class DashScopeMultimodalGenerationClientChatToolCallTest extends KeelIns
             baseUrl = "https://dashscope.aliyuncs.com/api/v1";
         }
 
-        DashScopeMultimodalGenerationClient client = DashScopeMultimodalGenerationClient.builder()
-                .httpClient(httpClient)
-                .apiKey(apiKey)
-                .baseUrl(baseUrl)
-                .build();
+        DashScopeMultimodalGenerationLLM client = DashScopeMultimodalGenerationLLM.builder()
+                                                                                  .httpClient(httpClient)
+                                                                                  .apiKey(apiKey)
+                                                                                  .baseUrl(baseUrl)
+                                                                                  .build();
 
         // 定义工具
         JsonObject getWeatherParams = new JsonObject()

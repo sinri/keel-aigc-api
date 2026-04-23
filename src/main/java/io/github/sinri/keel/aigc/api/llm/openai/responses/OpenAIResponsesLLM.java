@@ -21,7 +21,7 @@ import java.util.function.Function;
 /**
  * OpenAI Responses API 客户端，实现 {@link CatholicLLM}。
  */
-public class OpenAIResponsesClient implements CatholicLLM {
+public class OpenAIResponsesLLM implements CatholicLLM {
 
     private final HttpClient httpClient;
     private final String apiKey;
@@ -35,15 +35,15 @@ public class OpenAIResponsesClient implements CatholicLLM {
 
     private static final String RESPONSES_API_ERROR = "OpenAI Responses API error";
 
-    public OpenAIResponsesClient(HttpClient httpClient, String apiKey) {
+    public OpenAIResponsesLLM(HttpClient httpClient, String apiKey) {
         this(httpClient, apiKey, DEFAULT_BASE_URL, DEFAULT_AUTH_METHOD);
     }
 
-    public OpenAIResponsesClient(HttpClient httpClient, String apiKey, String baseUrl) {
+    public OpenAIResponsesLLM(HttpClient httpClient, String apiKey, String baseUrl) {
         this(httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
     }
 
-    public OpenAIResponsesClient(HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
+    public OpenAIResponsesLLM(HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
         this.httpClient = httpClient;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
@@ -134,14 +134,14 @@ public class OpenAIResponsesClient implements CatholicLLM {
             return this;
         }
 
-        public OpenAIResponsesClient build() {
+        public OpenAIResponsesLLM build() {
             if (httpClient == null) {
                 throw new IllegalArgumentException("httpClient is required");
             }
             if (apiKey == null || apiKey.isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            return new OpenAIResponsesClient(httpClient, apiKey, baseUrl, authMethod);
+            return new OpenAIResponsesLLM(httpClient, apiKey, baseUrl, authMethod);
         }
     }
 }

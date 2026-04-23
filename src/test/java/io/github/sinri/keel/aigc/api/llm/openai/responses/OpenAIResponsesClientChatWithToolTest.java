@@ -33,7 +33,7 @@ public class OpenAIResponsesClientChatWithToolTest extends KeelInstantRunner {
         Objects.requireNonNull(model, "OpenAI model must be set");
         Objects.requireNonNull(baseUrl, "Base URL must be set");
 
-        OpenAIResponsesClient client = new OpenAIResponsesClient(
+        OpenAIResponsesLLM client = new OpenAIResponsesLLM(
             httpClient,
             apiKey,
             baseUrl,
@@ -68,7 +68,7 @@ public class OpenAIResponsesClientChatWithToolTest extends KeelInstantRunner {
     }
 
     private Future<Void> handleResponse(
-        OpenAIResponsesClient client,
+        OpenAIResponsesLLM client,
         String model,
         CatholicLLMResponse response,
         List<CatholicToolCallMessage> toolResults

@@ -20,7 +20,7 @@ import java.util.function.Function;
 /**
  * Anthropic Messages API 客户端，实现 {@link CatholicLLM}。
  */
-public class AnthropicClient implements CatholicLLM {
+public class AnthropicLLM implements CatholicLLM {
 
     private static final String DEFAULT_BASE_URL = "https://api.anthropic.com/v1";
     private static final String DEFAULT_ANTHROPIC_VERSION = "2023-06-01";
@@ -32,15 +32,15 @@ public class AnthropicClient implements CatholicLLM {
     private final String anthropicVersion;
     private final Keel keel;
 
-    public AnthropicClient(HttpClient httpClient, String apiKey) {
+    public AnthropicLLM(HttpClient httpClient, String apiKey) {
         this(httpClient, apiKey, DEFAULT_BASE_URL, DEFAULT_ANTHROPIC_VERSION);
     }
 
-    public AnthropicClient(HttpClient httpClient, String apiKey, String baseUrl) {
+    public AnthropicLLM(HttpClient httpClient, String apiKey, String baseUrl) {
         this(httpClient, apiKey, baseUrl, DEFAULT_ANTHROPIC_VERSION);
     }
 
-    public AnthropicClient(HttpClient httpClient, String apiKey, String baseUrl, String anthropicVersion) {
+    public AnthropicLLM(HttpClient httpClient, String apiKey, String baseUrl, String anthropicVersion) {
         this.httpClient = httpClient;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
@@ -131,14 +131,14 @@ public class AnthropicClient implements CatholicLLM {
             return this;
         }
 
-        public AnthropicClient build() {
+        public AnthropicLLM build() {
             if (httpClient == null) {
                 throw new IllegalArgumentException("httpClient is required");
             }
             if (apiKey == null || apiKey.isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            return new AnthropicClient(httpClient, apiKey, baseUrl, anthropicVersion);
+            return new AnthropicLLM(httpClient, apiKey, baseUrl, anthropicVersion);
         }
     }
 }
