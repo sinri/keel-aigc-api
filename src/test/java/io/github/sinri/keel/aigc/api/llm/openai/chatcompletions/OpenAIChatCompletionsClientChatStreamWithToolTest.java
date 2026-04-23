@@ -32,7 +32,7 @@ public class OpenAIChatCompletionsClientChatStreamWithToolTest extends KeelInsta
         Objects.requireNonNull(model, "OpenAI model must be set");
         Objects.requireNonNull(baseUrl, "Base URL must be set");
 
-        OpenAIChatCompletionsClient client = new OpenAIChatCompletionsClient(
+        OpenAIChatCompletionsLLM client = new OpenAIChatCompletionsLLM(
                 httpClient,
                 apiKey,
                 baseUrl,
@@ -74,7 +74,7 @@ public class OpenAIChatCompletionsClientChatStreamWithToolTest extends KeelInsta
      * 处理响应，如果是工具调用则执行工具并继续对话
      */
     private Future<Void> handleResponse(
-            OpenAIChatCompletionsClient client,
+            OpenAIChatCompletionsLLM client,
             String model,
             CatholicLLMResponse response,
             List<CatholicToolCallMessage> toolResults

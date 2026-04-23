@@ -21,7 +21,7 @@ import java.util.function.Function;
 /**
  * OpenAI Chat Completions API 客户端，实现 CatholicLLM 接口。
  */
-public class OpenAIChatCompletionsClient implements CatholicLLM {
+public class OpenAIChatCompletionsLLM implements CatholicLLM {
 
     private final HttpClient httpClient;
     private final String apiKey;
@@ -35,15 +35,15 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
 
     private static final String CHAT_API_ERROR = "OpenAI API error";
 
-    public OpenAIChatCompletionsClient(HttpClient httpClient, String apiKey) {
+    public OpenAIChatCompletionsLLM(HttpClient httpClient, String apiKey) {
         this(httpClient, apiKey, DEFAULT_BASE_URL, DEFAULT_AUTH_METHOD);
     }
 
-    public OpenAIChatCompletionsClient(HttpClient httpClient, String apiKey, String baseUrl) {
+    public OpenAIChatCompletionsLLM(HttpClient httpClient, String apiKey, String baseUrl) {
         this(httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
     }
 
-    public OpenAIChatCompletionsClient(HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
+    public OpenAIChatCompletionsLLM(HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
         this.httpClient = httpClient;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
@@ -145,14 +145,14 @@ public class OpenAIChatCompletionsClient implements CatholicLLM {
             return this;
         }
 
-        public OpenAIChatCompletionsClient build() {
+        public OpenAIChatCompletionsLLM build() {
             if (httpClient == null) {
                 throw new IllegalArgumentException("httpClient is required");
             }
             if (apiKey == null || apiKey.isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            return new OpenAIChatCompletionsClient(httpClient, apiKey, baseUrl, authMethod);
+            return new OpenAIChatCompletionsLLM(httpClient, apiKey, baseUrl, authMethod);
         }
     }
 

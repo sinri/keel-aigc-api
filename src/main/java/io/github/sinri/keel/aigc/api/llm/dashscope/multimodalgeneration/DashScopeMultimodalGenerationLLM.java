@@ -22,14 +22,14 @@ import java.util.function.Function;
  * call() 方法返回 DashScopeMultimodalResponse，在 CatholicLLMResponse 基础上
  * 提供多模态特有的字段（reasoning_content, image_hw 等）。
  */
-public class DashScopeMultimodalGenerationClient implements CatholicLLM {
+public class DashScopeMultimodalGenerationLLM implements CatholicLLM {
 
     private static final String MULTIMODAL_GENERATION_PATH = "/services/aigc/multimodal-generation/generation";
     private static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/api/v1";
 
     private final DashScopeClientHelper helper;
 
-    public DashScopeMultimodalGenerationClient(DashScopeClientHelper helper) {
+    public DashScopeMultimodalGenerationLLM(DashScopeClientHelper helper) {
         this.helper = helper;
     }
 
@@ -112,13 +112,13 @@ public class DashScopeMultimodalGenerationClient implements CatholicLLM {
             return this;
         }
 
-        public DashScopeMultimodalGenerationClient build() {
+        public DashScopeMultimodalGenerationLLM build() {
             DashScopeClientHelper helper = DashScopeClientHelper.builder()
                 .httpClient(httpClient)
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)
                 .build();
-            return new DashScopeMultimodalGenerationClient(helper);
+            return new DashScopeMultimodalGenerationLLM(helper);
         }
     }
 }

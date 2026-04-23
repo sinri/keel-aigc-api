@@ -34,7 +34,7 @@ public class AnthropicClientChatWithToolTest extends KeelInstantRunner {
         Objects.requireNonNull(model, "Anthropic model must be set (anthropic.test1.model)");
         Objects.requireNonNull(baseUrl, "Base URL must be set (anthropic.test1.api)");
 
-        AnthropicClient client = new AnthropicClient(
+        AnthropicLLM client = new AnthropicLLM(
             httpClient,
             apiKey,
             baseUrl
@@ -68,7 +68,7 @@ public class AnthropicClientChatWithToolTest extends KeelInstantRunner {
     }
 
     private Future<Void> handleResponse(
-        AnthropicClient client,
+        AnthropicLLM client,
         String model,
         CatholicLLMResponse response,
         List<CatholicToolCallMessage> toolResults

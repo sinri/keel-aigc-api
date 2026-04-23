@@ -2,7 +2,6 @@ package io.github.sinri.keel.aigc.api.llm.openai.responses;
 
 import io.github.sinri.keel.aigc.api.internal.openai.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
-import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.base.configuration.ConfigElement;
@@ -26,7 +25,7 @@ public class OpenAIResponsesClientChatTest extends KeelInstantRunner {
         Objects.requireNonNull(model, "OpenAI model must be set");
         Objects.requireNonNull(baseUrl, "Base URL must be set");
 
-        OpenAIResponsesClient client = new OpenAIResponsesClient(
+        OpenAIResponsesLLM client = new OpenAIResponsesLLM(
             httpClient,
             apiKey,
             baseUrl,

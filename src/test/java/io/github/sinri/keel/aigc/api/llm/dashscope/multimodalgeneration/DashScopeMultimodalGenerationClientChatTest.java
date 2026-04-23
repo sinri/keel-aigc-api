@@ -26,11 +26,11 @@ public class DashScopeMultimodalGenerationClientChatTest extends KeelInstantRunn
             baseUrl = "https://dashscope.aliyuncs.com/api/v1";
         }
 
-        DashScopeMultimodalGenerationClient client = DashScopeMultimodalGenerationClient.builder()
-                .httpClient(httpClient)
-                .apiKey(apiKey)
-                .baseUrl(baseUrl)
-                .build();
+        DashScopeMultimodalGenerationLLM client = DashScopeMultimodalGenerationLLM.builder()
+                                                                                  .httpClient(httpClient)
+                                                                                  .apiKey(apiKey)
+                                                                                  .baseUrl(baseUrl)
+                                                                                  .build();
 
         CatholicLLMRequest request = CatholicLLMRequest.builder()
                 .model(model)

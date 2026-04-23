@@ -3,7 +3,6 @@ package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 import io.github.sinri.keel.aigc.api.internal.openai.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
-import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
@@ -33,7 +32,7 @@ public class OpenAIChatCompletionsClientChatWithToolTest extends KeelInstantRunn
         Objects.requireNonNull(model, "OpenAI model must be set");
         Objects.requireNonNull(baseUrl, "Base URL must be set");
 
-        OpenAIChatCompletionsClient client = new OpenAIChatCompletionsClient(
+        OpenAIChatCompletionsLLM client = new OpenAIChatCompletionsLLM(
                 httpClient,
                 apiKey,
                 baseUrl,
@@ -74,7 +73,7 @@ public class OpenAIChatCompletionsClientChatWithToolTest extends KeelInstantRunn
      * 处理响应，如果是工具调用则执行工具并继续对话
      */
     private Future<Void> handleResponse(
-            OpenAIChatCompletionsClient client,
+            OpenAIChatCompletionsLLM client,
             String model,
             CatholicLLMResponse response,
             List<CatholicToolCallMessage> toolResults

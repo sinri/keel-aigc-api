@@ -2,7 +2,6 @@ package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 
 import io.github.sinri.keel.aigc.api.internal.openai.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
-import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.CatholicTool;
@@ -28,7 +27,7 @@ public class OpenAIChatCompletionsClientChatStreamChunkWithToolTest extends Keel
         Objects.requireNonNull(model, "OpenAI model must be set");
         Objects.requireNonNull(baseUrl, "Base URL must be set");
 
-        OpenAIChatCompletionsClient client = new OpenAIChatCompletionsClient(
+        OpenAIChatCompletionsLLM client = new OpenAIChatCompletionsLLM(
                 httpClient,
                 apiKey,
                 baseUrl,

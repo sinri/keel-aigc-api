@@ -41,11 +41,11 @@ public class DashScopeTextGenerationClientChatToolCallTest extends KeelInstantRu
             baseUrl = "https://dashscope.aliyuncs.com/api/v1";
         }
 
-        DashScopeTextGenerationClient client = DashScopeTextGenerationClient.builder()
-                .httpClient(httpClient)
-                .apiKey(apiKey)
-                .baseUrl(baseUrl)
-                .build();
+        DashScopeTextGenerationLLM client = DashScopeTextGenerationLLM.builder()
+                                                                      .httpClient(httpClient)
+                                                                      .apiKey(apiKey)
+                                                                      .baseUrl(baseUrl)
+                                                                      .build();
 
         // 定义工具
         JsonObject getWeatherParams = new JsonObject()

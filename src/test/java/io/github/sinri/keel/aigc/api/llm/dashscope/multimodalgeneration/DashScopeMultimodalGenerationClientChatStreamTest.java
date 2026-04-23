@@ -1,7 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
-import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.base.configuration.ConfigElement;
@@ -27,11 +26,11 @@ public class DashScopeMultimodalGenerationClientChatStreamTest extends KeelInsta
             baseUrl = "https://dashscope.aliyuncs.com/api/v1";
         }
 
-        DashScopeMultimodalGenerationClient client = DashScopeMultimodalGenerationClient.builder()
-                .httpClient(httpClient)
-                .apiKey(apiKey)
-                .baseUrl(baseUrl)
-                .build();
+        DashScopeMultimodalGenerationLLM client = DashScopeMultimodalGenerationLLM.builder()
+                                                                                  .httpClient(httpClient)
+                                                                                  .apiKey(apiKey)
+                                                                                  .baseUrl(baseUrl)
+                                                                                  .build();
 
         CatholicLLMRequest request = CatholicLLMRequest.builder()
                 .model(model)
