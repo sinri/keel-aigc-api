@@ -9,6 +9,7 @@ import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeClientHelper;
 import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeRequestConverter;
 import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeResponseConverter;
 import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeStreamHandler;
+import io.github.sinri.keel.logger.api.LateObject;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
@@ -83,17 +84,17 @@ public class DashScopeTextGenerationLLM implements CatholicLLM {
     }
 
     public static class Builder {
-        private HttpClient httpClient;
-        private String apiKey;
+        private final LateObject<HttpClient> lateHttpClient = new LateObject<>();
+        private final LateObject<String> lateApiKey = new LateObject<>();
         private String baseUrl = DEFAULT_BASE_URL;
 
         public Builder httpClient(HttpClient httpClient) {
-            this.httpClient = httpClient;
+            this.lateHttpClient.set(httpClient);
             return this;
         }
 
         public Builder apiKey(String apiKey) {
-            this.apiKey = apiKey;
+            this.lateApiKey.set(apiKey);
             return this;
         }
 
@@ -103,9 +104,15 @@ public class DashScopeTextGenerationLLM implements CatholicLLM {
         }
 
         public DashScopeTextGenerationLLM build() {
+            if (!lateHttpClient.isInitialized()) {
+                throw new IllegalArgumentException("httpClient is required");
+            }
+            if (!lateApiKey.isInitialized() || lateApiKey.get().isEmpty()) {
+                throw new IllegalArgumentException("apiKey is required");
+            }
             DashScopeClientHelper helper = DashScopeClientHelper.builder()
-                .httpClient(httpClient)
-                .apiKey(apiKey)
+                .httpClient(lateHttpClient.get())
+                .apiKey(lateApiKey.get())
                 .baseUrl(baseUrl)
                 .build();
             return new DashScopeTextGenerationLLM(helper);

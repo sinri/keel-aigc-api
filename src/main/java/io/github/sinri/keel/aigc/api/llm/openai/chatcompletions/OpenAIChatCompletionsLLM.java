@@ -11,6 +11,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.github.sinri.keel.base.async.Keel;
+import io.github.sinri.keel.logger.api.LateObject;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientResponse;
@@ -120,18 +121,18 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
      * Builder 类
      */
     public static class Builder {
-        private HttpClient httpClient;
-        private String apiKey;
+        private final LateObject<HttpClient> lateHttpClient = new LateObject<>();
+        private final LateObject<String> lateApiKey = new LateObject<>();
         private String baseUrl = DEFAULT_BASE_URL;
         private AuthMethod authMethod = DEFAULT_AUTH_METHOD;
 
         public Builder httpClient(HttpClient httpClient) {
-            this.httpClient = httpClient;
+            this.lateHttpClient.set(httpClient);
             return this;
         }
 
         public Builder apiKey(String apiKey) {
-            this.apiKey = apiKey;
+            this.lateApiKey.set(apiKey);
             return this;
         }
 
@@ -146,13 +147,13 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
         }
 
         public OpenAIChatCompletionsLLM build() {
-            if (httpClient == null) {
+            if (!lateHttpClient.isInitialized()) {
                 throw new IllegalArgumentException("httpClient is required");
             }
-            if (apiKey == null || apiKey.isEmpty()) {
+            if (!lateApiKey.isInitialized() || lateApiKey.get().isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            return new OpenAIChatCompletionsLLM(httpClient, apiKey, baseUrl, authMethod);
+            return new OpenAIChatCompletionsLLM(lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod);
         }
     }
 

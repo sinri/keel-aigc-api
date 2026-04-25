@@ -4,6 +4,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.logger.api.LateObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -79,14 +80,14 @@ public class CatholicLLMRequestImpl implements CatholicLLMRequest {
      * Builder类
      */
     public static class Builder implements CatholicLLMRequest.Builder {
-        private String model;
+        private final LateObject<String> lateModel = new LateObject<>();
         private final List<CatholicChatMessage> messages = new ArrayList<>();
         private final List<CatholicToolDefinition> tools = new ArrayList<>();
         private CatholicLLMRequestOptions options = CatholicLLMRequestOptionsImpl.defaultOptions();
         private boolean stream = false;
 
         public Builder model(String model) {
-            this.model = model;
+            this.lateModel.set(model);
             return this;
         }
 
@@ -128,10 +129,10 @@ public class CatholicLLMRequestImpl implements CatholicLLMRequest {
         }
 
         public CatholicLLMRequestImpl build() {
-            if (model == null || model.isEmpty()) {
+            if (!lateModel.isInitialized() || lateModel.get().isEmpty()) {
                 throw new IllegalArgumentException("model is required");
             }
-            return new CatholicLLMRequestImpl(model, messages, tools, options, stream);
+            return new CatholicLLMRequestImpl(lateModel.get(), messages, tools, options, stream);
         }
     }
 }

@@ -11,6 +11,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.logger.api.LateObject;
 import io.vertx.core.Future;
 
 import java.util.ArrayList;
@@ -125,8 +126,8 @@ public final class CatholicAgent {
     }
 
     public static final class Builder {
-        private CatholicLLM llm;
-        private String model;
+        private final LateObject<CatholicLLM> lateLlm = new LateObject<>();
+        private final LateObject<String> lateModel = new LateObject<>();
         private final List<CatholicToolDefinition> tools = new ArrayList<>();
         private CatholicLLMRequestOptions options = CatholicLLMRequestOptions.defaultOptions();
         private CatholicToolInvocationHandler toolHandler;
@@ -134,12 +135,12 @@ public final class CatholicAgent {
         private final List<CatholicChatMessage> initialMessages = new ArrayList<>();
 
         public Builder llm(CatholicLLM llm) {
-            this.llm = llm;
+            this.lateLlm.set(llm);
             return this;
         }
 
         public Builder model(String model) {
-            this.model = model;
+            this.lateModel.set(model);
             return this;
         }
 
@@ -182,10 +183,10 @@ public final class CatholicAgent {
         }
 
         public CatholicAgent build() {
-            if (llm == null) {
+            if (!lateLlm.isInitialized()) {
                 throw new IllegalArgumentException("llm is required");
             }
-            if (model == null || model.isEmpty()) {
+            if (!lateModel.isInitialized() || lateModel.get().isEmpty()) {
                 throw new IllegalArgumentException("model is required");
             }
             if (!tools.isEmpty() && toolHandler == null) {
@@ -194,7 +195,7 @@ public final class CatholicAgent {
             CatholicToolInvocationHandler resolvedHandler = tools.isEmpty()
                 ? tc -> Future.succeededFuture("")
                 : toolHandler;
-            return new CatholicAgent(llm, model, List.copyOf(tools), options, resolvedHandler, maxToolRounds, initialMessages);
+            return new CatholicAgent(lateLlm.get(), lateModel.get(), List.copyOf(tools), options, resolvedHandler, maxToolRounds, initialMessages);
         }
     }
 }
