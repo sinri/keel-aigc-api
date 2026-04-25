@@ -5,11 +5,12 @@ import io.github.sinri.keel.aigc.api.internal.anthropic.AnthropicRequestConverte
 import io.github.sinri.keel.aigc.api.internal.anthropic.AnthropicResponseConverter;
 import io.github.sinri.keel.aigc.api.internal.anthropic.AnthropicStreamHandler;
 import io.github.sinri.keel.aigc.api.internal.anthropic.AnthropicVertxSupport;
-import io.github.sinri.keel.base.async.Keel;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
+import io.github.sinri.keel.base.async.Keel;
+import io.github.sinri.keel.logger.api.LateObject;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientResponse;
@@ -58,14 +59,14 @@ public class AnthropicLLM implements CatholicLLM {
         body.put("stream", false);
 
         return sendJsonPost(body, false)
-            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, ANTHROPIC_API_ERROR))
-            .map(buf -> new AnthropicResponseConverter().convert(buf.toJsonObject()));
+                .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, ANTHROPIC_API_ERROR))
+                .map(buf -> new AnthropicResponseConverter().convert(buf.toJsonObject()));
     }
 
     @Override
     public Future<Void> callStream(
-        CatholicLLMRequest request,
-        Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
+            CatholicLLMRequest request,
+            Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
     ) {
         JsonObject body = new AnthropicRequestConverter().convert(request);
         body.put("stream", true);
@@ -73,9 +74,9 @@ public class AnthropicLLM implements CatholicLLM {
         AnthropicStreamHandler streamHandler = new AnthropicStreamHandler();
 
         return sendJsonPost(body, true)
-            .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
-                keel, response, ANTHROPIC_API_ERROR, streamHandler::processSseLine, chunkAsyncProcessor
-            ));
+                .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
+                        keel, response, ANTHROPIC_API_ERROR, streamHandler::processSseLine, chunkAsyncProcessor
+                ));
     }
 
     @Override
@@ -86,38 +87,38 @@ public class AnthropicLLM implements CatholicLLM {
         AnthropicStreamHandler streamHandler = new AnthropicStreamHandler();
 
         return sendJsonPost(body, true)
-            .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
-                keel, response, ANTHROPIC_API_ERROR, streamHandler::processSseLine,
-                chunk -> Future.succeededFuture()
-            ))
-            .map(v -> streamHandler.buildFinalResponse())
-            .otherwise(err -> streamHandler.buildFinalResponse());
+                .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
+                        keel, response, ANTHROPIC_API_ERROR, streamHandler::processSseLine,
+                        chunk -> Future.succeededFuture()
+                ))
+                .map(v -> streamHandler.buildFinalResponse())
+                .otherwise(err -> streamHandler.buildFinalResponse());
     }
 
     private Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, boolean stream) {
         return AnthropicVertxSupport.sendMessagesPost(
-            httpClient,
-            baseUrl,
-            apiKey,
-            anthropicVersion,
-            requestBody,
-            stream
+                httpClient,
+                baseUrl,
+                apiKey,
+                anthropicVersion,
+                requestBody,
+                stream
         );
     }
 
     public static class Builder {
-        private HttpClient httpClient;
-        private String apiKey;
+        private final LateObject<HttpClient> lateHttpClient = new LateObject<>();
+        private final LateObject<String> lateApiKey=new LateObject<>();
         private String baseUrl = DEFAULT_BASE_URL;
         private String anthropicVersion = DEFAULT_ANTHROPIC_VERSION;
 
         public Builder httpClient(HttpClient httpClient) {
-            this.httpClient = httpClient;
+            this.lateHttpClient.set(httpClient);
             return this;
         }
 
         public Builder apiKey(String apiKey) {
-            this.apiKey = apiKey;
+            this.lateApiKey.set( apiKey);
             return this;
         }
 
@@ -132,13 +133,13 @@ public class AnthropicLLM implements CatholicLLM {
         }
 
         public AnthropicLLM build() {
-            if (httpClient == null) {
+            if (!lateHttpClient.isInitialized()) {
                 throw new IllegalArgumentException("httpClient is required");
             }
-            if (apiKey == null || apiKey.isEmpty()) {
+            if (!lateApiKey.isInitialized()|| lateApiKey.get().isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            return new AnthropicLLM(httpClient, apiKey, baseUrl, anthropicVersion);
+            return new AnthropicLLM(lateHttpClient.get(), lateApiKey.get(), baseUrl, anthropicVersion);
         }
     }
 }
