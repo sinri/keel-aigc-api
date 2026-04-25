@@ -4,6 +4,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessa
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCallImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 
 import java.util.ArrayList;
@@ -90,7 +91,6 @@ public class CatholicResponseChunkCollector {
     private static class ToolCallCollector {
         private final int index;
         private String id;
-        private String type;
         private String name;
         private final StringBuilder argumentsBuilder = new StringBuilder();
 
@@ -101,9 +101,6 @@ public class CatholicResponseChunkCollector {
         void collect(CatholicToolCallChunkDelta delta) {
             if (delta.id() != null) {
                 this.id = delta.id();
-            }
-            if (delta.type() != null) {
-                this.type = delta.type();
             }
             if (delta.function() != null) {
                 if (delta.function().name() != null) {
@@ -116,9 +113,8 @@ public class CatholicResponseChunkCollector {
         }
 
         CatholicFunctionToolCall build() {
-            return new CatholicFunctionToolCall(
+            return new CatholicFunctionToolCallImpl(
                 id,
-                type != null ? type : "function",
                 new FunctionCall(name, argumentsBuilder.toString())
             );
         }

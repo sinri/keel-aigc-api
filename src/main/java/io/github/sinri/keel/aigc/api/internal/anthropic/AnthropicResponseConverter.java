@@ -5,6 +5,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCallImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -37,7 +38,7 @@ public class AnthropicResponseConverter {
                 if ("text".equals(type)) {
                     String t = block.getString("text");
                     if (t != null && !t.isEmpty()) {
-                        if (textBuilder.length() > 0) {
+                        if (!textBuilder.isEmpty()) {
                             textBuilder.append('\n');
                         }
                         textBuilder.append(t);
@@ -48,7 +49,7 @@ public class AnthropicResponseConverter {
             }
         }
 
-        String text = textBuilder.length() > 0 ? textBuilder.toString() : null;
+        String text = !textBuilder.isEmpty() ? textBuilder.toString() : null;
         List<CatholicFunctionToolCall> calls = toolCalls.isEmpty() ? null : toolCalls;
         CatholicAssistantMessage assistant = CatholicAssistantMessage.ofMixed(text, calls);
         if (!assistant.hasText() && !assistant.hasToolCalls()) {
@@ -78,9 +79,8 @@ public class AnthropicResponseConverter {
         } else {
             arguments = "{}";
         }
-        return new CatholicFunctionToolCall(
+        return new CatholicFunctionToolCallImpl(
             id,
-            "tool_use",
             new FunctionCall(name, arguments)
         );
     }

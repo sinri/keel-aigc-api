@@ -7,6 +7,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCallImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.Future;
 import org.junit.jupiter.api.Test;
@@ -38,9 +39,8 @@ class CatholicAgentTest {
     @Test
     void toolLoopRunsTwiceThenFinishes() {
         CountingLlm llm = new CountingLlm();
-        CatholicFunctionToolCall call = new CatholicFunctionToolCall(
+        CatholicFunctionToolCall call = new CatholicFunctionToolCallImpl(
             "call-1",
-            "function",
             new FunctionCall("get_x", "{}")
         );
         llm.queue.add(toolOnlyResponse(call));
@@ -61,9 +61,8 @@ class CatholicAgentTest {
     @Test
     void maxToolRoundsFails() {
         CountingLlm llm = new CountingLlm();
-        CatholicFunctionToolCall call = new CatholicFunctionToolCall(
+        CatholicFunctionToolCall call = new CatholicFunctionToolCallImpl(
             "c",
-            "function",
             new FunctionCall("f", "{}")
         );
         llm.queue.add(toolOnlyResponse(call));

@@ -5,6 +5,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.*;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCallImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.vertx.core.json.JsonArray;
@@ -131,9 +132,8 @@ class OpenAIChatCompletionsRequestConverterTest {
             .addMessage(CatholicUserMessage.ofText("What's the weather?"))
             .addMessage(new CatholicAssistantMessage(
                 null,
-                java.util.List.of(new CatholicFunctionToolCall(
+                java.util.List.of(new CatholicFunctionToolCallImpl(
                     "call_123",
-                    "function",
                     new FunctionCall(
                         "get_weather",
                         "{\"location\": \"Beijing\"}"

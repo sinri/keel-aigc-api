@@ -5,6 +5,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCallImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -77,15 +78,13 @@ public class OpenAIChatCompletionsResponseConverter {
      */
     private CatholicFunctionToolCall convertToolCall(JsonObject toolCall) {
         String id = toolCall.getString("id");
-        String type = toolCall.getString("type", "function");
         JsonObject function = toolCall.getJsonObject("function");
 
         String name = function.getString("name");
         String arguments = function.getString("arguments", "{}");
 
-        return new CatholicFunctionToolCall(
+        return new CatholicFunctionToolCallImpl(
             id,
-            type,
             new FunctionCall(name, arguments)
         );
     }

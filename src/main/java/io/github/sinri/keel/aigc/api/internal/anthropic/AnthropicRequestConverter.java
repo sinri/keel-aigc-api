@@ -3,6 +3,7 @@ package io.github.sinri.keel.aigc.api.internal.anthropic;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.*;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicFunctionToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.vertx.core.json.JsonArray;
@@ -28,7 +29,7 @@ public class AnthropicRequestConverter {
         JsonArray messages = new JsonArray();
         for (CatholicChatMessage message : request.messages()) {
             if (CatholicSystemMessage.ROLE.equals(message.role())) {
-                if (systemText.length() > 0) {
+                if (!systemText.isEmpty()) {
                     systemText.append("\n\n");
                 }
                 systemText.append(((CatholicSystemMessage) message).text());
@@ -169,13 +170,13 @@ public class AnthropicRequestConverter {
             if (!"function".equals(tool.type())) {
                 continue;
             }
-            JsonObject schema = tool.function().parameters();
+            JsonObject schema = ((CatholicFunctionToolDefinition) tool).function().parameters();
             if (schema == null) {
                 schema = new JsonObject();
             }
             array.add(new JsonObject()
-                .put("name", tool.function().name())
-                .put("description", tool.function().description())
+                .put("name", ((CatholicFunctionToolDefinition) tool).function().name())
+                .put("description", ((CatholicFunctionToolDefinition) tool).function().description())
                 .put("input_schema", schema));
         }
         return array;

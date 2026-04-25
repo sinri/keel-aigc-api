@@ -4,6 +4,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.*;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicFunctionToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -177,11 +178,11 @@ public class DashScopeMultimodalRequestConverter {
             JsonObject toolDef = new JsonObject()
                 .put("type", tool.type())
                 .put("function", new JsonObject()
-                    .put("name", tool.function().name())
-                    .put("description", tool.function().description()));
+                    .put("name", ((CatholicFunctionToolDefinition) tool).function().name())
+                    .put("description", ((CatholicFunctionToolDefinition) tool).function().description()));
 
-            if (tool.function().parameters() != null && !tool.function().parameters().isEmpty()) {
-                toolDef.getJsonObject("function").put("parameters", tool.function().parameters());
+            if (((CatholicFunctionToolDefinition) tool).function().parameters() != null && !((CatholicFunctionToolDefinition) tool).function().parameters().isEmpty()) {
+                toolDef.getJsonObject("function").put("parameters", ((CatholicFunctionToolDefinition) tool).function().parameters());
             }
 
             array.add(toolDef);

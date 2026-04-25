@@ -17,7 +17,9 @@ module io.github.sinri.keel.integration.llm.api {
     // Catholic LLM 通用格式
     exports io.github.sinri.keel.aigc.api.llm.catholic;
     exports io.github.sinri.keel.aigc.api.llm.catholic.message;
-    exports io.github.sinri.keel.aigc.api.llm.catholic.tool;
+    exports io.github.sinri.keel.aigc.api.llm.catholic.tool.definition;
+    exports io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function;
+    exports io.github.sinri.keel.aigc.api.llm.catholic.tool.call;
     exports io.github.sinri.keel.aigc.api.llm.catholic.request;
     exports io.github.sinri.keel.aigc.api.llm.catholic.response;
 
@@ -36,7 +38,4 @@ module io.github.sinri.keel.integration.llm.api {
 
     // Agent（Catholic LLM 工具循环编排）
     exports io.github.sinri.keel.aigc.api.agent;
-    exports io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function;
-    exports io.github.sinri.keel.aigc.api.llm.catholic.tool.definition;
-    exports io.github.sinri.keel.aigc.api.llm.catholic.tool.call;
 }

@@ -9,6 +9,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCallImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -95,9 +96,8 @@ class AnthropicRequestConverterTest {
             .addMessage(CatholicUserMessage.ofText("Weather?"))
             .addMessage(new CatholicAssistantMessage(
                 null,
-                java.util.List.of(new CatholicFunctionToolCall(
+                java.util.List.of(new CatholicFunctionToolCallImpl(
                     "toolu_01",
-                    "function",
                     new FunctionCall("get_weather", "{\"city\":\"NYC\"}")
                 ))
             ))

@@ -14,7 +14,7 @@ public class CatholicAssistantMessage implements CatholicChatMessage {
 
     public static final String ROLE = "assistant";
 
-    private final String text;
+    private final @Nullable String text;
     private final List<CatholicFunctionToolCall> toolCalls;
 
     /**
@@ -23,7 +23,7 @@ public class CatholicAssistantMessage implements CatholicChatMessage {
      * @param text      文本内容（可能为null或空）
      * @param toolCalls 工具调用列表（可能为null或空）
      */
-    public CatholicAssistantMessage(String text, List<CatholicFunctionToolCall> toolCalls) {
+    public CatholicAssistantMessage(@Nullable String text, @Nullable List<CatholicFunctionToolCall> toolCalls) {
         this.text = text;
         this.toolCalls = toolCalls != null ? toolCalls : Collections.emptyList();
     }
@@ -40,6 +40,27 @@ public class CatholicAssistantMessage implements CatholicChatMessage {
      */
     public CatholicAssistantMessage(List<CatholicFunctionToolCall> toolCalls) {
         this(null, toolCalls);
+    }
+
+    /**
+     * 创建纯文本回复
+     */
+    public static CatholicAssistantMessage ofText(String text) {
+        return new CatholicAssistantMessage(text);
+    }
+
+    /**
+     * 创建工具调用回复
+     */
+    public static CatholicAssistantMessage ofToolCalls(List<CatholicFunctionToolCall> toolCalls) {
+        return new CatholicAssistantMessage(toolCalls);
+    }
+
+    /**
+     * 创建混合回复（文本+工具调用）
+     */
+    public static CatholicAssistantMessage ofMixed(@Nullable String text, @Nullable List<CatholicFunctionToolCall> toolCalls) {
+        return new CatholicAssistantMessage(text, toolCalls);
     }
 
     @Override
@@ -63,6 +84,8 @@ public class CatholicAssistantMessage implements CatholicChatMessage {
         return text;
     }
 
+    // === 便捷构造方法 ===
+
     /**
      * 获取工具调用列表
      */
@@ -74,7 +97,7 @@ public class CatholicAssistantMessage implements CatholicChatMessage {
      * 是否包含工具调用
      */
     public boolean hasToolCalls() {
-        return toolCalls != null && !toolCalls.isEmpty();
+        return !toolCalls.isEmpty();
     }
 
     /**
@@ -82,28 +105,5 @@ public class CatholicAssistantMessage implements CatholicChatMessage {
      */
     public boolean hasText() {
         return text != null && !text.isEmpty();
-    }
-
-    // === 便捷构造方法 ===
-
-    /**
-     * 创建纯文本回复
-     */
-    public static CatholicAssistantMessage ofText(String text) {
-        return new CatholicAssistantMessage(text);
-    }
-
-    /**
-     * 创建工具调用回复
-     */
-    public static CatholicAssistantMessage ofToolCalls(List<CatholicFunctionToolCall> toolCalls) {
-        return new CatholicAssistantMessage(toolCalls);
-    }
-
-    /**
-     * 创建混合回复（文本+工具调用）
-     */
-    public static CatholicAssistantMessage ofMixed(String text, List<CatholicFunctionToolCall> toolCalls) {
-        return new CatholicAssistantMessage(text, toolCalls);
     }
 }
