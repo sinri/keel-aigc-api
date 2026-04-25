@@ -56,7 +56,7 @@ public class CatholicResponseChunkCollector {
      * 构建最终的回复
      */
     public CatholicLLMResponseImpl build() {
-        String text = textBuilder.length() > 0 ? textBuilder.toString() : null;
+        String text = !textBuilder.isEmpty() ? textBuilder.toString() : null;
 
         List<CatholicFunctionToolCall> toolCalls = null;
         if (!toolCallCollectors.isEmpty()) {

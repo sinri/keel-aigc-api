@@ -9,6 +9,7 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
+import org.jspecify.annotations.Nullable;
 
 import java.util.function.Function;
 
@@ -42,7 +43,7 @@ public class SSE2Chunk {
         Keel keel,
         HttpClientResponse httpClientResponse,
         String serviceName,
-        Function<String, CatholicLLMResponseChunk> processSseLine,
+        Function<String, @Nullable CatholicLLMResponseChunk> processSseLine,
         Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
     ) {
         if (httpClientResponse.statusCode() != 200) {
@@ -55,7 +56,7 @@ public class SSE2Chunk {
                 String line = rawLine.endsWith("\r")
                     ? rawLine.substring(0, rawLine.length() - 1)
                     : rawLine;
-                CatholicLLMResponseChunk chunk;
+                @Nullable CatholicLLMResponseChunk chunk;
                 try {
                     chunk = processSseLine.apply(line);
                 } catch (Exception e) {

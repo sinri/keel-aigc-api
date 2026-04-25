@@ -12,7 +12,7 @@ import io.vertx.core.json.JsonObject;
 /**
  * 将 CatholicLLMRequest 转换为 DashScope 多模态 API 请求格式。
  * 多模态 API 端点：/services/aigc/multimodal-generation/generation
- *
+ * <p>
  * 与文本 API 的主要区别：
  * - 用户消息内容使用 DashScope 原生格式（{"text": "..."}, {"image": "url"}）
  *   而非 OpenAI 兼容格式（{"type": "text", "text": "..."}, {"type": "image_url", "image_url": "url"}）

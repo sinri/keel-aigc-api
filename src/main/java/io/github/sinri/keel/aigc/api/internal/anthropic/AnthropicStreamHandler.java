@@ -7,6 +7,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta.CatholicToolCallFunctionChunkDelta;
 import io.vertx.core.json.JsonObject;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,20 +18,24 @@ import java.util.Map;
  */
 public class AnthropicStreamHandler {
 
-    private CatholicResponseChunkCollector collector = new CatholicResponseChunkCollector();
-    private String messageId;
-    private Integer inputTokensHint;
-    private Integer lastOutputTokens;
     private final Map<Integer, BlockContext> blockContextByIndex = new HashMap<>();
+    private CatholicResponseChunkCollector collector = new CatholicResponseChunkCollector();
+    private @Nullable String messageId;
+    private @Nullable Integer inputTokensHint;
+    private @Nullable Integer lastOutputTokens;
 
-    private record BlockContext(String toolUseId, String toolName) {
+    private static @Nullable Integer computeTotal(@Nullable Integer in, @Nullable Integer out) {
+        if (in == null || out == null) {
+            return null;
+        }
+        return in + out;
     }
 
     /**
      * 处理单行 SSE（通常为 {@code data: {...}}）。
      */
-    public CatholicLLMResponseChunk processSseLine(String sseLine) {
-        if (sseLine == null || sseLine.isEmpty()) {
+    public @Nullable CatholicLLMResponseChunk processSseLine(String sseLine) {
+        if (sseLine.isEmpty()) {
             return null;
         }
         if (!sseLine.startsWith("data: ")) {
@@ -104,7 +109,7 @@ public class AnthropicStreamHandler {
         blockContextByIndex.put(index, new BlockContext(id, name));
     }
 
-    private CatholicLLMResponseChunk emitContentBlockDelta(JsonObject event) {
+    private @Nullable CatholicLLMResponseChunk emitContentBlockDelta(JsonObject event) {
         JsonObject delta = event.getJsonObject("delta");
         if (delta == null) {
             return null;
@@ -117,11 +122,14 @@ public class AnthropicStreamHandler {
             if (text == null || text.isEmpty()) {
                 return null;
             }
-            CatholicLLMResponseChunkImpl chunk = CatholicLLMResponseChunkImpl.builder()
-                .id(messageId)
-                .index(index)
-                .deltaText(text)
-                .build();
+            var builder = CatholicLLMResponseChunkImpl.builder();
+            if (messageId != null) {
+                builder.id(messageId);
+            }
+            CatholicLLMResponseChunkImpl chunk = builder
+                    .index(index)
+                    .deltaText(text)
+                    .build();
             collector.collect(chunk);
             return chunk;
         }
@@ -135,16 +143,19 @@ public class AnthropicStreamHandler {
             String toolId = ctx != null ? ctx.toolUseId : null;
             String toolName = ctx != null ? ctx.toolName : null;
             CatholicToolCallChunkDelta toolDelta = new CatholicToolCallChunkDelta(
-                toolId,
-                "tool_use",
-                index,
-                new CatholicToolCallFunctionChunkDelta(toolName, partial)
+                    toolId,
+                    "tool_use",
+                    index,
+                    new CatholicToolCallFunctionChunkDelta(toolName, partial)
             );
-            CatholicLLMResponseChunkImpl chunk = CatholicLLMResponseChunkImpl.builder()
-                .id(messageId)
-                .index(index)
-                .deltaToolCalls(List.of(toolDelta))
-                .build();
+            var builder = CatholicLLMResponseChunkImpl.builder();
+            if (messageId != null) {
+                builder.id(messageId);
+            }
+            CatholicLLMResponseChunkImpl chunk = builder
+                    .index(index)
+                    .deltaToolCalls(List.of(toolDelta))
+                    .build();
             collector.collect(chunk);
             return chunk;
         }
@@ -161,24 +172,20 @@ public class AnthropicStreamHandler {
 
     private CatholicLLMResponseChunk emitMessageStop() {
         CatholicLLMUsage usage = new CatholicLLMUsage(
-            inputTokensHint,
-            lastOutputTokens,
-            computeTotal(inputTokensHint, lastOutputTokens)
+                inputTokensHint,
+                lastOutputTokens,
+                computeTotal(inputTokensHint, lastOutputTokens)
         );
-        CatholicLLMResponseChunkImpl chunk = CatholicLLMResponseChunkImpl.builder()
-            .id(messageId)
-            .markFinished()
-            .usage(usage)
-            .build();
+        var builder = CatholicLLMResponseChunkImpl.builder();
+        if (messageId != null) {
+            builder.id(messageId);
+        }
+        CatholicLLMResponseChunkImpl chunk = builder
+                .markFinished()
+                .usage(usage)
+                .build();
         collector.collect(chunk);
         return chunk;
-    }
-
-    private static Integer computeTotal(Integer in, Integer out) {
-        if (in == null || out == null) {
-            return null;
-        }
-        return in + out;
     }
 
     public io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse buildFinalResponse() {
@@ -191,5 +198,8 @@ public class AnthropicStreamHandler {
         inputTokensHint = null;
         lastOutputTokens = null;
         blockContextByIndex.clear();
+    }
+
+    private record BlockContext(String toolUseId, String toolName) {
     }
 }
