@@ -14,12 +14,12 @@ import java.util.List;
 
 /**
  * 处理 DashScope API SSE 流式数据，转换为 CatholicLLMResponseChunk。
- *
+ * <p>
  * DashScope SSE 格式：
  * id:xxx
  * event:add/result/error
  * data:{...}
- *
+ * <p>
  * 事件块用空行分隔
  */
 public class DashScopeStreamHandler {

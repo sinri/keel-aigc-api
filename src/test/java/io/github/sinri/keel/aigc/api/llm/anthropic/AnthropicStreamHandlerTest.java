@@ -4,6 +4,7 @@ import io.github.sinri.keel.aigc.api.internal.anthropic.AnthropicStreamHandler;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.vertx.core.json.JsonObject;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +44,7 @@ class AnthropicStreamHandlerTest {
         handler.processSseLine("data: " + start);
         handler.processSseLine("data: " + d1);
         handler.processSseLine("data: " + md);
-        CatholicLLMResponseChunk last = handler.processSseLine("data: " + stop);
+        @Nullable CatholicLLMResponseChunk last = handler.processSseLine("data: " + stop);
         assertNotNull(last);
         assertTrue(last.isFinished());
 

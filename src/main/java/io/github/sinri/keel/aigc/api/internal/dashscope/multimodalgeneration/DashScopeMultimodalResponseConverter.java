@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * 将 DashScope 多模态 API 响应转换为 DashScopeMultimodalResponse。
- *
+ * <p>
  * 与文本 API 响应的主要区别：
  * - message.content 可以是数组格式（包含多个内容元素）
  * - message.reasoning_content 为思考内容

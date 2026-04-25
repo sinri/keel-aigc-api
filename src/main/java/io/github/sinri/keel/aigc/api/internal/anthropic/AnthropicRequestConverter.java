@@ -37,7 +37,7 @@ public class AnthropicRequestConverter {
                 messages.add(convertNonSystemMessage(message));
             }
         }
-        if (systemText.length() > 0) {
+        if (!systemText.isEmpty()) {
             body.put("system", systemText.toString());
         }
         body.put("messages", messages);

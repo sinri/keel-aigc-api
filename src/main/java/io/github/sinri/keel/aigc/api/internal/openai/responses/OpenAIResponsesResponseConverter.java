@@ -43,7 +43,7 @@ public class OpenAIResponsesResponseConverter {
             }
         }
 
-        String text = textBuilder.length() > 0 ? textBuilder.toString() : null;
+        String text = !textBuilder.isEmpty() ? textBuilder.toString() : null;
         List<CatholicFunctionToolCall> calls = toolCalls.isEmpty() ? null : toolCalls;
         CatholicAssistantMessage assistant = CatholicAssistantMessage.ofMixed(text, calls);
         if (!assistant.hasText() && !assistant.hasToolCalls()) {
@@ -76,7 +76,7 @@ public class OpenAIResponsesResponseConverter {
             if ("output_text".equals(partType)) {
                 String t = part.getString("text");
                 if (t != null && !t.isEmpty()) {
-                    if (textBuilder.length() > 0) {
+                    if (!textBuilder.isEmpty()) {
                         textBuilder.append('\n');
                     }
                     textBuilder.append(t);
@@ -84,7 +84,7 @@ public class OpenAIResponsesResponseConverter {
             } else if ("refusal".equals(partType)) {
                 String refusal = part.getString("refusal");
                 if (refusal != null && !refusal.isEmpty()) {
-                    if (textBuilder.length() > 0) {
+                    if (!textBuilder.isEmpty()) {
                         textBuilder.append('\n');
                     }
                     textBuilder.append(refusal);

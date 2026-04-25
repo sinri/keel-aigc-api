@@ -19,7 +19,7 @@ import java.util.function.Function;
 /**
  * DashScope 图&文→文 API 客户端，对应端点 /services/aigc/multimodal-generation/generation。
  * 适用于多模态模型（如 qwen3-vl-plus, qwen-vl-plus, qwen-audio, qvq）。
- *
+ * <p>
  * call() 方法返回 DashScopeMultimodalResponse，在 CatholicLLMResponse 基础上
  * 提供多模态特有的字段（reasoning_content, image_hw 等）。
  */
