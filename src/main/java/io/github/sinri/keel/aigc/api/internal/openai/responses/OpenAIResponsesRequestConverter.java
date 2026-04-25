@@ -3,6 +3,7 @@ package io.github.sinri.keel.aigc.api.internal.openai.responses;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.*;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicFunctionToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.vertx.core.json.JsonArray;
@@ -137,9 +138,9 @@ public class OpenAIResponsesRequestConverter {
             }
             array.add(new JsonObject()
                 .put("type", "function")
-                .put("name", tool.function().name())
-                .put("description", tool.function().description())
-                .put("parameters", tool.function().parameters()));
+                .put("name", ((CatholicFunctionToolDefinition) tool).function().name())
+                .put("description", ((CatholicFunctionToolDefinition) tool).function().description())
+                .put("parameters", ((CatholicFunctionToolDefinition) tool).function().parameters()));
         }
         return array;
     }

@@ -9,6 +9,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCallImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -119,9 +120,8 @@ class OpenAIResponsesRequestConverterTest {
             .addMessage(CatholicUserMessage.ofText("What's the weather?"))
             .addMessage(new CatholicAssistantMessage(
                 null,
-                java.util.List.of(new CatholicFunctionToolCall(
+                java.util.List.of(new CatholicFunctionToolCallImpl(
                     "call_123",
-                    "function",
                     new FunctionCall("get_weather", "{\"location\": \"Beijing\"}")
                 ))
             ))
@@ -165,9 +165,8 @@ class OpenAIResponsesRequestConverterTest {
             .addMessage(CatholicUserMessage.ofText("Go"))
             .addMessage(CatholicAssistantMessage.ofMixed(
                 "Checking.",
-                java.util.List.of(new CatholicFunctionToolCall(
+                java.util.List.of(new CatholicFunctionToolCallImpl(
                     "call_1",
-                    "function",
                     new FunctionCall("f", "{}")
                 ))
             ))

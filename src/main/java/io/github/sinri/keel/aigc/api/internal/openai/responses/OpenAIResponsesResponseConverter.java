@@ -5,6 +5,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCallImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -97,9 +98,8 @@ public class OpenAIResponsesResponseConverter {
         String itemId = item.getString("id", callId);
         String name = item.getString("name");
         String arguments = item.getString("arguments", "{}");
-        return new CatholicFunctionToolCall(
+        return new CatholicFunctionToolCallImpl(
             callId != null ? callId : itemId,
-            "function",
             new FunctionCall(name, arguments)
         );
     }
