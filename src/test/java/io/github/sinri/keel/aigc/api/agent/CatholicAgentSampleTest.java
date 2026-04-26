@@ -29,7 +29,7 @@ public class CatholicAgentSampleTest extends KeelInstantRunner {
     }
 
     @Override
-    protected Future<Void> run() throws Exception {
+    protected Future<Void> run() {
         HttpClientAgent httpClientAgent = getKeel().httpClientBuilder()
                                                    .with(new HttpClientOptions()
                                                            .setSsl(true)

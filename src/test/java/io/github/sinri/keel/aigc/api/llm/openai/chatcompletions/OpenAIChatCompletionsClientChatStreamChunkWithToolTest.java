@@ -15,7 +15,7 @@ import java.util.Objects;
 
 public class OpenAIChatCompletionsClientChatStreamChunkWithToolTest extends KeelInstantRunner {
     @Override
-    protected Future<Void> run() throws Exception {
+    protected Future<Void> run() {
         HttpClient httpClient = getKeel().createHttpClient();
 
         String baseUrl = ConfigElement.root().readProperty("openai.test1.api");

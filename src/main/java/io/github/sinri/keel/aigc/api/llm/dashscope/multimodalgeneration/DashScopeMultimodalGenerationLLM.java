@@ -1,12 +1,12 @@
 package io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration;
 
-import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
+import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.github.sinri.keel.aigc.api.internal.SSE2Chunk;
-import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeClientHelper;
 import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeStreamHandler;
+import io.github.sinri.keel.aigc.api.llm.dashscope.AbstractDashScopeLLM;
 import io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration.DashScopeMultimodalRequestConverter;
 import io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration.DashScopeMultimodalResponseConverter;
 import io.github.sinri.keel.logger.api.LateObject;
@@ -23,15 +23,20 @@ import java.util.function.Function;
  * call() 方法返回 DashScopeMultimodalResponse，在 CatholicLLMResponse 基础上
  * 提供多模态特有的字段（reasoning_content, image_hw 等）。
  */
-public class DashScopeMultimodalGenerationLLM implements CatholicLLM {
+public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
 
     private static final String MULTIMODAL_GENERATION_PATH = "/services/aigc/multimodal-generation/generation";
-    private static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/api/v1";
 
-    private final DashScopeClientHelper helper;
+    public DashScopeMultimodalGenerationLLM(HttpClient httpClient, String apiKey) {
+        this(httpClient, apiKey, DEFAULT_BASE_URL);
+    }
 
-    public DashScopeMultimodalGenerationLLM(DashScopeClientHelper helper) {
-        this.helper = helper;
+    public DashScopeMultimodalGenerationLLM(HttpClient httpClient, String apiKey, String baseUrl) {
+        this(httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
+    }
+
+    public DashScopeMultimodalGenerationLLM(HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
+        super(httpClient, apiKey, baseUrl, authMethod);
     }
 
     /**
@@ -41,7 +46,7 @@ public class DashScopeMultimodalGenerationLLM implements CatholicLLM {
         JsonObject dashscopeRequest = new DashScopeMultimodalRequestConverter().convert(request);
         dashscopeRequest.getJsonObject("parameters").put("stream", false);
 
-        return helper.sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, false)
+        return sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, false)
             .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, "DashScope Multimodal Generation API error"))
             .map(body -> new DashScopeMultimodalResponseConverter().convert(body.toJsonObject()));
     }
@@ -63,9 +68,9 @@ public class DashScopeMultimodalGenerationLLM implements CatholicLLM {
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
 
-        return helper.sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, true)
+        return sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(
-                helper.getKeel(), response, "DashScope Multimodal Generation API error", streamHandler, chunkAsyncProcessor
+                getKeel(), response, "DashScope Multimodal Generation API error", streamHandler, chunkAsyncProcessor
             ));
     }
 
@@ -78,9 +83,9 @@ public class DashScopeMultimodalGenerationLLM implements CatholicLLM {
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
 
-        return helper.sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, true)
+        return sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(
-                helper.getKeel(), response, "DashScope Multimodal Generation API error", streamHandler,
+                getKeel(), response, "DashScope Multimodal Generation API error", streamHandler,
                 chunk -> Future.succeededFuture()
             ))
             .map(v -> streamHandler.buildFinalResponse())
@@ -97,6 +102,7 @@ public class DashScopeMultimodalGenerationLLM implements CatholicLLM {
         private final LateObject<HttpClient> lateHttpClient = new LateObject<>();
         private final LateObject<String> lateApiKey = new LateObject<>();
         private String baseUrl = DEFAULT_BASE_URL;
+        private AuthMethod authMethod = DEFAULT_AUTH_METHOD;
 
         public Builder httpClient(HttpClient httpClient) {
             this.lateHttpClient.set(httpClient);
@@ -113,6 +119,11 @@ public class DashScopeMultimodalGenerationLLM implements CatholicLLM {
             return this;
         }
 
+        public Builder authMethod(AuthMethod authMethod) {
+            this.authMethod = authMethod;
+            return this;
+        }
+
         public DashScopeMultimodalGenerationLLM build() {
             if (!lateHttpClient.isInitialized()) {
                 throw new IllegalArgumentException("httpClient is required");
@@ -120,12 +131,7 @@ public class DashScopeMultimodalGenerationLLM implements CatholicLLM {
             if (!lateApiKey.isInitialized() || lateApiKey.get().isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            DashScopeClientHelper helper = DashScopeClientHelper.builder()
-                .httpClient(lateHttpClient.get())
-                .apiKey(lateApiKey.get())
-                .baseUrl(baseUrl)
-                .build();
-            return new DashScopeMultimodalGenerationLLM(helper);
+            return new DashScopeMultimodalGenerationLLM(lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod);
         }
     }
 }

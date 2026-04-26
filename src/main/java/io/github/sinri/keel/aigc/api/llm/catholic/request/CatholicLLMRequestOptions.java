@@ -53,11 +53,11 @@ public interface CatholicLLMRequestOptions {
      * Builder接口，将构造逻辑暴露给外部模块。
      */
     interface Builder {
-        Builder temperature(Double temperature);
+        Builder temperature(double temperature);
 
-        Builder maxTokens(Integer maxTokens);
+        Builder maxTokens(int maxTokens);
 
-        Builder topP(Double topP);
+        Builder topP(double topP);
 
         Builder stop(List<String> stop);
 

@@ -6,6 +6,8 @@ import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunk
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCallImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
+import io.github.sinri.keel.logger.api.LateObject;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,19 +19,17 @@ import java.util.Map;
  */
 public class CatholicResponseChunkCollector {
 
-    private String id;
+    private final LateObject<String> lateId = new LateObject<>();
     private final StringBuilder textBuilder = new StringBuilder();
     private final Map<Integer, ToolCallCollector> toolCallCollectors = new HashMap<>();
-    private CatholicLLMUsage usage;
+    private @Nullable CatholicLLMUsage usage;
     private boolean finished = false;
 
     /**
      * 处理一个片段，累积内容
      */
     public void collect(CatholicLLMResponseChunkImpl chunk) {
-        if (id == null && chunk.id() != null) {
-            this.id = chunk.id();
-        }
+        lateId.ensure(chunk::id);
 
         // 累积文本
         if (chunk.deltaText() != null) {
@@ -68,7 +68,7 @@ public class CatholicResponseChunkCollector {
         }
 
         CatholicAssistantMessage message = new CatholicAssistantMessage(text, toolCalls);
-        return new CatholicLLMResponseImpl(id, message, usage != null ? usage : CatholicLLMUsage.empty(), finished);
+        return new CatholicLLMResponseImpl(lateId.get(), message, usage != null ? usage : CatholicLLMUsage.empty(), finished);
     }
 
     /**
@@ -90,9 +90,9 @@ public class CatholicResponseChunkCollector {
      */
     private static class ToolCallCollector {
         private final int index;
+        private final StringBuilder argumentsBuilder = new StringBuilder();
         private String id;
         private String name;
-        private final StringBuilder argumentsBuilder = new StringBuilder();
 
         ToolCallCollector(int index) {
             this.index = index;
@@ -114,8 +114,8 @@ public class CatholicResponseChunkCollector {
 
         CatholicFunctionToolCall build() {
             return new CatholicFunctionToolCallImpl(
-                id,
-                new FunctionCall(name, argumentsBuilder.toString())
+                    id,
+                    new FunctionCall(name, argumentsBuilder.toString())
             );
         }
     }

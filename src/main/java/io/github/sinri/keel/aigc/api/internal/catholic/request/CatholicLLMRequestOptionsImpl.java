@@ -2,6 +2,7 @@ package io.github.sinri.keel.aigc.api.internal.catholic.request;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
 import io.vertx.core.json.JsonObject;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
@@ -9,10 +10,10 @@ import java.util.List;
  * LLM请求的生成参数选项实现类。
  */
 public record CatholicLLMRequestOptionsImpl(
-    Double temperature,
-    Integer maxTokens,
-    Double topP,
-    List<String> stop,
+    @Nullable Double temperature,
+    @Nullable Integer maxTokens,
+    @Nullable Double topP,
+    @Nullable List<String> stop,
     JsonObject extra
 ) implements CatholicLLMRequestOptions {
 
@@ -34,23 +35,23 @@ public record CatholicLLMRequestOptionsImpl(
      * Builder类
      */
     public static class Builder implements CatholicLLMRequestOptions.Builder {
-        private Double temperature;
-        private Integer maxTokens;
-        private Double topP;
-        private List<String> stop;
+        private @Nullable Double temperature;
+        private @Nullable Integer maxTokens;
+        private @Nullable Double topP;
+        private @Nullable List<String> stop;
         private JsonObject extra = new JsonObject();
 
-        public Builder temperature(Double temperature) {
+        public Builder temperature(double temperature) {
             this.temperature = temperature;
             return this;
         }
 
-        public Builder maxTokens(Integer maxTokens) {
+        public Builder maxTokens(int maxTokens) {
             this.maxTokens = maxTokens;
             return this;
         }
 
-        public Builder topP(Double topP) {
+        public Builder topP(double topP) {
             this.topP = topP;
             return this;
         }

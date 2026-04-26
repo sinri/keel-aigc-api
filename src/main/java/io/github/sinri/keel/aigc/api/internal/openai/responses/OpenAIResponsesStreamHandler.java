@@ -7,10 +7,12 @@ import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta.CatholicToolCallFunctionChunkDelta;
 import io.vertx.core.json.JsonObject;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 解析 OpenAI Responses API 的 SSE 事件流，并转换为 {@link CatholicLLMResponseChunk}。
@@ -18,13 +20,13 @@ import java.util.Map;
 public class OpenAIResponsesStreamHandler {
 
     private CatholicResponseChunkCollector collector = new CatholicResponseChunkCollector();
-    private String responseId;
+    private @Nullable String responseId;
     private final Map<Integer, FunctionCallStreamState> functionCallsByOutputIndex = new HashMap<>();
 
     /**
      * 处理单行 SSE（通常为 {@code data: {...}}；忽略 {@code event:} 行）。
      */
-    public CatholicLLMResponseChunk processSseLine(String sseLine) {
+    public @Nullable CatholicLLMResponseChunk processSseLine(@Nullable String sseLine) {
         if (sseLine == null || sseLine.isEmpty()) {
             return null;
         }
@@ -109,12 +111,13 @@ public class OpenAIResponsesStreamHandler {
         functionCallsByOutputIndex.put(outputIndex, new FunctionCallStreamState(callId, name));
     }
 
-    private CatholicLLMResponseChunk emitTextDelta(JsonObject event) {
+    private @Nullable CatholicLLMResponseChunk emitTextDelta(JsonObject event) {
         String delta = event.getString("delta");
         if (delta == null || delta.isEmpty()) {
             return null;
         }
         int outputIndex = event.getInteger("output_index", 0);
+        Objects.requireNonNull(responseId);
         CatholicLLMResponseChunkImpl chunk = CatholicLLMResponseChunkImpl.builder()
             .id(responseId)
             .index(outputIndex)
@@ -124,7 +127,7 @@ public class OpenAIResponsesStreamHandler {
         return chunk;
     }
 
-    private CatholicLLMResponseChunk emitFunctionArgumentsDelta(JsonObject event) {
+    private @Nullable CatholicLLMResponseChunk emitFunctionArgumentsDelta(JsonObject event) {
         String delta = event.getString("delta");
         if (delta == null || delta.isEmpty()) {
             return null;
@@ -140,6 +143,7 @@ public class OpenAIResponsesStreamHandler {
             outputIndex,
             new CatholicToolCallFunctionChunkDelta(name, delta)
         );
+        Objects.requireNonNull(responseId);
         CatholicLLMResponseChunkImpl chunk = CatholicLLMResponseChunkImpl.builder()
             .id(responseId)
             .index(outputIndex)
@@ -158,6 +162,7 @@ public class OpenAIResponsesStreamHandler {
             }
         }
         CatholicLLMUsage usage = convertUsage(response != null ? response.getJsonObject("usage") : null);
+        Objects.requireNonNull(responseId);
         CatholicLLMResponseChunkImpl chunk = CatholicLLMResponseChunkImpl.builder()
             .id(responseId)
             .markFinished()
@@ -177,8 +182,8 @@ public class OpenAIResponsesStreamHandler {
         return new CatholicLLMUsage(prompt, completion, total);
     }
 
-    private static Integer firstNonNull(Integer a, Integer b) {
-        return a != null ? a : b;
+    private static Integer firstNonNull(@Nullable Integer a, @Nullable Integer b) {
+        return a != null ? a : Objects.requireNonNull(b);
     }
 
     /**

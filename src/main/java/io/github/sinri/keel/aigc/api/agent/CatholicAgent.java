@@ -130,7 +130,7 @@ public final class CatholicAgent {
         private final LateObject<String> lateModel = new LateObject<>();
         private final List<CatholicToolDefinition> tools = new ArrayList<>();
         private CatholicLLMRequestOptions options = CatholicLLMRequestOptions.defaultOptions();
-        private CatholicToolInvocationHandler toolHandler;
+        private final LateObject<CatholicToolInvocationHandler> lateToolHandler=new LateObject<>();
         private int maxToolRounds = 32;
         private final List<CatholicChatMessage> initialMessages = new ArrayList<>();
 
@@ -151,19 +151,17 @@ public final class CatholicAgent {
 
         public Builder tools(List<CatholicToolDefinition> tools) {
             this.tools.clear();
-            if (tools != null) {
-                this.tools.addAll(tools);
-            }
+            this.tools.addAll(tools);
             return this;
         }
 
         public Builder options(CatholicLLMRequestOptions options) {
-            this.options = options != null ? options : CatholicLLMRequestOptions.defaultOptions();
+            this.options = options;
             return this;
         }
 
         public Builder toolHandler(CatholicToolInvocationHandler toolHandler) {
-            this.toolHandler = toolHandler;
+            this.lateToolHandler.set(  toolHandler);
             return this;
         }
 
@@ -176,7 +174,7 @@ public final class CatholicAgent {
          * 在会话开头插入一条系统消息（通常在首次 {@link #chat} 前调用一次）。
          */
         public Builder systemPrompt(String text) {
-            if (text != null && !text.isEmpty()) {
+            if (!text.isEmpty()) {
                 this.initialMessages.add(CatholicSystemMessage.of(text));
             }
             return this;
@@ -189,12 +187,14 @@ public final class CatholicAgent {
             if (!lateModel.isInitialized() || lateModel.get().isEmpty()) {
                 throw new IllegalArgumentException("model is required");
             }
-            if (!tools.isEmpty() && toolHandler == null) {
-                throw new IllegalArgumentException("toolHandler is required when tools are non-empty");
+            if (!tools.isEmpty()) {
+                if(!lateToolHandler.isInitialized()) {
+                    throw new IllegalArgumentException("toolHandler is required when tools are non-empty");
+                }
             }
             CatholicToolInvocationHandler resolvedHandler = tools.isEmpty()
                 ? tc -> Future.succeededFuture("")
-                : toolHandler;
+                : lateToolHandler.get();
             return new CatholicAgent(lateLlm.get(), lateModel.get(), List.copyOf(tools), options, resolvedHandler, maxToolRounds, initialMessages);
         }
     }
