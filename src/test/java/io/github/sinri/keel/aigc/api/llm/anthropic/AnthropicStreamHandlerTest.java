@@ -44,7 +44,7 @@ class AnthropicStreamHandlerTest {
         handler.processSseLine("data: " + start);
         handler.processSseLine("data: " + d1);
         handler.processSseLine("data: " + md);
-        @Nullable CatholicLLMResponseChunk last = handler.processSseLine("data: " + stop);
+        CatholicLLMResponseChunk last = handler.processSseLine("data: " + stop);
         assertNotNull(last);
         assertTrue(last.isFinished());
 

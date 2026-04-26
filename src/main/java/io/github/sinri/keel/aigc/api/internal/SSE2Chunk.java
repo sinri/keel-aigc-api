@@ -56,7 +56,7 @@ public class SSE2Chunk {
                 String line = rawLine.endsWith("\r")
                     ? rawLine.substring(0, rawLine.length() - 1)
                     : rawLine;
-                @Nullable CatholicLLMResponseChunk chunk;
+                CatholicLLMResponseChunk chunk;
                 try {
                     chunk = processSseLine.apply(line);
                 } catch (Exception e) {

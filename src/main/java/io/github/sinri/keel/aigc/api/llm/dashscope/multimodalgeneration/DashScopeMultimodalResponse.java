@@ -11,7 +11,7 @@ import io.vertx.core.json.JsonArray;
 public record DashScopeMultimodalResponse(
     CatholicLLMResponse catholicResponse,
     @Nullable String reasoningContent,
-    JsonArray imageHw,
+    @Nullable JsonArray imageHw,
     @Nullable Integer imageTokens,
     @Nullable Integer videoTokens,
     @Nullable Integer audioTokens
@@ -28,7 +28,7 @@ public record DashScopeMultimodalResponse(
     /**
      * 获取思考内容（reasoning_content），适用于开启了 enable_thinking 的模型
      */
-    public String reasoningContent() {
+    public @Nullable String reasoningContent() {
         return reasoningContent;
     }
 

@@ -1,14 +1,14 @@
 package io.github.sinri.keel.aigc.api.llm.dashscope.textgeneration;
 
-import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
+import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.github.sinri.keel.aigc.api.internal.SSE2Chunk;
-import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeClientHelper;
 import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeRequestConverter;
 import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeResponseConverter;
 import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeStreamHandler;
+import io.github.sinri.keel.aigc.api.llm.dashscope.AbstractDashScopeLLM;
 import io.github.sinri.keel.logger.api.LateObject;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
@@ -20,15 +20,20 @@ import java.util.function.Function;
  * DashScope 文→文 API 客户端，对应端点 /services/aigc/text-generation/generation。
  * 适用于纯文本模型（如 qwen-plus, qwen-turbo, qwen-max）。
  */
-public class DashScopeTextGenerationLLM implements CatholicLLM {
+public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
 
     private static final String TEXT_GENERATION_PATH = "/services/aigc/text-generation/generation";
-    private static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/api/v1";
 
-    private final DashScopeClientHelper helper;
+    public DashScopeTextGenerationLLM(HttpClient httpClient, String apiKey) {
+        this(httpClient, apiKey, DEFAULT_BASE_URL);
+    }
 
-    public DashScopeTextGenerationLLM(DashScopeClientHelper helper) {
-        this.helper = helper;
+    public DashScopeTextGenerationLLM(HttpClient httpClient, String apiKey, String baseUrl) {
+        this(httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
+    }
+
+    public DashScopeTextGenerationLLM(HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
+        super(httpClient, apiKey, baseUrl, authMethod);
     }
 
     @Override
@@ -36,7 +41,7 @@ public class DashScopeTextGenerationLLM implements CatholicLLM {
         JsonObject dashscopeRequest = new DashScopeRequestConverter().convert(request);
         dashscopeRequest.getJsonObject("parameters").put("stream", false);
 
-        return helper.sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, false)
+        return sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, false)
             .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, "DashScope Text Generation API error"))
             .map(body -> new DashScopeResponseConverter().convert(body.toJsonObject()));
     }
@@ -53,9 +58,9 @@ public class DashScopeTextGenerationLLM implements CatholicLLM {
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
 
-        return helper.sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, true)
+        return sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(
-                helper.getKeel(), response, "DashScope Text Generation API error", streamHandler, chunkAsyncProcessor
+                getKeel(), response, "DashScope Text Generation API error", streamHandler, chunkAsyncProcessor
             ));
     }
 
@@ -68,9 +73,9 @@ public class DashScopeTextGenerationLLM implements CatholicLLM {
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
 
-        return helper.sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, true)
+        return sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(
-                helper.getKeel(), response, "DashScope Text Generation API error", streamHandler,
+                getKeel(), response, "DashScope Text Generation API error", streamHandler,
                 chunk -> Future.succeededFuture()
             ))
             .map(v -> streamHandler.buildFinalResponse())
@@ -87,6 +92,7 @@ public class DashScopeTextGenerationLLM implements CatholicLLM {
         private final LateObject<HttpClient> lateHttpClient = new LateObject<>();
         private final LateObject<String> lateApiKey = new LateObject<>();
         private String baseUrl = DEFAULT_BASE_URL;
+        private AuthMethod authMethod = DEFAULT_AUTH_METHOD;
 
         public Builder httpClient(HttpClient httpClient) {
             this.lateHttpClient.set(httpClient);
@@ -103,6 +109,11 @@ public class DashScopeTextGenerationLLM implements CatholicLLM {
             return this;
         }
 
+        public Builder authMethod(AuthMethod authMethod) {
+            this.authMethod = authMethod;
+            return this;
+        }
+
         public DashScopeTextGenerationLLM build() {
             if (!lateHttpClient.isInitialized()) {
                 throw new IllegalArgumentException("httpClient is required");
@@ -110,12 +121,7 @@ public class DashScopeTextGenerationLLM implements CatholicLLM {
             if (!lateApiKey.isInitialized() || lateApiKey.get().isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            DashScopeClientHelper helper = DashScopeClientHelper.builder()
-                .httpClient(lateHttpClient.get())
-                .apiKey(lateApiKey.get())
-                .baseUrl(baseUrl)
-                .build();
-            return new DashScopeTextGenerationLLM(helper);
+            return new DashScopeTextGenerationLLM(lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod);
         }
     }
 }

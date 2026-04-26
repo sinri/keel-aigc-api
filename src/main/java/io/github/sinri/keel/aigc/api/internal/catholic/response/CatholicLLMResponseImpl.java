@@ -22,6 +22,13 @@ public class CatholicLLMResponseImpl implements CatholicLLMResponse {
         this.finished = finished;
     }
 
+    /**
+     * 创建Builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
     @Override
     public String id() {
         return id;
@@ -43,23 +50,16 @@ public class CatholicLLMResponseImpl implements CatholicLLMResponse {
     }
 
     /**
-     * 创建Builder
-     */
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    /**
      * Builder类
      */
     public static class Builder implements CatholicLLMResponse.Builder {
-        private String id;
+        private final LateObject<String> lateId = new LateObject<>();
         private final LateObject<CatholicAssistantMessage> lateMessage = new LateObject<>();
         private CatholicLLMUsage usage = CatholicLLMUsage.empty();
         private boolean finished = true;
 
         public Builder id(String id) {
-            this.id = id;
+            this.lateId.set(id);
             return this;
         }
 
@@ -87,7 +87,7 @@ public class CatholicLLMResponseImpl implements CatholicLLMResponse {
             if (!lateMessage.isInitialized()) {
                 throw new IllegalArgumentException("message is required");
             }
-            return new CatholicLLMResponseImpl(id, lateMessage.get(), usage, finished);
+            return new CatholicLLMResponseImpl(lateId.get(), lateMessage.get(), usage, finished);
         }
     }
 }

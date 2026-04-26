@@ -12,7 +12,7 @@ import java.util.Objects;
 
 public class DashScopeMultimodalGenerationClientChatStreamTest extends KeelInstantRunner {
     @Override
-    protected Future<Void> run() throws Exception {
+    protected Future<Void> run() {
         HttpClient httpClient = getKeel().createHttpClient();
 
         String baseUrl = ConfigElement.root().readProperty("dashscope.test2.api");

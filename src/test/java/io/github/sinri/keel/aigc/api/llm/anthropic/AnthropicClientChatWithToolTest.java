@@ -23,7 +23,7 @@ import java.util.Objects;
  */
 public class AnthropicClientChatWithToolTest extends KeelInstantRunner {
     @Override
-    protected Future<Void> run() throws Exception {
+    protected Future<Void> run() {
         HttpClient httpClient = getKeel().createHttpClient();
 
         String baseUrl = ConfigElement.root().readProperty("anthropic.test1.api");
