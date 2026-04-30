@@ -5,6 +5,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function.FunctionDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
@@ -58,8 +59,8 @@ public class DashScopeMultimodalGenerationClientChatToolCallTest extends KeelIns
 
         JsonObject getTimeParams = new JsonObject();
 
-        CatholicToolDefinition getWeatherTool = CatholicToolDefinition.function("get_current_weather", "当你想查询指定城市的天气时非常有用。", getWeatherParams);
-        CatholicToolDefinition getTimeTool = CatholicToolDefinition.function("get_current_time", "当你想知道现在的时间时非常有用。", getTimeParams);
+        CatholicToolDefinition getWeatherTool = CatholicToolDefinition.function(FunctionDefinition.of("get_current_weather", "当你想查询指定城市的天气时非常有用。", getWeatherParams));
+        CatholicToolDefinition getTimeTool = CatholicToolDefinition.function(FunctionDefinition.of("get_current_time", "当你想知道现在的时间时非常有用。", getTimeParams));
 
         // 步骤1: 发送带 tools 的请求
         CatholicLLMRequest request1 = CatholicLLMRequest.builder()

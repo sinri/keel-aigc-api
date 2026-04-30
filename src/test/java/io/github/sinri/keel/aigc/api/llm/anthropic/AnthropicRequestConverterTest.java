@@ -8,6 +8,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessag
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function.FunctionDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCallImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.json.JsonArray;
@@ -59,7 +60,7 @@ class AnthropicRequestConverterTest {
         CatholicLLMRequest request = CatholicLLMRequest.builder()
             .model("claude-3-5-haiku-20241022")
             .addMessage(CatholicUserMessage.ofText("Go"))
-            .addTool(CatholicToolDefinition.function("f", "d", schema))
+            .addTool(CatholicToolDefinition.function(FunctionDefinition.of("f", "d", schema)))
             .build();
 
         JsonArray tools = converter.convert(request).getJsonArray("tools");

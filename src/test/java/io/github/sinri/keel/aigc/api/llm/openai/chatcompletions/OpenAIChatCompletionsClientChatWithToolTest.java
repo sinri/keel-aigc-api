@@ -7,6 +7,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function.FunctionDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.tesuto.KeelInstantRunner;
@@ -49,9 +50,11 @@ public class OpenAIChatCompletionsClientChatWithToolTest extends KeelInstantRunn
                 .put("required", new io.vertx.core.json.JsonArray().add("city"));
 
         CatholicToolDefinition weatherTool = CatholicToolDefinition.function(
-                "get_weather",
-                "获取指定城市的当前天气信息，包括温度、天气状况等",
-                weatherToolParams
+                FunctionDefinition.of(
+                        "get_weather",
+                        "获取指定城市的当前天气信息，包括温度、天气状况等",
+                        weatherToolParams
+                )
         );
 
         // 构建初始请求

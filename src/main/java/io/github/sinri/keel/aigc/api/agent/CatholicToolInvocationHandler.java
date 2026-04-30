@@ -9,6 +9,10 @@ import io.vertx.core.Future;
 @FunctionalInterface
 public interface CatholicToolInvocationHandler {
 
+    static CatholicToolInvocationHandlerWithNativeFunctionAdapters createWithNativeFunctionAdapters() {
+        return new CatholicToolInvocationHandlerWithNativeFunctionAdapters();
+    }
+
     /**
      * 执行单次工具调用，返回值将封装为 tool 角色消息进入后续轮次。
      */

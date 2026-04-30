@@ -10,10 +10,10 @@ import io.vertx.core.json.JsonObject;
 public record CatholicFunctionToolDefinitionImpl(
     FunctionDefinition function
 ) implements CatholicFunctionToolDefinition {
-
     /**
      * 创建 function 类型的工具定义
      */
+    @Deprecated
     public static CatholicToolDefinition function(String name, String description, JsonObject parameters) {
         return new CatholicFunctionToolDefinitionImpl(FunctionDefinitionImpl.of(name, description, parameters));
     }
@@ -21,6 +21,7 @@ public record CatholicFunctionToolDefinitionImpl(
     /**
      * 创建无参数的 function 类型工具定义
      */
+    @Deprecated
     public static CatholicToolDefinition function(String name, String description) {
         return new CatholicFunctionToolDefinitionImpl(FunctionDefinitionImpl.of(name, description));
     }
