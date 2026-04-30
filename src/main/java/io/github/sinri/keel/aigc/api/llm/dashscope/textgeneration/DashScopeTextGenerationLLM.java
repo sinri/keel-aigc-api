@@ -1,0 +1,127 @@
+package io.github.sinri.keel.aigc.api.llm.dashscope.textgeneration;
+
+import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
+import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
+import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
+import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
+import io.github.sinri.keel.aigc.api.internal.SSE2Chunk;
+import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeRequestConverter;
+import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeResponseConverter;
+import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeStreamHandler;
+import io.github.sinri.keel.aigc.api.llm.dashscope.AbstractDashScopeLLM;
+import io.github.sinri.keel.logger.api.LateObject;
+import io.vertx.core.Future;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.json.JsonObject;
+
+import java.util.function.Function;
+
+/**
+ * DashScope 文→文 API 客户端，对应端点 /services/aigc/text-generation/generation。
+ * 适用于纯文本模型（如 qwen-plus, qwen-turbo, qwen-max）。
+ */
+public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
+
+    private static final String TEXT_GENERATION_PATH = "/services/aigc/text-generation/generation";
+
+    public DashScopeTextGenerationLLM(HttpClient httpClient, String apiKey) {
+        this(httpClient, apiKey, DEFAULT_BASE_URL);
+    }
+
+    public DashScopeTextGenerationLLM(HttpClient httpClient, String apiKey, String baseUrl) {
+        this(httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
+    }
+
+    public DashScopeTextGenerationLLM(HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
+        super(httpClient, apiKey, baseUrl, authMethod);
+    }
+
+    @Override
+    public Future<CatholicLLMResponse> call(CatholicLLMRequest request) {
+        JsonObject dashscopeRequest = new DashScopeRequestConverter().convert(request);
+        dashscopeRequest.getJsonObject("parameters").put("stream", false);
+
+        return sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, false)
+            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, "DashScope Text Generation API error"))
+            .map(body -> new DashScopeResponseConverter().convert(body.toJsonObject()));
+    }
+
+    @Override
+    public Future<Void> callStream(
+        CatholicLLMRequest request,
+        Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
+    ) {
+        JsonObject dashscopeRequest = new DashScopeRequestConverter().convert(request);
+        JsonObject parameters = dashscopeRequest.getJsonObject("parameters");
+        parameters.put("stream", true);
+        parameters.put("incremental_output", true);
+
+        DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
+
+        return sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, true)
+            .compose(response -> SSE2Chunk.processDashScopeSSEStream(
+                getKeel(), response, "DashScope Text Generation API error", streamHandler, chunkAsyncProcessor
+            ));
+    }
+
+    @Override
+    public Future<CatholicLLMResponse> callStream(CatholicLLMRequest request) {
+        JsonObject dashscopeRequest = new DashScopeRequestConverter().convert(request);
+        JsonObject parameters = dashscopeRequest.getJsonObject("parameters");
+        parameters.put("stream", true);
+        parameters.put("incremental_output", true);
+
+        DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
+
+        return sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, true)
+            .compose(response -> SSE2Chunk.processDashScopeSSEStream(
+                getKeel(), response, "DashScope Text Generation API error", streamHandler,
+                chunk -> Future.succeededFuture()
+            ))
+            .map(v -> streamHandler.buildFinalResponse())
+            .otherwise(err -> streamHandler.buildFinalResponse());
+    }
+
+    // === Builder ===
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final LateObject<HttpClient> lateHttpClient = new LateObject<>();
+        private final LateObject<String> lateApiKey = new LateObject<>();
+        private String baseUrl = DEFAULT_BASE_URL;
+        private AuthMethod authMethod = DEFAULT_AUTH_METHOD;
+
+        public Builder httpClient(HttpClient httpClient) {
+            this.lateHttpClient.set(httpClient);
+            return this;
+        }
+
+        public Builder apiKey(String apiKey) {
+            this.lateApiKey.set(apiKey);
+            return this;
+        }
+
+        public Builder baseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+            return this;
+        }
+
+        public Builder authMethod(AuthMethod authMethod) {
+            this.authMethod = authMethod;
+            return this;
+        }
+
+        public DashScopeTextGenerationLLM build() {
+            if (!lateHttpClient.isInitialized()) {
+                throw new IllegalArgumentException("httpClient is required");
+            }
+            if (!lateApiKey.isInitialized() || lateApiKey.get().isEmpty()) {
+                throw new IllegalArgumentException("apiKey is required");
+            }
+            return new DashScopeTextGenerationLLM(lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod);
+        }
+    }
+}
