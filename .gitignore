@@ -48,3 +48,4 @@ build/
 config.properties
 /bin/
 runtime/
+/src/test/java/io/github/sinri/keel/aigc/api/agent/tempcensor/

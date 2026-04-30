@@ -29,14 +29,6 @@ public class CatholicAgentSampleTest extends KeelInstantRunner {
         return Objects.requireNonNull(ConfigElement.root().readProperty("dashscope.test2.model"));
     }
 
-    private CatholicToolDefinition getToolA() {
-        return CatholicToolDefinition.function(builder -> {
-            builder.name("query_weather")
-                   .description("Query weather info")
-                   .addParameter("location", "string", "Location to query");
-        });
-    }
-
     @Override
     protected Future<Void> run() {
         HttpClientAgent httpClientAgent = getKeel().httpClientBuilder()
