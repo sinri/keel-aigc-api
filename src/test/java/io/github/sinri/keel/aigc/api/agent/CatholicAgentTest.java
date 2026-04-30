@@ -6,6 +6,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function.FunctionDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCallImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
@@ -49,7 +50,7 @@ class CatholicAgentTest {
         CatholicAgent agent = CatholicAgent.builder()
             .llm(llm)
             .model("m")
-            .tools(List.of(CatholicToolDefinition.function("get_x", "desc")))
+            .tools(List.of(CatholicToolDefinition.function(FunctionDefinition.of("get_x", "desc"))))
             .toolHandler(tc -> Future.succeededFuture("{\"ok\":true}"))
             .build();
 
@@ -72,7 +73,7 @@ class CatholicAgentTest {
             .llm(llm)
             .model("m")
             .maxToolRounds(1)
-            .tools(List.of(CatholicToolDefinition.function("f", "d")))
+            .tools(List.of(CatholicToolDefinition.function(FunctionDefinition.of("f", "d"))))
             .toolHandler(tc -> Future.succeededFuture("{}"))
             .build();
 

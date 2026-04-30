@@ -7,6 +7,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOpti
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCallImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function.FunctionDefinition;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.Test;
@@ -84,7 +85,7 @@ class OpenAIChatCompletionsRequestConverterTest {
         CatholicLLMRequest request = CatholicLLMRequest.builder()
             .model("gpt-4o")
             .addMessage(CatholicUserMessage.ofText("What's the weather in Beijing?"))
-            .addTool(CatholicToolDefinition.function("get_weather", "Get weather info", toolParams))
+            .addTool(CatholicToolDefinition.function(FunctionDefinition.of("get_weather", "Get weather info", toolParams)))
             .build();
 
         JsonObject openaiRequest = converter.convert(request);

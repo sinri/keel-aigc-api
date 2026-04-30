@@ -17,6 +17,7 @@ module io.github.sinri.keel.integration.llm.api {
     // Catholic LLM 通用格式
     exports io.github.sinri.keel.aigc.api.llm.catholic;
     exports io.github.sinri.keel.aigc.api.llm.catholic.message;
+    exports io.github.sinri.keel.aigc.api.llm.catholic.tool;
     exports io.github.sinri.keel.aigc.api.llm.catholic.tool.definition;
     exports io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function;
     exports io.github.sinri.keel.aigc.api.llm.catholic.tool.call;
