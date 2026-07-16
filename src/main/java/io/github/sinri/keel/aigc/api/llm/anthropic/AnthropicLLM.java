@@ -86,13 +86,12 @@ public class AnthropicLLM implements CatholicLLM {
 
         AnthropicStreamHandler streamHandler = new AnthropicStreamHandler();
 
-        return sendJsonPost(body, true)
+        Future<Void> streamFuture = sendJsonPost(body, true)
                 .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
                         keel, response, ANTHROPIC_API_ERROR, streamHandler::processSseLine,
                         chunk -> Future.succeededFuture()
-                ))
-                .map(v -> streamHandler.buildFinalResponse())
-                .otherwise(err -> streamHandler.buildFinalResponse());
+                ));
+        return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
     }
 
     private Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, boolean stream) {

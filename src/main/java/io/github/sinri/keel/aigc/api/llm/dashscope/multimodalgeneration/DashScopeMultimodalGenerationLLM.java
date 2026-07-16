@@ -83,13 +83,12 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
 
-        return sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, true)
+        Future<Void> streamFuture = sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(
                 getKeel(), response, "DashScope Multimodal Generation API error", streamHandler,
                 chunk -> Future.succeededFuture()
-            ))
-            .map(v -> streamHandler.buildFinalResponse())
-            .otherwise(err -> streamHandler.buildFinalResponse());
+            ));
+        return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
     }
 
     // === Builder ===

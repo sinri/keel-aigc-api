@@ -88,13 +88,12 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
 
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
 
-        return sendJsonPost(openaiRequest, true)
+        Future<Void> streamFuture = sendJsonPost(openaiRequest, true)
             .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
                 keel, response, CHAT_API_ERROR, streamHandler::processSseLine,
                 chunk -> Future.succeededFuture()
-            ))
-            .map(v -> streamHandler.buildFinalResponse())
-            .otherwise(err -> streamHandler.buildFinalResponse());
+            ));
+        return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
     }
 
     private Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, boolean stream) {

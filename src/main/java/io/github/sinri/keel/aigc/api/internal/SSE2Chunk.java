@@ -12,6 +12,7 @@ import io.vertx.core.http.HttpClientResponse;
 import org.jspecify.annotations.Nullable;
 
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * 工具类，用于处理 LLM 的流式调用产生的 SSE 事件。
@@ -19,6 +20,20 @@ import java.util.function.Function;
 public class SSE2Chunk {
 
     private SSE2Chunk() {
+    }
+
+    /**
+     * 仅在流处理正常完成后组装最终响应。
+     *
+     * @param streamFuture 流处理结果
+     * @param responseBuilder 最终响应组装器
+     * @return 流失败时保留原始失败，成功时返回组装结果
+     */
+    public static <T> Future<T> buildResponseOnSuccess(
+        Future<Void> streamFuture,
+        Supplier<T> responseBuilder
+    ) {
+        return streamFuture.map(v -> responseBuilder.get());
     }
 
     /**
