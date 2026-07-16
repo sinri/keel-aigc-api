@@ -3,7 +3,6 @@ package io.github.sinri.keel.aigc.api.internal.catholic.response;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta;
-import io.github.sinri.keel.logger.api.LateObject;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
@@ -94,15 +93,15 @@ public class CatholicLLMResponseChunkImpl implements CatholicLLMResponseChunk {
      * Builder类
      */
     public static class Builder implements CatholicLLMResponseChunk.Builder {
-        private final LateObject<String> lateId = new LateObject<>();
-        private final LateObject<String> lateDeltaText = new LateObject<>();
+        private @Nullable String id;
+        private @Nullable String deltaText;
         private @Nullable CatholicLLMUsage usage;
         private int index;
         private @Nullable List<CatholicToolCallChunkDelta> deltaToolCalls;
         private boolean finished = false;
 
         public Builder id(String id) {
-            this.lateId.set(id);
+            this.id = id;
             return this;
         }
 
@@ -111,12 +110,12 @@ public class CatholicLLMResponseChunkImpl implements CatholicLLMResponseChunk {
             return this;
         }
 
-        public Builder deltaText(String deltaText) {
-            this.lateDeltaText.set(deltaText);
+        public Builder deltaText(@Nullable String deltaText) {
+            this.deltaText = deltaText;
             return this;
         }
 
-        public Builder deltaToolCalls(List<CatholicToolCallChunkDelta> deltaToolCalls) {
+        public Builder deltaToolCalls(@Nullable List<CatholicToolCallChunkDelta> deltaToolCalls) {
             this.deltaToolCalls = deltaToolCalls;
             return this;
         }
@@ -131,7 +130,7 @@ public class CatholicLLMResponseChunkImpl implements CatholicLLMResponseChunk {
             return this;
         }
 
-        public Builder usage(CatholicLLMUsage usage) {
+        public Builder usage(@Nullable CatholicLLMUsage usage) {
             this.usage = usage;
             return this;
         }
@@ -142,7 +141,10 @@ public class CatholicLLMResponseChunkImpl implements CatholicLLMResponseChunk {
         }
 
         public CatholicLLMResponseChunkImpl build() {
-            return new CatholicLLMResponseChunkImpl(lateId.get(), index, lateDeltaText.get(), deltaToolCalls, finished, usage);
+            if (id == null || id.isBlank()) {
+                throw new IllegalStateException("CatholicLLMResponseChunk id must be assigned");
+            }
+            return new CatholicLLMResponseChunkImpl(id, index, deltaText, deltaToolCalls, finished, usage);
         }
     }
 }

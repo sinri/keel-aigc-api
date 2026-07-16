@@ -33,8 +33,8 @@ class OpenAIChatCompletionsStreamHandlerTest {
 
         for (String line : sseLines) {
             CatholicLLMResponseChunk chunk = handler.processSseLine(line);
-            if (chunk != null && line.equals("data: [DONE]")) {
-                assertTrue(chunk.isFinished());
+            if (line.equals("data: [DONE]")) {
+                assertNull(chunk);
             }
         }
 

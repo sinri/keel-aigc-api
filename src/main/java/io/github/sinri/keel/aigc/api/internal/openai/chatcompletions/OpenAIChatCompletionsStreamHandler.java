@@ -8,6 +8,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunk
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta.CatholicToolCallFunctionChunkDelta;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.List;
 public class OpenAIChatCompletionsStreamHandler {
 
     private CatholicResponseChunkCollector collector;
+    private @Nullable String responseId;
 
     public OpenAIChatCompletionsStreamHandler() {
         this.collector = new CatholicResponseChunkCollector();
@@ -40,15 +42,13 @@ public class OpenAIChatCompletionsStreamHandler {
 
         // 流结束标记
         if (data.equals("[DONE]")) {
-            return CatholicLLMResponseChunkImpl.builder()
-                .markFinished()
-                .build();
+            return null;
         }
 
         try {
             JsonObject chunkJson = new JsonObject(data);
             return convertChunk(chunkJson);
-        } catch (Exception e) {
+        } catch (io.vertx.core.json.DecodeException e) {
             // 解析失败返回 null
             return null;
         }
@@ -59,6 +59,14 @@ public class OpenAIChatCompletionsStreamHandler {
      */
     private CatholicLLMResponseChunk convertChunk(JsonObject chunkJson) {
         String id = chunkJson.getString("id");
+        if (id != null) {
+            responseId = id;
+        } else {
+            id = responseId;
+        }
+        if (id == null) {
+            return null;
+        }
 
         JsonArray choices = chunkJson.getJsonArray("choices");
         if (choices == null || choices.isEmpty()) {
@@ -172,5 +180,6 @@ public class OpenAIChatCompletionsStreamHandler {
      */
     public void reset() {
         this.collector = new CatholicResponseChunkCollector();
+        this.responseId = null;
     }
 }
