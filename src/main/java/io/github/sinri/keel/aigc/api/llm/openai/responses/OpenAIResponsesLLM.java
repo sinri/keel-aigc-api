@@ -85,13 +85,12 @@ public class OpenAIResponsesLLM implements CatholicLLM {
 
         OpenAIResponsesStreamHandler streamHandler = new OpenAIResponsesStreamHandler();
 
-        return sendJsonPost(responsesRequest, true)
+        Future<Void> streamFuture = sendJsonPost(responsesRequest, true)
             .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
                 keel, response, RESPONSES_API_ERROR, streamHandler::processSseLine,
                 chunk -> Future.succeededFuture()
-            ))
-            .map(v -> streamHandler.buildFinalResponse())
-            .otherwise(err -> streamHandler.buildFinalResponse());
+            ));
+        return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
     }
 
     private Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, boolean stream) {

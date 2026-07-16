@@ -73,13 +73,12 @@ public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
 
-        return sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, true)
+        Future<Void> streamFuture = sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(
                 getKeel(), response, "DashScope Text Generation API error", streamHandler,
                 chunk -> Future.succeededFuture()
-            ))
-            .map(v -> streamHandler.buildFinalResponse())
-            .otherwise(err -> streamHandler.buildFinalResponse());
+            ));
+        return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
     }
 
     // === Builder ===
