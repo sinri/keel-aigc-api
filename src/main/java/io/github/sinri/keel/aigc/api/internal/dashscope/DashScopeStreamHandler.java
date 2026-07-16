@@ -8,6 +8,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunk
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta.CatholicToolCallFunctionChunkDelta;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,7 @@ public class DashScopeStreamHandler {
     private String currentEventId;
     private String currentEventType;
     private String currentEventData;
+    private @Nullable String responseId;
 
     public DashScopeStreamHandler() {
         this.collector = new CatholicResponseChunkCollector();
@@ -91,6 +93,14 @@ public class DashScopeStreamHandler {
     private CatholicLLMResponseChunk convertEvent(String eventId, String eventType, JsonObject dataJson) {
         // request_id 作为 id
         String id = dataJson.getString("request_id", eventId);
+        if (id != null) {
+            responseId = id;
+        } else {
+            id = responseId;
+        }
+        if (id == null) {
+            return null;
+        }
 
         JsonObject output = dataJson.getJsonObject("output");
         if (output == null) {
@@ -222,6 +232,7 @@ public class DashScopeStreamHandler {
      */
     public void reset() {
         this.collector = new CatholicResponseChunkCollector();
+        this.responseId = null;
         resetCurrentEvent();
     }
 }

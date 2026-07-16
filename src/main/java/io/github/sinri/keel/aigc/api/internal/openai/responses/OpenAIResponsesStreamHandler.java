@@ -117,7 +117,9 @@ public class OpenAIResponsesStreamHandler {
             return null;
         }
         int outputIndex = event.getInteger("output_index", 0);
-        Objects.requireNonNull(responseId);
+        if (responseId == null) {
+            return null;
+        }
         CatholicLLMResponseChunkImpl chunk = CatholicLLMResponseChunkImpl.builder()
             .id(responseId)
             .index(outputIndex)
@@ -143,7 +145,9 @@ public class OpenAIResponsesStreamHandler {
             outputIndex,
             new CatholicToolCallFunctionChunkDelta(name, delta)
         );
-        Objects.requireNonNull(responseId);
+        if (responseId == null) {
+            return null;
+        }
         CatholicLLMResponseChunkImpl chunk = CatholicLLMResponseChunkImpl.builder()
             .id(responseId)
             .index(outputIndex)

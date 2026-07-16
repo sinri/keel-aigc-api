@@ -72,15 +72,15 @@ public interface CatholicLLMResponseChunk {
 
         Builder index(int index);
 
-        Builder deltaText(String deltaText);
+        Builder deltaText(@Nullable String deltaText);
 
-        Builder deltaToolCalls(List<CatholicToolCallChunkDelta> deltaToolCalls);
+        Builder deltaToolCalls(@Nullable List<CatholicToolCallChunkDelta> deltaToolCalls);
 
         Builder finished(boolean finished);
 
         Builder markFinished();
 
-        Builder usage(CatholicLLMUsage usage);
+        Builder usage(@Nullable CatholicLLMUsage usage);
 
         Builder usage(Integer promptTokens, Integer completionTokens, Integer totalTokens);
 
