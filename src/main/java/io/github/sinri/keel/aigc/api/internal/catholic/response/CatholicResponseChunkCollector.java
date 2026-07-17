@@ -36,12 +36,10 @@ public class CatholicResponseChunkCollector {
         }
 
         // 累积工具调用
-        if (chunk.deltaToolCalls() != null) {
-            for (CatholicToolCallChunkDelta delta : chunk.deltaToolCalls()) {
-                int index = delta.index();
-                ToolCallCollector collector = toolCallCollectors.computeIfAbsent(index, ToolCallCollector::new);
-                collector.collect(delta);
-            }
+        for (CatholicToolCallChunkDelta delta : chunk.deltaToolCalls()) {
+            int index = delta.index();
+            ToolCallCollector collector = toolCallCollectors.computeIfAbsent(index, ToolCallCollector::new);
+            collector.collect(delta);
         }
 
         // 标记完成
