@@ -27,7 +27,15 @@ public class CatholicToolInvocationHandlerWithNativeFunctionAdapters implements 
     @Override
     public Future<String> handle(CatholicFunctionToolCall toolCall) {
         NativeFunctionAdapter nativeFunctionAdapter = functionAdapterMap.get(toolCall.functionName());
-        JsonObject args = toolCall.parseArguments();
-        return nativeFunctionAdapter.call(args);
+        if (nativeFunctionAdapter == null) {
+            return Future.failedFuture(new IllegalArgumentException(
+                    "No native function adapter registered for tool: " + toolCall.functionName()));
+        }
+        try {
+            JsonObject args = toolCall.parseArguments();
+            return nativeFunctionAdapter.call(args);
+        } catch (RuntimeException e) {
+            return Future.failedFuture(e);
+        }
     }
 }
