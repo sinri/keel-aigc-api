@@ -33,20 +33,35 @@ public class AnthropicLLM implements CatholicLLM {
     private final String anthropicVersion;
     private final Keel keel;
 
+    @Deprecated
     public AnthropicLLM(HttpClient httpClient, String apiKey) {
         this(httpClient, apiKey, DEFAULT_BASE_URL, DEFAULT_ANTHROPIC_VERSION);
     }
 
+    @Deprecated
     public AnthropicLLM(HttpClient httpClient, String apiKey, String baseUrl) {
         this(httpClient, apiKey, baseUrl, DEFAULT_ANTHROPIC_VERSION);
     }
 
+    @Deprecated
     public AnthropicLLM(HttpClient httpClient, String apiKey, String baseUrl, String anthropicVersion) {
+        this(Keel.shared(), httpClient, apiKey, baseUrl, anthropicVersion);
+    }
+
+    public AnthropicLLM(Keel keel, HttpClient httpClient, String apiKey) {
+        this(keel, httpClient, apiKey, DEFAULT_BASE_URL, DEFAULT_ANTHROPIC_VERSION);
+    }
+
+    public AnthropicLLM(Keel keel, HttpClient httpClient, String apiKey, String baseUrl) {
+        this(keel, httpClient, apiKey, baseUrl, DEFAULT_ANTHROPIC_VERSION);
+    }
+
+    public AnthropicLLM(Keel keel, HttpClient httpClient, String apiKey, String baseUrl, String anthropicVersion) {
+        this.keel = keel;
         this.httpClient = httpClient;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.anthropicVersion = anthropicVersion;
-        this.keel = Keel.shared();
     }
 
     public static Builder builder() {
@@ -108,6 +123,7 @@ public class AnthropicLLM implements CatholicLLM {
     public static class Builder {
         private final LateObject<HttpClient> lateHttpClient = new LateObject<>();
         private final LateObject<String> lateApiKey=new LateObject<>();
+        private final LateObject<Keel> lateKeel = new LateObject<>();
         private String baseUrl = DEFAULT_BASE_URL;
         private String anthropicVersion = DEFAULT_ANTHROPIC_VERSION;
 
@@ -118,6 +134,11 @@ public class AnthropicLLM implements CatholicLLM {
 
         public Builder apiKey(String apiKey) {
             this.lateApiKey.set( apiKey);
+            return this;
+        }
+
+        public Builder keel(Keel keel) {
+            this.lateKeel.set(keel);
             return this;
         }
 
@@ -132,13 +153,16 @@ public class AnthropicLLM implements CatholicLLM {
         }
 
         public AnthropicLLM build() {
+            if (!lateKeel.isInitialized()) {
+                throw new IllegalArgumentException("keel is required");
+            }
             if (!lateHttpClient.isInitialized()) {
                 throw new IllegalArgumentException("httpClient is required");
             }
             if (!lateApiKey.isInitialized()|| lateApiKey.get().isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            return new AnthropicLLM(lateHttpClient.get(), lateApiKey.get(), baseUrl, anthropicVersion);
+            return new AnthropicLLM(lateKeel.get(), lateHttpClient.get(), lateApiKey.get(), baseUrl, anthropicVersion);
         }
     }
 }

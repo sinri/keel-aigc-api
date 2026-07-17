@@ -1,5 +1,7 @@
 package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 
+import io.github.sinri.keel.base.async.Keel;
+import io.vertx.core.Vertx;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -9,10 +11,20 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class OpenAIChatCompletionsLLMTest {
 
+    private final Keel keel = Keel.create(Vertx.vertx());
+
+    @Test
+    void testBuilderRequiresKeel() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+            OpenAIChatCompletionsLLM.builder().build());
+        assertEquals("keel is required", exception.getMessage());
+    }
+
     @Test
     void testBuilderRequiresHttpClient() {
         assertThrows(IllegalArgumentException.class, () -> {
             OpenAIChatCompletionsLLM.builder()
+                                    .keel(keel)
                                     .apiKey("test-key")
                                     .build();
         });
@@ -22,6 +34,7 @@ class OpenAIChatCompletionsLLMTest {
     void testBuilderRequiresApiKey() {
         assertThrows(IllegalArgumentException.class, () -> {
             OpenAIChatCompletionsLLM.builder()
+                                    .keel(keel)
                                     .httpClient(io.vertx.core.Vertx.vertx().createHttpClient())
                                     .build();
         });
@@ -31,6 +44,7 @@ class OpenAIChatCompletionsLLMTest {
     void testBuilderWithEmptyApiKey() {
         assertThrows(IllegalArgumentException.class, () -> {
             OpenAIChatCompletionsLLM.builder()
+                                    .keel(keel)
                                     .httpClient(io.vertx.core.Vertx.vertx().createHttpClient())
                                     .apiKey("")
                                     .build();
@@ -40,6 +54,7 @@ class OpenAIChatCompletionsLLMTest {
     @Test
     void testBuilderCreatesClientWithDefaults() {
         OpenAIChatCompletionsLLM client = OpenAIChatCompletionsLLM.builder()
+                                                                  .keel(keel)
                                                                   .httpClient(io.vertx.core.Vertx.vertx().createHttpClient())
                                                                   .apiKey("test-api-key")
                                                                   .build();
@@ -50,6 +65,7 @@ class OpenAIChatCompletionsLLMTest {
     @Test
     void testBuilderCreatesClientWithCustomBaseUrl() {
         OpenAIChatCompletionsLLM client = OpenAIChatCompletionsLLM.builder()
+                                                                  .keel(keel)
                                                                   .httpClient(io.vertx.core.Vertx.vertx().createHttpClient())
                                                                   .apiKey("test-api-key")
                                                                   .baseUrl("https://custom.api.com/v1")
@@ -61,6 +77,7 @@ class OpenAIChatCompletionsLLMTest {
     @Test
     void testClientImplementsCatholicLLM() {
         OpenAIChatCompletionsLLM client = OpenAIChatCompletionsLLM.builder()
+                                                                  .keel(keel)
                                                                   .httpClient(io.vertx.core.Vertx.vertx().createHttpClient())
                                                                   .apiKey("test-api-key")
                                                                   .build();

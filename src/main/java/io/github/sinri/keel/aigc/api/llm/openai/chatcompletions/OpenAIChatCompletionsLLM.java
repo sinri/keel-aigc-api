@@ -36,20 +36,37 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
 
     private static final String CHAT_API_ERROR = "OpenAI API error";
 
+    @Deprecated
     public OpenAIChatCompletionsLLM(HttpClient httpClient, String apiKey) {
         this(httpClient, apiKey, DEFAULT_BASE_URL, DEFAULT_AUTH_METHOD);
     }
 
+    @Deprecated
     public OpenAIChatCompletionsLLM(HttpClient httpClient, String apiKey, String baseUrl) {
         this(httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
     }
 
+    @Deprecated
     public OpenAIChatCompletionsLLM(HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
+        this(Keel.shared(), httpClient, apiKey, baseUrl, authMethod);
+    }
+
+    public OpenAIChatCompletionsLLM(Keel keel, HttpClient httpClient, String apiKey) {
+        this(keel, httpClient, apiKey, DEFAULT_BASE_URL, DEFAULT_AUTH_METHOD);
+    }
+
+    public OpenAIChatCompletionsLLM(Keel keel, HttpClient httpClient, String apiKey, String baseUrl) {
+        this(keel, httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
+    }
+
+    public OpenAIChatCompletionsLLM(
+        Keel keel, HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod
+    ) {
+        this.keel = keel;
         this.httpClient = httpClient;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.authMethod = authMethod;
-        this.keel = Keel.shared();
     }
 
     @Override
@@ -122,6 +139,7 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
     public static class Builder {
         private final LateObject<HttpClient> lateHttpClient = new LateObject<>();
         private final LateObject<String> lateApiKey = new LateObject<>();
+        private final LateObject<Keel> lateKeel = new LateObject<>();
         private String baseUrl = DEFAULT_BASE_URL;
         private AuthMethod authMethod = DEFAULT_AUTH_METHOD;
 
@@ -132,6 +150,11 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
 
         public Builder apiKey(String apiKey) {
             this.lateApiKey.set(apiKey);
+            return this;
+        }
+
+        public Builder keel(Keel keel) {
+            this.lateKeel.set(keel);
             return this;
         }
 
@@ -146,13 +169,18 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
         }
 
         public OpenAIChatCompletionsLLM build() {
+            if (!lateKeel.isInitialized()) {
+                throw new IllegalArgumentException("keel is required");
+            }
             if (!lateHttpClient.isInitialized()) {
                 throw new IllegalArgumentException("httpClient is required");
             }
             if (!lateApiKey.isInitialized() || lateApiKey.get().isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            return new OpenAIChatCompletionsLLM(lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod);
+            return new OpenAIChatCompletionsLLM(
+                lateKeel.get(), lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod
+            );
         }
     }
 
