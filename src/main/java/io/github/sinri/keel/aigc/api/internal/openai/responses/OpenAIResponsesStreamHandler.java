@@ -186,8 +186,8 @@ public class OpenAIResponsesStreamHandler {
         return new CatholicLLMUsage(prompt, completion, total);
     }
 
-    private static Integer firstNonNull(@Nullable Integer a, @Nullable Integer b) {
-        return a != null ? a : Objects.requireNonNull(b);
+    private static @Nullable Integer firstNonNull(@Nullable Integer a, @Nullable Integer b) {
+        return a != null ? a : b;
     }
 
     /**

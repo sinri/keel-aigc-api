@@ -9,6 +9,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionTool
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,7 +121,7 @@ public class OpenAIResponsesResponseConverter {
         return new CatholicLLMUsage(prompt, completion, total);
     }
 
-    private static Integer firstNonNull(Integer a, Integer b) {
+    private static @Nullable Integer firstNonNull(@Nullable Integer a, @Nullable Integer b) {
         return a != null ? a : b;
     }
 }

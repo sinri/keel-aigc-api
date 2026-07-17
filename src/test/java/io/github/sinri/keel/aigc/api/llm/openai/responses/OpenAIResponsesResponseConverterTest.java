@@ -131,6 +131,32 @@ class OpenAIResponsesResponseConverterTest {
     }
 
     @Test
+    void testConvertPartialUsage() {
+        CatholicLLMUsage inputOnly = convertUsage(new JsonObject().put("input_tokens", 4));
+        assertEquals(4, inputOnly.promptTokens());
+        assertNull(inputOnly.completionTokens());
+        assertNull(inputOnly.totalTokens());
+
+        CatholicLLMUsage outputOnly = convertUsage(new JsonObject().put("output_tokens", 5));
+        assertNull(outputOnly.promptTokens());
+        assertEquals(5, outputOnly.completionTokens());
+        assertNull(outputOnly.totalTokens());
+
+        CatholicLLMUsage empty = convertUsage(new JsonObject());
+        assertNull(empty.promptTokens());
+        assertNull(empty.completionTokens());
+        assertNull(empty.totalTokens());
+    }
+
+    private CatholicLLMUsage convertUsage(JsonObject usage) {
+        return converter.convert(new JsonObject()
+            .put("id", "resp_usage")
+            .put("output", new JsonArray())
+            .put("usage", usage))
+            .usage();
+    }
+
+    @Test
     void testConvertRefusalPart() {
         JsonObject responseJson = new JsonObject()
             .put("id", "resp_ref")
