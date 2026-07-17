@@ -37,7 +37,8 @@ public class CatholicAgentSampleTest extends KeelInstantRunner {
                                                            .setKeepAlive(true))
                                                    .build();
         DashScopeMultimodalGenerationLLM.Builder builder = DashScopeMultimodalGenerationLLM.builder();
-        DashScopeMultimodalGenerationLLM llm = builder.baseUrl(getBaseUrl())
+        DashScopeMultimodalGenerationLLM llm = builder.keel(getKeel())
+                                                      .baseUrl(getBaseUrl())
                                                       .apiKey(getApiKey())
                                                       .httpClient(httpClientAgent)
                                                       .build();
@@ -52,7 +53,7 @@ public class CatholicAgentSampleTest extends KeelInstantRunner {
                                            .model(getModel())
                                            .tools(toolInvocationHandler.getRegisteredToolDefinitions())
                                            .toolHandler(toolInvocationHandler)
-                                           .maxToolRounds(3)
+                                           .maxRounds(3)
                                            .build();
 
         return agent.chat("今天是 2026年 4 月 4 日，杭州明天的天气怎么样")
