@@ -9,7 +9,6 @@ import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.github.sinri.keel.logger.api.LateObject;
 import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,11 +59,11 @@ public class CatholicResponseChunkCollector {
 
         List<CatholicFunctionToolCall> toolCalls = null;
         if (!toolCallCollectors.isEmpty()) {
-            toolCalls = new ArrayList<>();
-            for (int i = 0; toolCallCollectors.containsKey(i); i++) {
-                ToolCallCollector collector = toolCallCollectors.get(i);
-                toolCalls.add(collector.build());
-            }
+            toolCalls = toolCallCollectors.entrySet().stream()
+                                          .sorted(Map.Entry.comparingByKey())
+                                          .map(Map.Entry::getValue)
+                                          .map(ToolCallCollector::build)
+                                          .toList();
         }
 
         CatholicAssistantMessage message = new CatholicAssistantMessage(text, toolCalls);
