@@ -9,6 +9,7 @@ import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeStreamHandler;
 import io.github.sinri.keel.aigc.api.llm.dashscope.AbstractDashScopeLLM;
 import io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration.DashScopeMultimodalRequestConverter;
 import io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration.DashScopeMultimodalResponseConverter;
+import io.github.sinri.keel.base.async.Keel;
 import io.github.sinri.keel.logger.api.LateObject;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
@@ -27,16 +28,33 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
 
     private static final String MULTIMODAL_GENERATION_PATH = "/services/aigc/multimodal-generation/generation";
 
+    @Deprecated
     public DashScopeMultimodalGenerationLLM(HttpClient httpClient, String apiKey) {
         this(httpClient, apiKey, DEFAULT_BASE_URL);
     }
 
+    @Deprecated
     public DashScopeMultimodalGenerationLLM(HttpClient httpClient, String apiKey, String baseUrl) {
         this(httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
     }
 
+    @Deprecated
     public DashScopeMultimodalGenerationLLM(HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
         super(httpClient, apiKey, baseUrl, authMethod);
+    }
+
+    public DashScopeMultimodalGenerationLLM(Keel keel, HttpClient httpClient, String apiKey) {
+        this(keel, httpClient, apiKey, DEFAULT_BASE_URL, DEFAULT_AUTH_METHOD);
+    }
+
+    public DashScopeMultimodalGenerationLLM(Keel keel, HttpClient httpClient, String apiKey, String baseUrl) {
+        this(keel, httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
+    }
+
+    public DashScopeMultimodalGenerationLLM(
+        Keel keel, HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod
+    ) {
+        super(keel, httpClient, apiKey, baseUrl, authMethod);
     }
 
     /**
@@ -100,6 +118,7 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
     public static class Builder {
         private final LateObject<HttpClient> lateHttpClient = new LateObject<>();
         private final LateObject<String> lateApiKey = new LateObject<>();
+        private final LateObject<Keel> lateKeel = new LateObject<>();
         private String baseUrl = DEFAULT_BASE_URL;
         private AuthMethod authMethod = DEFAULT_AUTH_METHOD;
 
@@ -110,6 +129,11 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
 
         public Builder apiKey(String apiKey) {
             this.lateApiKey.set(apiKey);
+            return this;
+        }
+
+        public Builder keel(Keel keel) {
+            this.lateKeel.set(keel);
             return this;
         }
 
@@ -124,13 +148,18 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
         }
 
         public DashScopeMultimodalGenerationLLM build() {
+            if (!lateKeel.isInitialized()) {
+                throw new IllegalArgumentException("keel is required");
+            }
             if (!lateHttpClient.isInitialized()) {
                 throw new IllegalArgumentException("httpClient is required");
             }
             if (!lateApiKey.isInitialized() || lateApiKey.get().isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            return new DashScopeMultimodalGenerationLLM(lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod);
+            return new DashScopeMultimodalGenerationLLM(
+                lateKeel.get(), lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod
+            );
         }
     }
 }

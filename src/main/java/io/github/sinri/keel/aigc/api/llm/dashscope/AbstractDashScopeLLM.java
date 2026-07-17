@@ -26,16 +26,28 @@ public abstract class AbstractDashScopeLLM implements CatholicLLM {
     private final AuthMethod authMethod;
     private final Keel keel;
 
+    @Deprecated
     protected AbstractDashScopeLLM(HttpClient httpClient, String apiKey, String baseUrl) {
         this(httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
     }
 
+    @Deprecated
     protected AbstractDashScopeLLM(HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
+        this(Keel.shared(), httpClient, apiKey, baseUrl, authMethod);
+    }
+
+    protected AbstractDashScopeLLM(Keel keel, HttpClient httpClient, String apiKey, String baseUrl) {
+        this(keel, httpClient, apiKey, baseUrl, DEFAULT_AUTH_METHOD);
+    }
+
+    protected AbstractDashScopeLLM(
+        Keel keel, HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod
+    ) {
+        this.keel = keel;
         this.httpClient = httpClient;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.authMethod = authMethod;
-        this.keel = Keel.shared();
     }
 
     protected Keel getKeel() {
