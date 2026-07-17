@@ -176,4 +176,73 @@ class OpenAIResponsesStreamHandlerTest {
         assertEquals("resp_second", response.id());
         assertEquals("B", response.text());
     }
+
+    @Test
+    void testCompletedWithoutUsage() {
+        CatholicLLMUsageAssertions.assertUsage(
+            completeWithUsage("resp_without_usage", null),
+            null, null, null
+        );
+    }
+
+    @Test
+    void testCompletedWithEmptyUsage() {
+        CatholicLLMUsageAssertions.assertUsage(
+            completeWithUsage("resp_empty_usage", new JsonObject()),
+            null, null, null
+        );
+    }
+
+    @Test
+    void testCompletedWithOnlyInputTokens() {
+        CatholicLLMUsageAssertions.assertUsage(
+            completeWithUsage("resp_input_only", new JsonObject().put("input_tokens", 11)),
+            11, null, null
+        );
+    }
+
+    @Test
+    void testCompletedWithOnlyOutputTokens() {
+        CatholicLLMUsageAssertions.assertUsage(
+            completeWithUsage("resp_output_only", new JsonObject().put("output_tokens", 12)),
+            null, 12, null
+        );
+    }
+
+    @Test
+    void testCompletedWithLegacyTokenAliases() {
+        CatholicLLMUsageAssertions.assertUsage(
+            completeWithUsage("resp_aliases", new JsonObject()
+                .put("prompt_tokens", 13)
+                .put("completion_tokens", 14)),
+            13, 14, null
+        );
+    }
+
+    private CatholicLLMResponse completeWithUsage(String responseId, JsonObject usage) {
+        JsonObject response = new JsonObject().put("id", responseId);
+        if (usage != null) {
+            response.put("usage", usage);
+        }
+        CatholicLLMResponseChunk completed = handler.processSseLine("data: " + new JsonObject()
+            .put("type", "response.completed")
+            .put("response", response)
+            .encode());
+        assertNotNull(completed);
+        assertTrue(completed.isFinished());
+        return handler.buildFinalResponse();
+    }
+
+    private static final class CatholicLLMUsageAssertions {
+        private static void assertUsage(
+            CatholicLLMResponse response,
+            Integer promptTokens,
+            Integer completionTokens,
+            Integer totalTokens
+        ) {
+            assertEquals(promptTokens, response.usage().promptTokens());
+            assertEquals(completionTokens, response.usage().completionTokens());
+            assertEquals(totalTokens, response.usage().totalTokens());
+        }
+    }
 }
