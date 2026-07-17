@@ -1,5 +1,8 @@
 package io.github.sinri.keel.aigc.api.agent;
 
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkill;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillFrontmatter;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillProvider;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
@@ -123,6 +126,171 @@ class CatholicAgentTest {
     }
 
     @Test
+    void skillCatalogIsDisclosedAndActivatedProgressively() {
+        CountingLlm llm = new CountingLlm();
+        CatholicFunctionToolCall activation = new CatholicFunctionToolCallImpl(
+            "skill-call", new FunctionCall(CatholicAgent.ACTIVATE_SKILL_FUNCTION_NAME,
+            "{\"name\":\"pdf-processing\"}"));
+        llm.queue.add(toolOnlyResponse(activation));
+        llm.queue.add(textOnlyResponse("processed"));
+        int[] loads = {0};
+
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+            .skillProvider(new CatholicSkillProvider() {
+                @Override
+                public Future<List<CatholicSkillFrontmatter>> getSkillCandidates() {
+                    return Future.succeededFuture(List.of(frontmatter(
+                        "pdf-processing", "Process PDF documents when the user asks about PDFs.")));
+                }
+
+                @Override
+                public Future<CatholicSkill> loadSkillByName(String skillName) {
+                    loads[0]++;
+                    return Future.succeededFuture(skill(skillName, "Process PDFs.",
+                        "First inspect the PDF, then summarize it."));
+                }
+            })
+            .build();
+
+        CatholicAgentResult result = agent.interact("summarize a PDF")
+            .toCompletionStage().toCompletableFuture().join();
+
+        assertTrue(result.completed());
+        assertEquals(1, loads[0]);
+        assertEquals("processed", result.text());
+        assertEquals(2, llm.requests.get(0).messages().size());
+        assertTrue(((CatholicSystemMessage) llm.requests.get(0).messages().get(0)).text()
+            .contains("pdf-processing"));
+        assertTrue(llm.requests.get(0).tools().stream()
+            .filter(io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicFunctionToolDefinition.class::isInstance)
+            .map(io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicFunctionToolDefinition.class::cast)
+            .anyMatch(t -> t.function().name().equals(CatholicAgent.ACTIVATE_SKILL_FUNCTION_NAME)));
+        assertTrue(result.transcript().stream()
+            .filter(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::isInstance)
+            .map(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::cast)
+            .anyMatch(message -> message.content().contains("First inspect the PDF")));
+    }
+
+    @Test
+    void emptySkillCatalogAddsNeitherPromptNorActivationTool() {
+        CountingLlm llm = new CountingLlm();
+        llm.nextResponse = textOnlyResponse("plain");
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+            .skillProvider(new CatholicSkillProvider() {
+                @Override
+                public Future<List<CatholicSkillFrontmatter>> getSkillCandidates() {
+                    return Future.succeededFuture(List.of());
+                }
+
+                @Override
+                public Future<CatholicSkill> loadSkillByName(String skillName) {
+                    return Future.failedFuture("should not load");
+                }
+            }).build();
+
+        CatholicAgentResult result = agent.interact("hello").toCompletionStage().toCompletableFuture().join();
+        assertEquals(2, result.transcript().size());
+        assertTrue(llm.requests.get(0).tools().isEmpty());
+    }
+
+    @Test
+    void repeatedSkillActivationLoadsOnlyOncePerInteraction() {
+        CountingLlm llm = new CountingLlm();
+        CatholicFunctionToolCall activation = new CatholicFunctionToolCallImpl(
+            "skill-call-1", new FunctionCall(CatholicAgent.ACTIVATE_SKILL_FUNCTION_NAME,
+            "{\"name\":\"code-review\"}"));
+        CatholicFunctionToolCall repeatedActivation = new CatholicFunctionToolCallImpl(
+            "skill-call-2", new FunctionCall(CatholicAgent.ACTIVATE_SKILL_FUNCTION_NAME,
+            "{\"name\":\"code-review\"}"));
+        llm.queue.add(toolOnlyResponse(activation));
+        llm.queue.add(toolOnlyResponse(repeatedActivation));
+        llm.queue.add(textOnlyResponse("done"));
+        int[] loads = {0};
+
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+            .skillProvider(new CatholicSkillProvider() {
+                @Override
+                public Future<List<CatholicSkillFrontmatter>> getSkillCandidates() {
+                    return Future.succeededFuture(List.of(
+                        frontmatter("code-review", "Review code when a review is requested.")));
+                }
+
+                @Override
+                public Future<CatholicSkill> loadSkillByName(String skillName) {
+                    loads[0]++;
+                    return Future.succeededFuture(skill(skillName, "Review code.", "Inspect every changed file."));
+                }
+            }).build();
+
+        CatholicAgentResult result = agent.interact("review this")
+            .toCompletionStage().toCompletableFuture().join();
+
+        assertTrue(result.completed());
+        assertEquals(1, loads[0]);
+        assertTrue(result.transcript().stream()
+            .filter(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::isInstance)
+            .map(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::cast)
+            .anyMatch(message -> message.content().contains("already active")));
+    }
+
+    @Test
+    void skillActivationDeduplicationIsIsolatedBetweenInteractions() {
+        CountingLlm llm = new CountingLlm();
+        CatholicFunctionToolCall firstActivation = new CatholicFunctionToolCallImpl(
+            "skill-call-1", new FunctionCall(CatholicAgent.ACTIVATE_SKILL_FUNCTION_NAME,
+            "{\"name\":\"code-review\"}"));
+        CatholicFunctionToolCall secondActivation = new CatholicFunctionToolCallImpl(
+            "skill-call-2", new FunctionCall(CatholicAgent.ACTIVATE_SKILL_FUNCTION_NAME,
+            "{\"name\":\"code-review\"}"));
+        llm.queue.add(toolOnlyResponse(firstActivation));
+        llm.queue.add(textOnlyResponse("first done"));
+        llm.queue.add(toolOnlyResponse(secondActivation));
+        llm.queue.add(textOnlyResponse("second done"));
+        int[] loads = {0};
+
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+            .skillProvider(new CatholicSkillProvider() {
+                @Override
+                public Future<List<CatholicSkillFrontmatter>> getSkillCandidates() {
+                    return Future.succeededFuture(List.of(
+                        frontmatter("code-review", "Review code when a review is requested.")));
+                }
+
+                @Override
+                public Future<CatholicSkill> loadSkillByName(String skillName) {
+                    loads[0]++;
+                    return Future.succeededFuture(skill(skillName, "Review code.", "Inspect every changed file."));
+                }
+            }).build();
+
+        assertTrue(agent.interact("first review").toCompletionStage().toCompletableFuture().join().completed());
+        assertTrue(agent.interact("second review").toCompletionStage().toCompletableFuture().join().completed());
+        assertEquals(2, loads[0]);
+    }
+
+    @Test
+    void duplicateSkillNamesFailBeforeCallingLlm() {
+        CountingLlm llm = new CountingLlm();
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+            .skillProvider(new CatholicSkillProvider() {
+                @Override
+                public Future<List<CatholicSkillFrontmatter>> getSkillCandidates() {
+                    return Future.succeededFuture(List.of(
+                        frontmatter("same-skill", "first description"),
+                        frontmatter("same-skill", "second description")));
+                }
+
+                @Override
+                public Future<CatholicSkill> loadSkillByName(String skillName) {
+                    return Future.failedFuture("should not load");
+                }
+            }).build();
+
+        assertTrue(failureOf(agent.interact("x")).getMessage().contains("duplicate skill name"));
+        assertEquals(0, llm.callCount);
+    }
+
+    @Test
     void requiredToolChoiceOnlyAffectsFirstRequest() {
         CountingLlm llm = new CountingLlm();
         CatholicFunctionToolCall call = new CatholicFunctionToolCallImpl("c", new FunctionCall("f", "{}"));
@@ -188,6 +356,21 @@ class CatholicAgentTest {
             .id("id")
             .message(CatholicAssistantMessage.ofText(text))
             .build();
+    }
+
+    private static CatholicSkillFrontmatter frontmatter(String name, String description) {
+        return new CatholicSkillFrontmatter() {
+            @Override public String name() { return name; }
+            @Override public String description() { return description; }
+        };
+    }
+
+    private static CatholicSkill skill(String name, String description, String instructions) {
+        return new CatholicSkill() {
+            @Override public String name() { return name; }
+            @Override public String description() { return description; }
+            @Override public String instructions() { return instructions; }
+        };
     }
 
     /**
