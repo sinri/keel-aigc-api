@@ -138,6 +138,35 @@ CatholicAgent agent = CatholicAgent.builder()
 
 Observer 返回完成时，即使响应包含工具调用，工具也不会执行。业务 Observer 因此应明确决定工具调用是否仍有必要。
 
+## Agent Skills
+
+可通过 `CatholicSkillProvider` 为 Agent 提供符合 [Agent Skills](https://agentskills.io/specification)
+规范的 Skill：
+
+```java
+CatholicAgent agent = CatholicAgent.builder()
+    .llm(llm)
+    .model("model-name")
+    .skillProvider(skillProvider)
+    .build();
+```
+
+框架采用渐进披露：每次交互开始时调用 `getSkillCandidates()`，只把候选 Skill 的
+`name` 和 `description` 放入本次 system context；存在候选时才注册内置
+`activate_skill` 工具，且其 `name` 参数枚举限定为本次候选名称。模型调用该工具后，
+框架再通过 `loadSkillByName(...)` 加载完整正文，并将 `instructions()` 作为工具结果送回下一轮。
+同一次 `interact(...)` 内已成功激活的 Skill 会被记录；模型重复激活时不会再次访问 Provider
+或重复注入正文，只会收到“已在当前上下文中”的简短工具结果。该记录不会跨交互共享。
+
+`CatholicSkillFrontmatter` 对应规范的 frontmatter：`name`、`description` 为必填，
+`license`、`compatibility`、`metadata`、`allowedTools` 为可选；其中 `allowed-tools`
+仍是实验字段，框架目前仅表达和披露其值，不据此绕过应用自身的权限控制。
+
+候选为空时不会注入空目录或注册激活工具。候选名称重复、字段违反规范、Provider 返回
+null、加载结果名称不一致或正文为空时，当前交互会失败。`activate_skill` 是保留函数名，
+不能作为业务工具注册。Skill 中引用的 scripts、references、assets 仍需由应用已有工具
+按 Skill 指令按需读取或执行；CatholicAgent 本身不隐式取得文件系统或命令执行能力。
+
 ## 首轮强制调用指定工具
 
 “本次交互的首次 LLM 请求必须选择某个函数”属于特殊策略，不由通用 `CatholicAgent` 保存状态。使用独立的 `CatholicRequiredToolAgent`：

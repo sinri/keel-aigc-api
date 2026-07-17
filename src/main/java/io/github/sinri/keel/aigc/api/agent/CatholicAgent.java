@@ -1,5 +1,8 @@
 package io.github.sinri.keel.aigc.api.agent;
 
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkill;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillFrontmatter;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillProvider;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
@@ -12,13 +15,20 @@ import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOpti
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicFunctionToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
+import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function.FunctionDefinition;
 import io.github.sinri.keel.logger.api.LateObject;
 import io.vertx.core.Future;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * 通用、非流式 Agent 执行器。每次 {@link #interact} 都是相互隔离的一次用户交互：
@@ -28,6 +38,7 @@ import java.util.Objects;
  * 本类不保存会话历史，也不承载“必须调用某个工具”等特定业务策略。
  */
 public final class CatholicAgent {
+    public static final String ACTIVATE_SKILL_FUNCTION_NAME = "activate_skill";
     private final CatholicLLM llm;
     private final String model;
     private final List<CatholicToolDefinition> tools;
@@ -36,11 +47,13 @@ public final class CatholicAgent {
     private final CatholicAgentObserver observer;
     private final int maxRounds;
     private final List<CatholicChatMessage> initialMessages;
+    private final @Nullable CatholicSkillProvider skillProvider;
 
     private CatholicAgent(CatholicLLM llm, String model, List<CatholicToolDefinition> tools,
                           CatholicLLMRequestOptions options, CatholicToolInvocationHandler toolHandler,
                           CatholicAgentObserver observer, int maxRounds,
-                          List<CatholicChatMessage> initialMessages) {
+                          List<CatholicChatMessage> initialMessages,
+                          @Nullable CatholicSkillProvider skillProvider) {
         this.llm = llm;
         this.model = model;
         this.tools = tools;
@@ -49,6 +62,7 @@ public final class CatholicAgent {
         this.observer = observer;
         this.maxRounds = maxRounds;
         this.initialMessages = initialMessages;
+        this.skillProvider = skillProvider;
     }
 
     public static Builder builder() {
@@ -68,9 +82,13 @@ public final class CatholicAgent {
                                         CatholicAgentFirstResponseValidator firstResponseValidator) {
         Objects.requireNonNull(userMessage, "userMessage");
         Objects.requireNonNull(firstResponseValidator, "firstResponseValidator");
-        ArrayList<CatholicChatMessage> transcript = new ArrayList<>(initialMessages);
-        transcript.add(userMessage);
-        return execute(transcript, 1, 0, requiredTool, firstResponseValidator);
+        return prepareSkillContext().compose(skillContext -> {
+            ArrayList<CatholicChatMessage> transcript = new ArrayList<>(initialMessages);
+            if (skillContext.catalogMessage() != null) transcript.add(skillContext.catalogMessage());
+            transcript.add(userMessage);
+            return execute(transcript, 1, 0, requiredTool, firstResponseValidator,
+                skillContext.tools(), skillContext.handler());
+        });
     }
 
     boolean supportsFunction(String functionName) {
@@ -101,14 +119,16 @@ public final class CatholicAgent {
     private Future<CatholicAgentResult> execute(ArrayList<CatholicChatMessage> transcript,
                                                 int llmRound, int toolRounds,
                                                 @Nullable String firstRoundRequiredTool,
-                                                CatholicAgentFirstResponseValidator firstResponseValidator) {
+                                                CatholicAgentFirstResponseValidator firstResponseValidator,
+                                                List<CatholicToolDefinition> interactionTools,
+                                                CatholicToolInvocationHandler interactionToolHandler) {
         CatholicLLMRequestOptions requestOptions = firstRoundRequiredTool == null
             ? copyOptions(options, null)
             : copyOptions(options, firstRoundRequiredTool);
         CatholicLLMRequest request = CatholicLLMRequest.builder()
             .model(model)
             .messages(List.copyOf(transcript))
-            .tools(tools)
+            .tools(interactionTools)
             .options(requestOptions)
             .stream(false)
             .build();
@@ -137,30 +157,136 @@ public final class CatholicAgent {
                         transcript, response, llmRound, toolRounds, maxRounds));
                 }
                 if (assistant.hasToolCalls()) {
-                    return appendToolResultsSequential(transcript, assistant.toolCalls(), 0)
+                    return appendToolResultsSequential(transcript, assistant.toolCalls(), 0,
+                            interactionToolHandler)
                         .compose(v -> execute(transcript, llmRound + 1, toolRounds + 1, null,
-                            firstResponseValidator));
+                            firstResponseValidator, interactionTools, interactionToolHandler));
                 }
                 if (directive.messagesToAppend().isEmpty()) {
                     return Future.failedFuture(new IllegalStateException(
                         "observer requested continuation without tool calls or observation messages"));
                 }
-                return execute(transcript, llmRound + 1, toolRounds, null, firstResponseValidator);
+                return execute(transcript, llmRound + 1, toolRounds, null, firstResponseValidator,
+                    interactionTools, interactionToolHandler);
             });
         });
     }
 
     private Future<Void> appendToolResultsSequential(ArrayList<CatholicChatMessage> transcript,
-                                                     List<CatholicFunctionToolCall> calls, int index) {
+                                                     List<CatholicFunctionToolCall> calls, int index,
+                                                     CatholicToolInvocationHandler interactionToolHandler) {
         if (index >= calls.size()) return Future.succeededFuture();
         CatholicFunctionToolCall call = calls.get(index);
-        return toolHandler.handle(call).compose(result -> {
+        return interactionToolHandler.handle(call).compose(result -> {
             if (result == null) return Future.failedFuture(new IllegalStateException(
                 "tool returned null: " + call.functionName()));
             transcript.add(CatholicToolCallMessage.of(call.id(), result));
-            return appendToolResultsSequential(transcript, calls, index + 1);
+            return appendToolResultsSequential(transcript, calls, index + 1, interactionToolHandler);
         });
     }
+
+    private Future<SkillContext> prepareSkillContext() {
+        if (skillProvider == null) {
+            return Future.succeededFuture(new SkillContext(tools, toolHandler, null));
+        }
+        return skillProvider.getSkillCandidates().compose(candidates -> {
+            if (candidates == null) {
+                return Future.failedFuture(new IllegalStateException("skill provider returned null candidates"));
+            }
+            Map<String, CatholicSkillFrontmatter> byName = new LinkedHashMap<>();
+            for (CatholicSkillFrontmatter candidate : candidates) {
+                if (candidate == null) {
+                    return Future.failedFuture(new IllegalStateException("skill provider returned a null candidate"));
+                }
+                validateSkillFrontmatter(candidate);
+                if (byName.putIfAbsent(candidate.name(), candidate) != null) {
+                    return Future.failedFuture(new IllegalStateException("duplicate skill name: " + candidate.name()));
+                }
+            }
+            if (byName.isEmpty()) {
+                return Future.succeededFuture(new SkillContext(tools, toolHandler, null));
+            }
+
+            ArrayList<CatholicToolDefinition> interactionTools = new ArrayList<>(tools);
+            JsonArray names = new JsonArray(new ArrayList<>(byName.keySet()));
+            JsonObject parameters = new JsonObject()
+                .put("type", "object")
+                .put("properties", new JsonObject().put("name", new JsonObject()
+                    .put("type", "string").put("enum", names)
+                    .put("description", "The name of the skill to activate.")))
+                .put("required", new JsonArray().add("name"))
+                .put("additionalProperties", false);
+            interactionTools.add(CatholicToolDefinition.function(FunctionDefinition.of(
+                ACTIVATE_SKILL_FUNCTION_NAME,
+                "Load the full instructions for one available skill before applying it.", parameters)));
+
+            Set<String> activatedSkillNames = new HashSet<>();
+            CatholicToolInvocationHandler interactionHandler = call -> {
+                if (!ACTIVATE_SKILL_FUNCTION_NAME.equals(call.functionName())) return toolHandler.handle(call);
+                String name;
+                try {
+                    name = call.parseArguments().getString("name");
+                } catch (RuntimeException e) {
+                    return Future.failedFuture(e);
+                }
+                if (name == null || !byName.containsKey(name)) {
+                    return Future.failedFuture(new IllegalArgumentException("unknown skill: " + name));
+                }
+                if (activatedSkillNames.contains(name)) {
+                    return Future.succeededFuture("Skill '" + name
+                        + "' is already active; its instructions are already present in this conversation.");
+                }
+                return skillProvider.loadSkillByName(name).compose(skill -> {
+                    if (skill == null) {
+                        return Future.failedFuture(new IllegalStateException("skill provider returned null: " + name));
+                    }
+                    validateSkillFrontmatter(skill);
+                    if (!name.equals(skill.name())) {
+                        return Future.failedFuture(new IllegalStateException(
+                            "loaded skill name mismatch: expected " + name + ", got " + skill.name()));
+                    }
+                    if (skill.instructions() == null || skill.instructions().isBlank()) {
+                        return Future.failedFuture(new IllegalStateException("skill instructions are blank: " + name));
+                    }
+                    activatedSkillNames.add(name);
+                    return Future.succeededFuture("<skill_instructions name=\"" + name + "\">\n"
+                        + skill.instructions() + "\n</skill_instructions>");
+                });
+            };
+            return Future.succeededFuture(new SkillContext(List.copyOf(interactionTools), interactionHandler,
+                CatholicSystemMessage.of(buildSkillCatalog(byName.values().stream().toList()))));
+        });
+    }
+
+    private static String buildSkillCatalog(List<CatholicSkillFrontmatter> candidates) {
+        JsonArray catalog = new JsonArray();
+        candidates.forEach(skill -> catalog.add(new JsonObject()
+            .put("name", skill.name()).put("description", skill.description())));
+        return "The following skills provide specialized instructions. When the user's task matches a "
+            + "skill description, call " + ACTIVATE_SKILL_FUNCTION_NAME
+            + " before proceeding. Do not call it for unrelated tasks.\n<available_skills>\n"
+            + catalog.encodePrettily() + "\n</available_skills>";
+    }
+
+    private static void validateSkillFrontmatter(CatholicSkillFrontmatter skill) {
+        String name = Objects.requireNonNull(skill.name(), "skill name");
+        String description = Objects.requireNonNull(skill.description(), "skill description");
+        if (!name.matches("[a-z0-9]+(?:-[a-z0-9]+)*") || name.length() > 64) {
+            throw new IllegalArgumentException("invalid skill name: " + name);
+        }
+        if (description.isBlank() || description.length() > 1024) {
+            throw new IllegalArgumentException("invalid description for skill: " + name);
+        }
+        if (skill.compatibility() != null
+            && (skill.compatibility().isBlank() || skill.compatibility().length() > 500)) {
+            throw new IllegalArgumentException("invalid compatibility for skill: " + name);
+        }
+        Objects.requireNonNull(skill.metadata(), "skill metadata");
+    }
+
+    private record SkillContext(List<CatholicToolDefinition> tools,
+                                CatholicToolInvocationHandler handler,
+                                @Nullable CatholicSystemMessage catalogMessage) {}
 
     private static CatholicLLMRequestOptions copyOptions(CatholicLLMRequestOptions source,
                                                          @Nullable String requiredTool) {
@@ -187,6 +313,7 @@ public final class CatholicAgent {
         private CatholicLLMRequestOptions options = CatholicLLMRequestOptions.defaultOptions();
         private CatholicAgentObserver observer = CatholicAgentObserver.defaultObserver();
         private int maxRounds = 32;
+        private @Nullable CatholicSkillProvider skillProvider;
 
         public Builder llm(CatholicLLM llm) { lateLlm.set(Objects.requireNonNull(llm, "llm")); return this; }
         public Builder model(String model) { lateModel.set(Objects.requireNonNull(model, "model")); return this; }
@@ -200,6 +327,10 @@ public final class CatholicAgent {
         public Builder toolHandler(CatholicToolInvocationHandler handler) { lateToolHandler.set(Objects.requireNonNull(handler, "toolHandler")); return this; }
         public Builder observer(CatholicAgentObserver observer) { this.observer = Objects.requireNonNull(observer, "observer"); return this; }
         public Builder maxRounds(int maxRounds) { this.maxRounds = maxRounds; return this; }
+        public Builder skillProvider(@Nullable CatholicSkillProvider skillProvider) {
+            this.skillProvider = skillProvider;
+            return this;
+        }
         /** @deprecated use {@link #maxRounds(int)} */
         @Deprecated public Builder maxToolRounds(int maxToolRounds) { return maxRounds(maxToolRounds + 1); }
         public Builder systemPrompt(@Nullable String text) {
@@ -213,11 +344,16 @@ public final class CatholicAgent {
             if (maxRounds < 1) throw new IllegalArgumentException("maxRounds must be at least 1");
             if (!tools.isEmpty() && !lateToolHandler.isInitialized())
                 throw new IllegalArgumentException("toolHandler is required when tools are non-empty");
+            if (tools.stream().filter(CatholicFunctionToolDefinition.class::isInstance)
+                .map(CatholicFunctionToolDefinition.class::cast)
+                .anyMatch(tool -> ACTIVATE_SKILL_FUNCTION_NAME.equals(tool.function().name()))) {
+                throw new IllegalArgumentException("reserved tool name: " + ACTIVATE_SKILL_FUNCTION_NAME);
+            }
             CatholicToolInvocationHandler handler = tools.isEmpty()
                 ? tc -> Future.failedFuture(new IllegalStateException("no tools configured"))
                 : lateToolHandler.get();
             return new CatholicAgent(lateLlm.get(), lateModel.get(), List.copyOf(tools), options,
-                handler, observer, maxRounds, List.copyOf(initialMessages));
+                handler, observer, maxRounds, List.copyOf(initialMessages), skillProvider);
         }
     }
 }
