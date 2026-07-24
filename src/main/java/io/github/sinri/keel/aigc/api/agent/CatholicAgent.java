@@ -75,6 +75,32 @@ public final class CatholicAgent {
                 + catalog.encodePrettily() + "\n</available_skills>";
     }
 
+    /**
+     * 不同 LLM 服务对多条或位于对话中间的 system message 支持并不一致。
+     * 在请求边界将它们按原始出现顺序合并，并始终放在消息列表首位。
+     * transcript 本身保持不变，以保留完整的 Agent 执行历史。
+     */
+    private static List<CatholicChatMessage> normalizeRequestMessages(
+            List<? extends CatholicChatMessage> messages) {
+        StringJoiner systemText = new StringJoiner("\n\n");
+        ArrayList<CatholicChatMessage> nonSystemMessages = new ArrayList<>(messages.size());
+        for (CatholicChatMessage message : messages) {
+            if (message instanceof CatholicSystemMessage systemMessage) {
+                systemText.add(systemMessage.text());
+            } else {
+                nonSystemMessages.add(message);
+            }
+        }
+        if (systemText.length() == 0) {
+            return List.copyOf(nonSystemMessages);
+        }
+        ArrayList<CatholicChatMessage> normalizedMessages =
+                new ArrayList<>(nonSystemMessages.size() + 1);
+        normalizedMessages.add(CatholicSystemMessage.of(systemText.toString()));
+        normalizedMessages.addAll(nonSystemMessages);
+        return List.copyOf(normalizedMessages);
+    }
+
     private static void validateSkillFrontmatter(CatholicSkillFrontmatter skill) {
         String name = Objects.requireNonNull(skill.name(), "skill name");
         String description = Objects.requireNonNull(skill.description(), "skill description");
@@ -84,8 +110,9 @@ public final class CatholicAgent {
         if (description.isBlank() || description.length() > 1024) {
             throw new IllegalArgumentException("invalid description for skill: " + name);
         }
-        if (skill.compatibility() != null
-                && (skill.compatibility().isBlank() || skill.compatibility().length() > 500)) {
+        String compatibility = skill.compatibility();
+        if (compatibility != null
+                && (compatibility.isBlank() || compatibility.length() > 500)) {
             throw new IllegalArgumentException("invalid compatibility for skill: " + name);
         }
         Objects.requireNonNull(skill.metadata(), "skill metadata");
@@ -176,7 +203,7 @@ public final class CatholicAgent {
                 : copyOptions(options, firstRoundRequiredTool);
         CatholicLLMRequest request = CatholicLLMRequest.builder()
                                                        .model(model)
-                                                       .messages(List.copyOf(transcript))
+                                                       .messages(normalizeRequestMessages(transcript))
                                                        .tools(interactionTools)
                                                        .options(requestOptions)
                                                        .stream(false)
