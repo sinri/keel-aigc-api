@@ -23,6 +23,15 @@ return agent.interact("分析这份需求")
     });
 ```
 
+需要继续由上层保存的会话时，可按次传入此前的完整消息列表：
+
+```java
+return agent.interact(priorMessages, CatholicUserMessage.ofText("继续分析"));
+```
+
+请求消息依次由 Builder 配置的 system prompt、`priorMessages`、当前用户消息组成。
+Agent 不会保存传入的历史，下一次交互仍需由调用方提供。
+
 `maxRounds` 是最多发起的 LLM 请求次数，最小为 1、默认 32。达到限制是可观察的正常
 终止，`interact(...)` 会成功返回 `ROUND_LIMIT_EXCEEDED`；模型、Observer 或工具失败
 才会使 Future 失败。
@@ -100,4 +109,3 @@ return reportAgent.interact(userMessage);
 `CatholicAgentResult` 提供终止原因、最后响应、可空文本、只读 transcript、LLM 轮数、
 工具轮数和轮次上限。一次 `interact(...)` 不继承其他交互的消息；跨请求会话应由上层
 保存，并确保共享的 LLM、Observer 和工具处理器支持并发。
-

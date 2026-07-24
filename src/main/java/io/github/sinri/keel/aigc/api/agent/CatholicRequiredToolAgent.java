@@ -3,6 +3,7 @@ package io.github.sinri.keel.aigc.api.agent;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.vertx.core.Future;
 
+import java.util.List;
 import java.util.Objects;
 
 /** “首次 LLM 分析必须选择指定工具”的特殊 Agent；该策略不污染通用 Agent。 */
@@ -24,7 +25,7 @@ public final class CatholicRequiredToolAgent {
     }
 
     public Future<CatholicAgentResult> interact(CatholicUserMessage userMessage) {
-        return delegate.interact(userMessage, functionName, response -> {
+        return delegate.interact(List.of(), userMessage, functionName, response -> {
             boolean requiredToolCalled = response.message().hasToolCalls()
                 && response.message().toolCalls().stream()
                     .anyMatch(call -> functionName.equals(call.functionName()));

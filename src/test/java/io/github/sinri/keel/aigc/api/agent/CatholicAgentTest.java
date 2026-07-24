@@ -8,7 +8,9 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
+import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
+import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function.FunctionDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
@@ -123,6 +125,27 @@ class CatholicAgentTest {
         CatholicAgentResult second = agent.interact("second").toCompletionStage().toCompletableFuture().join();
         assertEquals(2, first.transcript().size());
         assertEquals(2, second.transcript().size());
+    }
+
+    @Test
+    void interactionPrependsConfiguredMessagesAndSuppliedHistory() {
+        CountingLlm llm = new CountingLlm();
+        llm.nextResponse = textOnlyResponse("continued");
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+            .systemPrompt("fixed instructions")
+            .build();
+        List<CatholicChatMessage> history = List.of(
+            CatholicUserMessage.ofText("earlier question"),
+            CatholicAssistantMessage.ofText("earlier answer"));
+
+        CatholicAgentResult result = agent.interact(
+            history, CatholicUserMessage.ofText("current question"))
+            .toCompletionStage().toCompletableFuture().join();
+
+        assertEquals(List.of("system", "user", "assistant", "user", "assistant"),
+            result.transcript().stream().map(CatholicChatMessage::role).toList());
+        assertEquals(result.transcript().subList(0, 4), llm.requests.get(0).messages());
+        assertEquals(2, history.size());
     }
 
     @Test
