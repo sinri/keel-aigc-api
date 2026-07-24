@@ -12,7 +12,7 @@
   → 返回包含终止原因和完整 transcript 的结果
 ```
 
-`CatholicAgent` 是无会话状态的配置和执行器。每次 `interact(...)` 都会从 system prompt 和当前用户消息建立独立 transcript，不会继承其他交互的消息。同一个 Agent 可以用于彼此独立的请求；并发使用时，其所依赖的 LLM、Observer 和工具 handler 也必须支持并发。跨用户交互的长期会话历史应由上层另行管理。
+`CatholicAgent` 是无会话状态的配置和执行器。每次 `interact(...)` 都会建立独立 transcript，不会继承其他交互的消息。同一个 Agent 可以用于彼此独立的请求；并发使用时，其所依赖的 LLM、Observer 和工具 handler 也必须支持并发。跨用户交互的长期会话历史应由上层管理，并可通过 `interact(priorMessages, userMessage)` 按次传入。消息顺序为 Builder 配置的 system prompt、`priorMessages`、当前用户消息。
 
 ## 基本使用
 
