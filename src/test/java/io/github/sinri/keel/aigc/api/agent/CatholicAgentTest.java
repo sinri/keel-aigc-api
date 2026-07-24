@@ -112,6 +112,10 @@ class CatholicAgentTest {
         assertEquals(2, result.llmRounds());
         assertEquals(0, result.toolRounds());
         assertEquals(4, result.transcript().size());
+        assertEquals(List.of("system", "user", "assistant"),
+            llm.requests.get(1).messages().stream().map(CatholicChatMessage::role).toList());
+        assertEquals("check completeness",
+            ((CatholicSystemMessage) llm.requests.get(1).messages().get(0)).text());
     }
 
     @Test
@@ -146,6 +150,32 @@ class CatholicAgentTest {
             result.transcript().stream().map(CatholicChatMessage::role).toList());
         assertEquals(result.transcript().subList(0, 4), llm.requests.get(0).messages());
         assertEquals(2, history.size());
+    }
+
+    @Test
+    void eachLlmRequestContainsAtMostOneLeadingSystemMessage() {
+        CountingLlm llm = new CountingLlm();
+        llm.nextResponse = textOnlyResponse("continued");
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+            .systemPrompt("first instruction")
+            .systemPrompt("second instruction")
+            .build();
+
+        CatholicAgentResult result = agent.interact(
+                List.of(
+                    CatholicUserMessage.ofText("earlier question"),
+                    CatholicSystemMessage.of("historical instruction"),
+                    CatholicAssistantMessage.ofText("earlier answer")),
+                CatholicUserMessage.ofText("current question"))
+            .toCompletionStage().toCompletableFuture().join();
+
+        List<CatholicChatMessage> requestMessages = llm.requests.get(0).messages();
+        assertEquals(List.of("system", "user", "assistant", "user"),
+            requestMessages.stream().map(CatholicChatMessage::role).toList());
+        assertEquals("first instruction\n\nsecond instruction\n\nhistorical instruction",
+            ((CatholicSystemMessage) requestMessages.get(0)).text());
+        assertEquals(List.of("system", "system", "user", "system", "assistant", "user", "assistant"),
+            result.transcript().stream().map(CatholicChatMessage::role).toList());
     }
 
     @Test
