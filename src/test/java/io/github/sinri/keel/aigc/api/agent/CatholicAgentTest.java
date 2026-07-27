@@ -41,6 +41,7 @@ class CatholicAgentTest {
         assertTrue(r.completed());
         assertEquals("hello", r.lastResponse().text());
         assertEquals(1, llm.callCount);
+        assertTrue(llm.requests.get(0).stream());
         assertEquals(2, r.transcript().size());
     }
 
@@ -459,7 +460,12 @@ class CatholicAgentTest {
 
         @Override
         public Future<CatholicLLMResponse> callStream(CatholicLLMRequest request) {
-            return Future.failedFuture(new UnsupportedOperationException());
+            callCount++;
+            requests.add(request);
+            if (!queue.isEmpty()) {
+                return Future.succeededFuture(queue.remove(0));
+            }
+            return Future.succeededFuture(nextResponse);
         }
     }
 }

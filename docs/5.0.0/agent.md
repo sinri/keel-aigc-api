@@ -1,7 +1,8 @@
 # 5.0.0 Agent 指南
 
-`CatholicAgent` 在 `CatholicLLM` 上提供无会话状态的非流式执行循环：模型响应、Observer
-判断、工具执行，再将工具结果交给下一轮模型，直到完成或达到轮次上限。
+`CatholicAgent` 在 `CatholicLLM` 上提供无会话状态的流式 LLM 执行循环：每轮通过
+`callStream(...)` 接收并聚合模型响应，随后由 Observer 判断、执行工具，再将工具结果
+交给下一轮模型，直到完成或达到轮次上限。
 
 ## 基本 Agent
 
