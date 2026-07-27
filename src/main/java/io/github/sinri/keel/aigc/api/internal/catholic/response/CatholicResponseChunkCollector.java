@@ -96,11 +96,11 @@ public class CatholicResponseChunkCollector {
         }
 
         void collect(CatholicToolCallChunkDelta delta) {
-            if (delta.id() != null) {
+            if (delta.id() != null && !delta.id().isBlank()) {
                 this.id = delta.id();
             }
             if (delta.function() != null) {
-                if (delta.function().name() != null) {
+                if (delta.function().name() != null && !delta.function().name().isBlank()) {
                     this.name = delta.function().name();
                 }
                 if (delta.function().argumentsDelta() != null) {

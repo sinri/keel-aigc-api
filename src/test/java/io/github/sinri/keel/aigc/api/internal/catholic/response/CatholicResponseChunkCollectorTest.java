@@ -58,6 +58,20 @@ class CatholicResponseChunkCollectorTest {
     }
 
     @Test
+    void preservesToolCallIdentityWhenLaterChunksContainBlankValues() {
+        CatholicResponseChunkCollector collector = new CatholicResponseChunkCollector();
+        collector.collect(chunk(null, toolCall(0, "call_0", "command", "")));
+        collector.collect(chunk(null, toolCall(0, "", "", "{\"command\": ")));
+        collector.collect(chunk(null, toolCall(0, "", null, "\"pwd\"}")));
+
+        CatholicFunctionToolCall toolCall = collector.build().message().toolCalls().get(0);
+
+        assertEquals("call_0", toolCall.id());
+        assertEquals("command", toolCall.functionName());
+        assertEquals("{\"command\": \"pwd\"}", toolCall.function().arguments());
+    }
+
+    @Test
     void rejectsToolCallWithArgumentsButNoFunctionName() {
         CatholicResponseChunkCollector collector = new CatholicResponseChunkCollector();
         collector.collect(chunk(null, toolCall(0, "call_0", null, "{\"query\":\"value\"}")));
