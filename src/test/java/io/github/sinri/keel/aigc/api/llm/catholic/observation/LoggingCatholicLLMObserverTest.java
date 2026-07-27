@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LoggingCatholicLLMObserverTest {
@@ -30,18 +31,24 @@ class LoggingCatholicLLMObserverTest {
             "exchange", "provider", 0, "data: {\"api_key\":\"stream-secret\"}", 10
         );
 
-        String output = String.join("\n", logger.messages);
+        String output = logger.logs.stream()
+            .map(log -> log.message() + log.context().toMap())
+            .reduce("", (left, right) -> left + "\n" + right);
         assertFalse(output.contains("query-secret"));
         assertFalse(output.contains("header-secret"));
         assertFalse(output.contains("body-secret"));
         assertFalse(output.contains("content-secret"));
         assertFalse(output.contains("stream-secret"));
         assertTrue(output.contains(DefaultCatholicLLMLogRedactor.REDACTED));
+        assertEquals(List.of("LLM request", "LLM stream event"),
+            logger.logs.stream().map(Log::message).toList());
+        assertTrue(logger.logs.get(0).context().toMap().containsKey("body"));
+        assertTrue(logger.logs.get(1).context().toMap().containsKey("event"));
     }
 
     private static final class CapturingLogger implements Logger {
-        private final List<String> messages = new ArrayList<>();
-        private final LogWriterAdapter adapter = (topic, log) -> messages.add(log.message());
+        private final List<Log> logs = new ArrayList<>();
+        private final LogWriterAdapter adapter = (topic, log) -> logs.add(new Log(log));
         private LogLevel visibleLevel = LogLevel.DEBUG;
 
         @Override
