@@ -13,6 +13,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CatholicToolInvocationHandlerWithNativeFunctionAdapters implements CatholicToolInvocationHandler {
 
     private final Map<String, NativeFunctionAdapter> functionAdapterMap = new ConcurrentHashMap<>();
+    private final CatholicToolInvocationHandler observedHandler;
+
+    public CatholicToolInvocationHandlerWithNativeFunctionAdapters() {
+        this(CatholicToolInvocationObserver.noop());
+    }
+
+    public CatholicToolInvocationHandlerWithNativeFunctionAdapters(CatholicToolInvocationObserver observer) {
+        observedHandler = CatholicToolInvocationHandler.observed(this::handleUnobserved, observer);
+    }
 
     public void registerNativeFunctionAdapter(NativeFunctionAdapter functionAdapter) {
         functionAdapterMap.put(functionAdapter.functionName(), functionAdapter);
@@ -26,6 +35,10 @@ public class CatholicToolInvocationHandlerWithNativeFunctionAdapters implements 
 
     @Override
     public Future<String> handle(CatholicFunctionToolCall toolCall) {
+        return observedHandler.handle(toolCall);
+    }
+
+    private Future<String> handleUnobserved(CatholicFunctionToolCall toolCall) {
         NativeFunctionAdapter nativeFunctionAdapter = functionAdapterMap.get(toolCall.functionName());
         if (nativeFunctionAdapter == null) {
             return Future.failedFuture(new IllegalArgumentException(

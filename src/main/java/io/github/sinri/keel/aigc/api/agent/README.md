@@ -101,6 +101,32 @@ CatholicAgent agent = CatholicAgent.builder()
 
 模型请求未注册的函数时，注册器会返回包含函数名的失败 `Future`，而不是产生空指针异常。
 
+### 工具执行记录与审计
+
+任意工具处理器都可以通过 `CatholicToolInvocationObserver` 记录执行开始、成功结果、失败原因
+和耗时。每次执行会生成独立的 `invocationId`，并保留模型提供的 `toolCallId`、函数名和原始
+参数用于关联审计记录：
+
+```java
+var auditLogger = LoggerFactory.getShared().createLogger("agent.tool.audit");
+var toolObserver = new LoggingCatholicToolInvocationObserver(auditLogger);
+
+CatholicToolInvocationHandler observedHandler =
+    handler.observedBy(toolObserver);
+```
+
+使用 `NativeFunctionAdapter` 注册器时也可以在创建时直接配置：
+
+```java
+var handler =
+    CatholicToolInvocationHandler.createWithNativeFunctionAdapters(toolObserver);
+```
+
+默认日志实现使用结构化 `LogContext`，参数、结果和异常消息在写入 context 前会脱敏。执行开始
+和成功使用 `INFO`，失败使用 `WARNING`。Observer 采用 fail-open 语义，审计 Logger 故障
+不会改变工具调用结果；要求审计失败时禁止执行工具的场景，应由应用提供显式的 fail-closed
+包装器。
+
 ## 自定义观察机制
 
 `CatholicAgentObserver` 在每一轮 LLM 响应进入 transcript 后执行。它可以根据响应内容、完整 transcript 和当前轮数决定完成或继续：
