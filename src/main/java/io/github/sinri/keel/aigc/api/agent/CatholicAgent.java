@@ -409,6 +409,35 @@ public final class CatholicAgent {
             return this;
         }
 
+        /**
+         * 追加一条初始消息（UserMessage、AssistantMessage、ToolCallMessage 等）到 transcript 起点。
+         *
+         * <p>典型用途：在多轮 Fork 场景中，将上一轮 {@link CatholicAgentResult#transcript()} 逐条
+         * 注入新 Agent，使新 Agent 拥有完整的历史对话上下文，而无需把历史内容嵌入 system prompt 文本。
+         *
+         * <p>注意：若 transcript 中已含 system 消息，则不要再调用 {@link #systemPrompt}；
+         * 多个 system 消息的处理方式由 LLM 服务端决定。
+         *
+         * @param message 非 null 消息；消息类型不受限，由调用方保证语义正确性
+         */
+        public Builder addInitialMessage(CatholicChatMessage message) {
+            initialMessages.add(Objects.requireNonNull(message, "message"));
+            return this;
+        }
+
+        /**
+         * 批量追加初始消息，等同于对每个元素调用 {@link #addInitialMessage}。
+         *
+         * @param messages 非 null 列表；元素均不可为 null
+         */
+        public Builder addInitialMessages(List<? extends CatholicChatMessage> messages) {
+            Objects.requireNonNull(messages, "messages");
+            for (CatholicChatMessage m : messages) {
+                initialMessages.add(Objects.requireNonNull(m, "message element"));
+            }
+            return this;
+        }
+
         public CatholicAgent build() {
             if (!lateLlm.isInitialized()) throw new IllegalArgumentException("llm is required");
             if (!lateModel.isInitialized() || lateModel.get().isBlank())
