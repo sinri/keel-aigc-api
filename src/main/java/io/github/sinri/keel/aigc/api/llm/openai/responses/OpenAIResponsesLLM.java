@@ -10,6 +10,9 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
+import io.github.sinri.keel.aigc.api.llm.catholic.observation.CatholicLLMObserver;
+import io.github.sinri.keel.aigc.api.llm.catholic.observation.CatholicLLMObservationStage;
+import io.github.sinri.keel.aigc.api.internal.catholic.observation.CatholicLLMObservationSupport;
 import io.github.sinri.keel.base.async.Keel;
 import io.github.sinri.keel.logger.api.LateObject;
 import io.vertx.core.Future;
@@ -18,6 +21,7 @@ import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.json.JsonObject;
 
 import java.util.function.Function;
+import java.util.Map;
 
 /**
  * OpenAI Responses API 客户端，实现 {@link CatholicLLM}。
@@ -29,6 +33,7 @@ public class OpenAIResponsesLLM implements CatholicLLM {
     private final String baseUrl;
     private final AuthMethod authMethod;
     private final Keel keel;
+    private final CatholicLLMObserver observer;
 
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1";
     private static final AuthMethod DEFAULT_AUTH_METHOD = AuthMethod.Bearer;
@@ -60,21 +65,31 @@ public class OpenAIResponsesLLM implements CatholicLLM {
     }
 
     public OpenAIResponsesLLM(Keel keel, HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod) {
+        this(keel, httpClient, apiKey, baseUrl, authMethod, CatholicLLMObserver.noop());
+    }
+
+    public OpenAIResponsesLLM(
+        Keel keel, HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod,
+        CatholicLLMObserver observer
+    ) {
         this.keel = keel;
         this.httpClient = httpClient;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.authMethod = authMethod;
+        this.observer = CatholicLLMObservationSupport.orNoop(observer);
     }
 
     @Override
     public Future<CatholicLLMResponse> call(CatholicLLMRequest request) {
         JsonObject responsesRequest = new OpenAIResponsesRequestConverter().convert(request);
         responsesRequest.put("stream", false);
+        var exchange = observeRequest(responsesRequest, false);
 
         return sendJsonPost(responsesRequest, false)
-            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, RESPONSES_API_ERROR))
-            .map(body -> new OpenAIResponsesResponseConverter().convert(body.toJsonObject()));
+            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, RESPONSES_API_ERROR, observer, exchange))
+            .map(body -> new OpenAIResponsesResponseConverter().convert(body.toJsonObject()))
+            .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
     @Override
@@ -84,28 +99,51 @@ public class OpenAIResponsesLLM implements CatholicLLM {
     ) {
         JsonObject responsesRequest = new OpenAIResponsesRequestConverter().convert(request);
         responsesRequest.put("stream", true);
+        var exchange = observeRequest(responsesRequest, true);
 
         OpenAIResponsesStreamHandler streamHandler = new OpenAIResponsesStreamHandler();
 
         return sendJsonPost(responsesRequest, true)
             .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
-                keel, response, RESPONSES_API_ERROR, streamHandler::processSseLine, chunkAsyncProcessor
-            ));
+                keel, response, RESPONSES_API_ERROR, streamHandler::processSseLine, chunkAsyncProcessor,
+                observer, exchange
+            ))
+            .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
     @Override
     public Future<CatholicLLMResponse> callStream(CatholicLLMRequest request) {
         JsonObject responsesRequest = new OpenAIResponsesRequestConverter().convert(request);
         responsesRequest.put("stream", true);
+        var exchange = observeRequest(responsesRequest, true);
 
         OpenAIResponsesStreamHandler streamHandler = new OpenAIResponsesStreamHandler();
 
         Future<Void> streamFuture = sendJsonPost(responsesRequest, true)
             .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
                 keel, response, RESPONSES_API_ERROR, streamHandler::processSseLine,
-                chunk -> Future.succeededFuture()
-            ));
+                chunk -> Future.succeededFuture(), observer, exchange
+            ))
+            .andThen(ar -> observeFailure(exchange, ar.cause()));
         return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
+    }
+
+    private CatholicLLMObservationSupport.Exchange observeRequest(JsonObject body, boolean stream) {
+        String endpoint = baseUrl + RESPONSES_PATH;
+        var exchange = CatholicLLMObservationSupport.exchange("openai-responses", endpoint, stream);
+        var headers = new java.util.LinkedHashMap<String, String>();
+        headers.put("Content-Type", "application/json");
+        headers.put(authMethod == AuthMethod.Bearer ? "Authorization" : "api-key",
+            authMethod == AuthMethod.Bearer ? "Bearer " + apiKey : apiKey);
+        if (stream) headers.put("Accept", "text/event-stream");
+        CatholicLLMObservationSupport.request(observer, exchange, Map.copyOf(headers), body.encode());
+        return exchange;
+    }
+
+    private void observeFailure(CatholicLLMObservationSupport.Exchange exchange, Throwable cause) {
+        if (cause != null) CatholicLLMObservationSupport.failure(
+            observer, exchange, CatholicLLMObservationStage.HTTP_RESPONSE, cause
+        );
     }
 
     private Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, boolean stream) {
@@ -129,6 +167,7 @@ public class OpenAIResponsesLLM implements CatholicLLM {
         private final LateObject<Keel> lateKeel = new LateObject<>();
         private String baseUrl = DEFAULT_BASE_URL;
         private AuthMethod authMethod = DEFAULT_AUTH_METHOD;
+        private CatholicLLMObserver observer = CatholicLLMObserver.noop();
 
         public Builder httpClient(HttpClient httpClient) {
             this.lateHttpClient.set(httpClient);
@@ -155,6 +194,11 @@ public class OpenAIResponsesLLM implements CatholicLLM {
             return this;
         }
 
+        public Builder observer(CatholicLLMObserver observer) {
+            this.observer = observer;
+            return this;
+        }
+
         public OpenAIResponsesLLM build() {
             if (!lateKeel.isInitialized()) {
                 throw new IllegalArgumentException("keel is required");
@@ -165,7 +209,9 @@ public class OpenAIResponsesLLM implements CatholicLLM {
             if (!lateApiKey.isInitialized() || lateApiKey.get().isEmpty()) {
                 throw new IllegalArgumentException("apiKey is required");
             }
-            return new OpenAIResponsesLLM(lateKeel.get(), lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod);
+            return new OpenAIResponsesLLM(
+                lateKeel.get(), lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod, observer
+            );
         }
     }
 }

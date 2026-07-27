@@ -23,6 +23,7 @@ module io.github.sinri.keel.integration.llm.api {
     exports io.github.sinri.keel.aigc.api.llm.catholic.tool.call;
     exports io.github.sinri.keel.aigc.api.llm.catholic.request;
     exports io.github.sinri.keel.aigc.api.llm.catholic.response;
+    exports io.github.sinri.keel.aigc.api.llm.catholic.observation;
 
     // OpenAI Chat Completions API
     exports io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;

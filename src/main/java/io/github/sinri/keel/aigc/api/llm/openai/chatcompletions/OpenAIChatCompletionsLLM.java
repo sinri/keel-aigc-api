@@ -10,6 +10,9 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
+import io.github.sinri.keel.aigc.api.llm.catholic.observation.CatholicLLMObserver;
+import io.github.sinri.keel.aigc.api.llm.catholic.observation.CatholicLLMObservationStage;
+import io.github.sinri.keel.aigc.api.internal.catholic.observation.CatholicLLMObservationSupport;
 import io.github.sinri.keel.base.async.Keel;
 import io.github.sinri.keel.logger.api.LateObject;
 import io.vertx.core.Future;
@@ -18,6 +21,7 @@ import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.json.JsonObject;
 
 import java.util.function.Function;
+import java.util.Map;
 
 /**
  * OpenAI Chat Completions API 客户端，实现 CatholicLLM 接口。
@@ -29,6 +33,7 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
     private final String baseUrl;
     private final AuthMethod authMethod;
     private final Keel keel;
+    private final CatholicLLMObserver observer;
 
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1";
     private static final AuthMethod DEFAULT_AUTH_METHOD = AuthMethod.Bearer;
@@ -62,11 +67,19 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
     public OpenAIChatCompletionsLLM(
         Keel keel, HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod
     ) {
+        this(keel, httpClient, apiKey, baseUrl, authMethod, CatholicLLMObserver.noop());
+    }
+
+    public OpenAIChatCompletionsLLM(
+        Keel keel, HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod,
+        CatholicLLMObserver observer
+    ) {
         this.keel = keel;
         this.httpClient = httpClient;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.authMethod = authMethod;
+        this.observer = CatholicLLMObservationSupport.orNoop(observer);
     }
 
     @Override
@@ -74,10 +87,12 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
         JsonObject openaiRequest = new OpenAIChatCompletionsRequestConverter()
             .convert(request);
         openaiRequest.put("stream", false);
+        var exchange = observeRequest(openaiRequest, false);
 
         return sendJsonPost(openaiRequest, false)
-            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, CHAT_API_ERROR))
-            .map(body -> new OpenAIChatCompletionsResponseConverter().convert(body.toJsonObject()));
+            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, CHAT_API_ERROR, observer, exchange))
+            .map(body -> new OpenAIChatCompletionsResponseConverter().convert(body.toJsonObject()))
+            .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
     @Override
@@ -88,13 +103,16 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
         JsonObject openaiRequest = new OpenAIChatCompletionsRequestConverter()
             .convert(request);
         openaiRequest.put("stream", true);
+        var exchange = observeRequest(openaiRequest, true);
 
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
 
         return sendJsonPost(openaiRequest, true)
             .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
-                keel, response, CHAT_API_ERROR, streamHandler::processSseLine, chunkAsyncProcessor
-            ));
+                keel, response, CHAT_API_ERROR, streamHandler::processSseLine, chunkAsyncProcessor,
+                observer, exchange
+            ))
+            .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
     @Override
@@ -102,15 +120,40 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
         JsonObject openaiRequest = new OpenAIChatCompletionsRequestConverter()
             .convert(request);
         openaiRequest.put("stream", true);
+        var exchange = observeRequest(openaiRequest, true);
 
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
 
         Future<Void> streamFuture = sendJsonPost(openaiRequest, true)
             .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
                 keel, response, CHAT_API_ERROR, streamHandler::processSseLine,
-                chunk -> Future.succeededFuture()
-            ));
+                chunk -> Future.succeededFuture(), observer, exchange
+            ))
+            .andThen(ar -> observeFailure(exchange, ar.cause()));
         return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
+    }
+
+    private CatholicLLMObservationSupport.Exchange observeRequest(JsonObject body, boolean stream) {
+        String endpoint = baseUrl + CHAT_COMPLETIONS_PATH;
+        var exchange = CatholicLLMObservationSupport.exchange("openai-chat-completions", endpoint, stream);
+        CatholicLLMObservationSupport.request(observer, exchange, requestHeaders(stream), body.encode());
+        return exchange;
+    }
+
+    private Map<String, String> requestHeaders(boolean stream) {
+        String authHeader = authMethod == AuthMethod.Bearer ? "Authorization" : "api-key";
+        String authValue = authMethod == AuthMethod.Bearer ? "Bearer " + apiKey : apiKey;
+        var headers = new java.util.LinkedHashMap<String, String>();
+        headers.put("Content-Type", "application/json");
+        headers.put(authHeader, authValue);
+        if (stream) headers.put("Accept", "text/event-stream");
+        return Map.copyOf(headers);
+    }
+
+    private void observeFailure(CatholicLLMObservationSupport.Exchange exchange, Throwable cause) {
+        if (cause != null) CatholicLLMObservationSupport.failure(
+            observer, exchange, CatholicLLMObservationStage.HTTP_RESPONSE, cause
+        );
     }
 
     private Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, boolean stream) {
@@ -142,6 +185,7 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
         private final LateObject<Keel> lateKeel = new LateObject<>();
         private String baseUrl = DEFAULT_BASE_URL;
         private AuthMethod authMethod = DEFAULT_AUTH_METHOD;
+        private CatholicLLMObserver observer = CatholicLLMObserver.noop();
 
         public Builder httpClient(HttpClient httpClient) {
             this.lateHttpClient.set(httpClient);
@@ -168,6 +212,11 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
             return this;
         }
 
+        public Builder observer(CatholicLLMObserver observer) {
+            this.observer = observer;
+            return this;
+        }
+
         public OpenAIChatCompletionsLLM build() {
             if (!lateKeel.isInitialized()) {
                 throw new IllegalArgumentException("keel is required");
@@ -179,7 +228,7 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
                 throw new IllegalArgumentException("apiKey is required");
             }
             return new OpenAIChatCompletionsLLM(
-                lateKeel.get(), lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod
+                lateKeel.get(), lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod, observer
             );
         }
     }

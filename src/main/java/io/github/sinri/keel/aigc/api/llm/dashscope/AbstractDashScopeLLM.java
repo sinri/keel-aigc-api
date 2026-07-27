@@ -2,6 +2,8 @@ package io.github.sinri.keel.aigc.api.llm.dashscope;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
+import io.github.sinri.keel.aigc.api.llm.catholic.observation.CatholicLLMObserver;
+import io.github.sinri.keel.aigc.api.internal.catholic.observation.CatholicLLMObservationSupport;
 import io.github.sinri.keel.base.async.Keel;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
@@ -11,6 +13,7 @@ import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.json.JsonObject;
+import java.util.Map;
 
 /**
  * DashScope API 客户端抽象基类，封装共享的 HTTP 通信逻辑。
@@ -25,6 +28,7 @@ public abstract class AbstractDashScopeLLM implements CatholicLLM {
     private final String baseUrl;
     private final AuthMethod authMethod;
     private final Keel keel;
+    private final CatholicLLMObserver observer;
 
     @Deprecated
     protected AbstractDashScopeLLM(HttpClient httpClient, String apiKey, String baseUrl) {
@@ -43,15 +47,43 @@ public abstract class AbstractDashScopeLLM implements CatholicLLM {
     protected AbstractDashScopeLLM(
         Keel keel, HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod
     ) {
+        this(keel, httpClient, apiKey, baseUrl, authMethod, CatholicLLMObserver.noop());
+    }
+
+    protected AbstractDashScopeLLM(
+        Keel keel, HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod,
+        CatholicLLMObserver observer
+    ) {
         this.keel = keel;
         this.httpClient = httpClient;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.authMethod = authMethod;
+        this.observer = CatholicLLMObservationSupport.orNoop(observer);
     }
 
     protected Keel getKeel() {
         return keel;
+    }
+
+    protected CatholicLLMObserver getObserver() {
+        return observer;
+    }
+
+    protected CatholicLLMObservationSupport.Exchange observeRequest(
+        String provider, String path, JsonObject body, boolean stream
+    ) {
+        var exchange = CatholicLLMObservationSupport.exchange(provider, baseUrl + path, stream);
+        var headers = new java.util.LinkedHashMap<String, String>();
+        headers.put("Content-Type", "application/json");
+        headers.put(authMethod == AuthMethod.Bearer ? "Authorization" : "api-key",
+            authMethod == AuthMethod.Bearer ? "Bearer " + apiKey : apiKey);
+        if (stream) {
+            headers.put("Accept", "text/event-stream");
+            headers.put("X-DashScope-SSE", "enable");
+        }
+        CatholicLLMObservationSupport.request(observer, exchange, Map.copyOf(headers), body.encode());
+        return exchange;
     }
 
     /**

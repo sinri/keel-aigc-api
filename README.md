@@ -77,6 +77,29 @@ return llm.callStream(request, chunk -> {
 // 或：Future<CatholicLLMResponse> response = llm.callStream(request);
 ```
 
+### 原始 LLM I/O 日志
+
+所有 Provider Builder 都可配置 `CatholicLLMObserver`。日志实现会记录 Provider 转换后的
+原始 JSON 请求、非流式原始响应、完整 SSE event、状态码、耗时和失败阶段，并在写日志
+前脱敏认证头、密钥、令牌、私钥及大段 Base64 数据：
+
+```java
+var llmIoLogger = LoggerFactory.getShared().createLogger("llm.raw.io");
+var observer = new LoggingCatholicLLMObserver(llmIoLogger);
+
+CatholicLLM llm = OpenAIResponsesLLM.builder()
+    .keel(keel)
+    .httpClient(httpClient)
+    .apiKey(System.getenv("OPENAI_API_KEY"))
+    .observer(observer)
+    .build();
+```
+
+原始 I/O 使用 `DEBUG` 级别，失败使用 `WARNING` 级别。默认不配置 Observer，因此不会
+产生额外日志。Observer 采用 fail-open 语义：日志记录或脱敏异常不会改变 LLM 调用结果。
+请求和响应正文可能包含业务敏感内容，生产环境应同时配置日志访问控制与保留期限；如果
+业务需要隐藏 prompt，可传入自定义 `CatholicLLMLogRedactor`。
+
 ## 文档
 
 - [版本文档索引](docs/README.md)

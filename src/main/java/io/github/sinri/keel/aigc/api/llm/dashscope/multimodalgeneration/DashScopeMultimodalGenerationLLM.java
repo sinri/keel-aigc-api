@@ -9,6 +9,9 @@ import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeStreamHandler;
 import io.github.sinri.keel.aigc.api.llm.dashscope.AbstractDashScopeLLM;
 import io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration.DashScopeMultimodalRequestConverter;
 import io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration.DashScopeMultimodalResponseConverter;
+import io.github.sinri.keel.aigc.api.llm.catholic.observation.CatholicLLMObserver;
+import io.github.sinri.keel.aigc.api.llm.catholic.observation.CatholicLLMObservationStage;
+import io.github.sinri.keel.aigc.api.internal.catholic.observation.CatholicLLMObservationSupport;
 import io.github.sinri.keel.base.async.Keel;
 import io.github.sinri.keel.logger.api.LateObject;
 import io.vertx.core.Future;
@@ -57,16 +60,29 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
         super(keel, httpClient, apiKey, baseUrl, authMethod);
     }
 
+    public DashScopeMultimodalGenerationLLM(
+        Keel keel, HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod,
+        CatholicLLMObserver observer
+    ) {
+        super(keel, httpClient, apiKey, baseUrl, authMethod, observer);
+    }
+
     /**
      * 非流式调用，返回 DashScopeMultimodalResponse（包含多模态特有字段）
      */
     public Future<DashScopeMultimodalResponse> callMultimodal(CatholicLLMRequest request) {
         JsonObject dashscopeRequest = new DashScopeMultimodalRequestConverter().convert(request);
         dashscopeRequest.getJsonObject("parameters").put("stream", false);
+        var exchange = observeRequest(
+            "dashscope-multimodal-generation", MULTIMODAL_GENERATION_PATH, dashscopeRequest, false
+        );
 
         return sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, false)
-            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, "DashScope Multimodal Generation API error"))
-            .map(body -> new DashScopeMultimodalResponseConverter().convert(body.toJsonObject()));
+            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(
+                response, "DashScope Multimodal Generation API error", getObserver(), exchange
+            ))
+            .map(body -> new DashScopeMultimodalResponseConverter().convert(body.toJsonObject()))
+            .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
     @Override
@@ -83,13 +99,18 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
         JsonObject parameters = dashscopeRequest.getJsonObject("parameters");
         parameters.put("stream", true);
         parameters.put("incremental_output", true);
+        var exchange = observeRequest(
+            "dashscope-multimodal-generation", MULTIMODAL_GENERATION_PATH, dashscopeRequest, true
+        );
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
 
         return sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(
-                getKeel(), response, "DashScope Multimodal Generation API error", streamHandler, chunkAsyncProcessor
-            ));
+                getKeel(), response, "DashScope Multimodal Generation API error", streamHandler, chunkAsyncProcessor,
+                getObserver(), exchange
+            ))
+            .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
     @Override
@@ -98,15 +119,25 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
         JsonObject parameters = dashscopeRequest.getJsonObject("parameters");
         parameters.put("stream", true);
         parameters.put("incremental_output", true);
+        var exchange = observeRequest(
+            "dashscope-multimodal-generation", MULTIMODAL_GENERATION_PATH, dashscopeRequest, true
+        );
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
 
         Future<Void> streamFuture = sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(
                 getKeel(), response, "DashScope Multimodal Generation API error", streamHandler,
-                chunk -> Future.succeededFuture()
-            ));
+                chunk -> Future.succeededFuture(), getObserver(), exchange
+            ))
+            .andThen(ar -> observeFailure(exchange, ar.cause()));
         return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
+    }
+
+    private void observeFailure(CatholicLLMObservationSupport.Exchange exchange, Throwable cause) {
+        if (cause != null) CatholicLLMObservationSupport.failure(
+            getObserver(), exchange, CatholicLLMObservationStage.HTTP_RESPONSE, cause
+        );
     }
 
     // === Builder ===
@@ -121,6 +152,7 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
         private final LateObject<Keel> lateKeel = new LateObject<>();
         private String baseUrl = DEFAULT_BASE_URL;
         private AuthMethod authMethod = DEFAULT_AUTH_METHOD;
+        private CatholicLLMObserver observer = CatholicLLMObserver.noop();
 
         public Builder httpClient(HttpClient httpClient) {
             this.lateHttpClient.set(httpClient);
@@ -147,6 +179,11 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
             return this;
         }
 
+        public Builder observer(CatholicLLMObserver observer) {
+            this.observer = observer;
+            return this;
+        }
+
         public DashScopeMultimodalGenerationLLM build() {
             if (!lateKeel.isInitialized()) {
                 throw new IllegalArgumentException("keel is required");
@@ -158,7 +195,7 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
                 throw new IllegalArgumentException("apiKey is required");
             }
             return new DashScopeMultimodalGenerationLLM(
-                lateKeel.get(), lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod
+                lateKeel.get(), lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod, observer
             );
         }
     }

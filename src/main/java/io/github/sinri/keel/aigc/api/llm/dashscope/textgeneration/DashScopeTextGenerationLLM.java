@@ -9,6 +9,9 @@ import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeRequestConverte
 import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeResponseConverter;
 import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeStreamHandler;
 import io.github.sinri.keel.aigc.api.llm.dashscope.AbstractDashScopeLLM;
+import io.github.sinri.keel.aigc.api.llm.catholic.observation.CatholicLLMObserver;
+import io.github.sinri.keel.aigc.api.llm.catholic.observation.CatholicLLMObservationStage;
+import io.github.sinri.keel.aigc.api.internal.catholic.observation.CatholicLLMObservationSupport;
 import io.github.sinri.keel.base.async.Keel;
 import io.github.sinri.keel.logger.api.LateObject;
 import io.vertx.core.Future;
@@ -54,14 +57,25 @@ public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
         super(keel, httpClient, apiKey, baseUrl, authMethod);
     }
 
+    public DashScopeTextGenerationLLM(
+        Keel keel, HttpClient httpClient, String apiKey, String baseUrl, AuthMethod authMethod,
+        CatholicLLMObserver observer
+    ) {
+        super(keel, httpClient, apiKey, baseUrl, authMethod, observer);
+    }
+
     @Override
     public Future<CatholicLLMResponse> call(CatholicLLMRequest request) {
         JsonObject dashscopeRequest = new DashScopeRequestConverter().convert(request);
         dashscopeRequest.getJsonObject("parameters").put("stream", false);
+        var exchange = observeRequest("dashscope-text-generation", TEXT_GENERATION_PATH, dashscopeRequest, false);
 
         return sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, false)
-            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, "DashScope Text Generation API error"))
-            .map(body -> new DashScopeResponseConverter().convert(body.toJsonObject()));
+            .compose(response -> SSE2Chunk.requireSuccessAndReadBody(
+                response, "DashScope Text Generation API error", getObserver(), exchange
+            ))
+            .map(body -> new DashScopeResponseConverter().convert(body.toJsonObject()))
+            .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
     @Override
@@ -73,13 +87,16 @@ public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
         JsonObject parameters = dashscopeRequest.getJsonObject("parameters");
         parameters.put("stream", true);
         parameters.put("incremental_output", true);
+        var exchange = observeRequest("dashscope-text-generation", TEXT_GENERATION_PATH, dashscopeRequest, true);
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
 
         return sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(
-                getKeel(), response, "DashScope Text Generation API error", streamHandler, chunkAsyncProcessor
-            ));
+                getKeel(), response, "DashScope Text Generation API error", streamHandler, chunkAsyncProcessor,
+                getObserver(), exchange
+            ))
+            .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
     @Override
@@ -88,15 +105,23 @@ public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
         JsonObject parameters = dashscopeRequest.getJsonObject("parameters");
         parameters.put("stream", true);
         parameters.put("incremental_output", true);
+        var exchange = observeRequest("dashscope-text-generation", TEXT_GENERATION_PATH, dashscopeRequest, true);
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
 
         Future<Void> streamFuture = sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(
                 getKeel(), response, "DashScope Text Generation API error", streamHandler,
-                chunk -> Future.succeededFuture()
-            ));
+                chunk -> Future.succeededFuture(), getObserver(), exchange
+            ))
+            .andThen(ar -> observeFailure(exchange, ar.cause()));
         return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
+    }
+
+    private void observeFailure(CatholicLLMObservationSupport.Exchange exchange, Throwable cause) {
+        if (cause != null) CatholicLLMObservationSupport.failure(
+            getObserver(), exchange, CatholicLLMObservationStage.HTTP_RESPONSE, cause
+        );
     }
 
     // === Builder ===
@@ -111,6 +136,7 @@ public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
         private final LateObject<Keel> lateKeel = new LateObject<>();
         private String baseUrl = DEFAULT_BASE_URL;
         private AuthMethod authMethod = DEFAULT_AUTH_METHOD;
+        private CatholicLLMObserver observer = CatholicLLMObserver.noop();
 
         public Builder httpClient(HttpClient httpClient) {
             this.lateHttpClient.set(httpClient);
@@ -137,6 +163,11 @@ public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
             return this;
         }
 
+        public Builder observer(CatholicLLMObserver observer) {
+            this.observer = observer;
+            return this;
+        }
+
         public DashScopeTextGenerationLLM build() {
             if (!lateKeel.isInitialized()) {
                 throw new IllegalArgumentException("keel is required");
@@ -148,7 +179,7 @@ public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
                 throw new IllegalArgumentException("apiKey is required");
             }
             return new DashScopeTextGenerationLLM(
-                lateKeel.get(), lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod
+                lateKeel.get(), lateHttpClient.get(), lateApiKey.get(), baseUrl, authMethod, observer
             );
         }
     }
