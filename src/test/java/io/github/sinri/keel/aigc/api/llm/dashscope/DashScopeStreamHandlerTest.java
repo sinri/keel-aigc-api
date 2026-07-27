@@ -113,4 +113,31 @@ class DashScopeStreamHandlerTest {
         assertNotNull(chunk);
         assertTrue(chunk.isFinished());
     }
+
+    @Test
+    void preservesProtocolToolCallIndexAcrossSparseChunks() {
+        String[] sseLines = {
+            "id:1",
+            "event:add",
+            "data:{\"request_id\":\"req-tool\",\"output\":{\"choices\":[{\"message\":{\"tool_calls\":[{\"index\":3,\"id\":\"call_3\",\"type\":\"function\",\"function\":{\"name\":\"search\"}}]}}]}}",
+            "",
+            "id:2",
+            "event:add",
+            "data:{\"request_id\":\"req-tool\",\"output\":{\"choices\":[{\"message\":{\"tool_calls\":[{\"index\":3,\"function\":{\"arguments\":\"{\\\"query\\\":\\\"value\\\"}\"}}]}}]}}",
+            ""
+        };
+
+        for (String line : sseLines) {
+            handler.processSseLine(line);
+        }
+
+        CatholicLLMResponse response = handler.buildFinalResponse();
+        assertEquals(1, response.message().toolCalls().size());
+        assertEquals("call_3", response.message().toolCalls().get(0).id());
+        assertEquals("search", response.message().toolCalls().get(0).functionName());
+        assertEquals(
+            "{\"query\":\"value\"}",
+            response.message().toolCalls().get(0).function().arguments()
+        );
+    }
 }

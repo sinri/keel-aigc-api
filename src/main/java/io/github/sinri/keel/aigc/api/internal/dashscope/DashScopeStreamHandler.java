@@ -169,6 +169,7 @@ public class DashScopeStreamHandler {
     private CatholicToolCallChunkDelta convertToolCallChunkDelta(JsonObject tc, int index) {
         String id = tc.getString("id");
         String type = tc.getString("type");
+        int toolCallIndex = tc.getInteger("index", index);
 
         JsonObject function = tc.getJsonObject("function");
         String name = null;
@@ -182,7 +183,7 @@ public class DashScopeStreamHandler {
         return new CatholicToolCallChunkDelta(
             id,
             type != null ? type : "function",
-            index,
+            toolCallIndex,
             new CatholicToolCallFunctionChunkDelta(name, argumentsDelta)
         );
     }

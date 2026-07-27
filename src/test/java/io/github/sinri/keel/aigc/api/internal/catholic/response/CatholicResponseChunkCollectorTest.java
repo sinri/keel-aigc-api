@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CatholicResponseChunkCollectorTest {
@@ -54,6 +55,26 @@ class CatholicResponseChunkCollectorTest {
         assertTrue(response.message().hasToolCalls());
         assertEquals("search", response.message().toolCalls().get(0).functionName());
         assertEquals("{\"query\":\"value\"}", response.message().toolCalls().get(0).function().arguments());
+    }
+
+    @Test
+    void rejectsToolCallWithArgumentsButNoFunctionName() {
+        CatholicResponseChunkCollector collector = new CatholicResponseChunkCollector();
+        collector.collect(chunk(null, toolCall(0, "call_0", null, "{\"query\":\"value\"}")));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, collector::build);
+
+        assertEquals("incomplete streamed tool call at index 0: missing function name", exception.getMessage());
+    }
+
+    @Test
+    void rejectsToolCallWithNoId() {
+        CatholicResponseChunkCollector collector = new CatholicResponseChunkCollector();
+        collector.collect(chunk(null, toolCall(2, null, "search", "{}")));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, collector::build);
+
+        assertEquals("incomplete streamed tool call at index 2: missing id", exception.getMessage());
     }
 
     private static CatholicLLMResponseChunkImpl chunk(String text, CatholicToolCallChunkDelta... toolCalls) {

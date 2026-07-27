@@ -110,6 +110,14 @@ public class CatholicResponseChunkCollector {
         }
 
         CatholicFunctionToolCall build() {
+            if (id == null || id.isBlank()) {
+                throw new IllegalStateException(
+                        "incomplete streamed tool call at index " + index + ": missing id");
+            }
+            if (name == null || name.isBlank()) {
+                throw new IllegalStateException(
+                        "incomplete streamed tool call at index " + index + ": missing function name");
+            }
             return new CatholicFunctionToolCallImpl(
                     id,
                     new FunctionCall(name, argumentsBuilder.toString())

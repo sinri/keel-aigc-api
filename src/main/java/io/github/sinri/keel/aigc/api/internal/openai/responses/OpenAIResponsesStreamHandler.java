@@ -136,14 +136,16 @@ public class OpenAIResponsesStreamHandler {
         }
         int outputIndex = event.getInteger("output_index", 0);
         FunctionCallStreamState state = functionCallsByOutputIndex.get(outputIndex);
-        String callId = state != null ? state.callId : null;
-        String name = state != null ? state.name : null;
+        if (state == null) {
+            throw new IllegalStateException(
+                    "function call arguments received before metadata for output index " + outputIndex);
+        }
 
         CatholicToolCallChunkDelta toolDelta = new CatholicToolCallChunkDelta(
-            callId,
+            state.callId,
             "function",
             outputIndex,
-            new CatholicToolCallFunctionChunkDelta(name, delta)
+            new CatholicToolCallFunctionChunkDelta(state.name, delta)
         );
         if (responseId == null) {
             return null;

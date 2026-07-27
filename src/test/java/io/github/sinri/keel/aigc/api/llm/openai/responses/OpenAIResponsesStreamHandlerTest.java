@@ -129,6 +129,30 @@ class OpenAIResponsesStreamHandlerTest {
     }
 
     @Test
+    void rejectsFunctionArgumentsWithoutPrecedingMetadata() {
+        String created = new JsonObject()
+            .put("type", "response.created")
+            .put("response", new JsonObject().put("id", "resp_tool"))
+            .encode();
+        String arguments = new JsonObject()
+            .put("type", "response.function_call_arguments.delta")
+            .put("output_index", 0)
+            .put("delta", "{\"query\":\"value\"}")
+            .encode();
+
+        handler.processSseLine("data: " + created);
+
+        IllegalStateException exception = assertThrows(
+            IllegalStateException.class,
+            () -> handler.processSseLine("data: " + arguments)
+        );
+        assertEquals(
+            "function call arguments received before metadata for output index 0",
+            exception.getMessage()
+        );
+    }
+
+    @Test
     void testProcessNonDataLine() {
         assertNull(handler.processSseLine(": comment"));
         assertNull(handler.processSseLine("something"));
