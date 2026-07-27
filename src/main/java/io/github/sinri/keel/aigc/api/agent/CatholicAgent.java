@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.*;
 
 /**
- * 通用、非流式 Agent 执行器。每次 {@link #interact} 都是相互隔离的一次用户交互：
+ * 通用、流式 LLM Agent 执行器。每次 {@link #interact} 都是相互隔离的一次用户交互：
  * 用户需求进入 LLM，观察器判断完成或继续；继续时执行必要的工具并再次交给 LLM，
  * 直至完成或达到轮次上限。
  * <p>
@@ -206,10 +206,10 @@ public final class CatholicAgent {
                                                        .messages(normalizeRequestMessages(transcript))
                                                        .tools(interactionTools)
                                                        .options(requestOptions)
-                                                       .stream(false)
+                                                       .stream(true)
                                                        .build();
 
-        return llm.call(request).compose(response -> {
+        return llm.callStream(request).compose(response -> {
             CatholicAssistantMessage assistant = response.message();
             transcript.add(assistant);
             Future<Void> validation = llmRound == 1

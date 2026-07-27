@@ -1,6 +1,6 @@
 # Catholic Agent
 
-本包在 `CatholicLLM` 之上提供通用、非流式的 Agent 执行框架。它面向一次用户交互完成以下流程：
+本包在 `CatholicLLM` 之上提供通用、流式 LLM 的 Agent 执行框架。它面向一次用户交互完成以下流程：
 
 ```text
 用户需求
@@ -209,7 +209,7 @@ return reportAgent.interact(userMessage);
 
 ## 当前边界
 
-- 仅支持非流式 LLM 调用；
+- Agent 每轮使用流式 LLM 调用，并在响应聚合完成后执行 Observer 和工具；
 - 一次 `interact(...)` 是独立用户交互，不负责跨交互的会话存储；
 - 工具调用当前顺序执行，不并行执行；
 - 工具重试、超时、错误转换以及长期记忆应由 handler、Observer 或上层业务实现。
