@@ -10,6 +10,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 表示以函数名注册和分派 {@link NativeFunctionAdapter} 的工具调用处理器。
+ * 它将已注册的原生函数适配器同时作为可提供给 LLM 的工具定义集合和本地执行目标；
+ * 收到 {@link CatholicFunctionToolCall} 后解析 JSON 参数、查找同名适配器并异步执行。
+ * 所有调用还会通过配置的 {@link CatholicToolInvocationObserver} 产生审计事件。
+ */
 public class CatholicToolInvocationHandlerWithNativeFunctionAdapters implements CatholicToolInvocationHandler {
 
     private final Map<String, NativeFunctionAdapter> functionAdapterMap = new ConcurrentHashMap<>();

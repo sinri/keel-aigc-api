@@ -6,7 +6,9 @@ import io.vertx.core.Future;
 import java.util.Objects;
 
 /**
- * 将模型产生的 {@link CatholicFunctionToolCall} 转为可写回对话的工具结果字符串。
+ * 表示模型函数工具调用与应用侧工具实现之间的执行边界。
+ * 实现者负责接收模型产生的 {@link CatholicFunctionToolCall}、异步执行对应业务函数，
+ * 并返回可封装为 tool 角色消息、写回后续对话的结果字符串。
  */
 @FunctionalInterface
 public interface CatholicToolInvocationHandler {
@@ -35,6 +37,7 @@ public interface CatholicToolInvocationHandler {
 
     /**
      * Returns an observed view of this handler.
+     * todo 不应该 wrap
      */
     default CatholicToolInvocationHandler observedBy(CatholicToolInvocationObserver observer) {
         return observed(this, observer);

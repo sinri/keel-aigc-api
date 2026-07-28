@@ -7,7 +7,11 @@ import org.jspecify.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 
-/** 一次用户交互的完整结果，包括终止原因和可审计 transcript。 */
+/**
+ * 表示一次 {@link CatholicAgent} 用户交互的最终执行结果。
+ * 它汇集终止原因、完整且可审计的 transcript、最后一轮 LLM 响应及实际轮次统计，
+ * 使调用方既能取得最终文本，也能区分正常完成与达到轮次上限等终止情形。
+ */
 public record CatholicAgentResult(CatholicAgentTermination termination,
                                   List<CatholicChatMessage> transcript,
                                   CatholicLLMResponse lastResponse,

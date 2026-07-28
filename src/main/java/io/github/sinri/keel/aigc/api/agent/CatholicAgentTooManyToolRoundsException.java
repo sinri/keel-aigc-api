@@ -1,7 +1,10 @@
 package io.github.sinri.keel.aigc.api.agent;
 
 /**
- * 工具调用链超过 {@link CatholicAgent} 配置的 {@code maxToolRounds} 时抛出。
+ * 表示兼容性 {@code chat} API 无法返回完整结果时的轮次超限异常。
+ * 当 {@link CatholicAgent} 的工具调用链达到配置的最大轮次、交互未能正常完成时，
+ * {@code chat} 方法以此异常暴露失败；需要检查终止原因及 transcript 的调用方应改用
+ * {@link CatholicAgent#interact(String)}。
  */
 public final class CatholicAgentTooManyToolRoundsException extends RuntimeException {
 

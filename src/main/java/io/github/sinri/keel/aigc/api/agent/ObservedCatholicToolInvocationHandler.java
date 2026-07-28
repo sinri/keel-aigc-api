@@ -7,6 +7,13 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * 表示为任意 {@link CatholicToolInvocationHandler} 增加审计观察能力的内部装饰器。
+ * 它为每次调用创建 {@link CatholicToolInvocationObservation}，统一捕获同步异常和异步
+ * 执行结果，并向观察器发送开始、成功或失败事件；观察器异常会被隔离，不影响委托处理器
+ * 的原始结果。
+ */
+// todo 这个类不对劲，不应该 wrap
 final class ObservedCatholicToolInvocationHandler implements CatholicToolInvocationHandler {
     private final CatholicToolInvocationHandler delegate;
     private final CatholicToolInvocationObserver observer;

@@ -20,11 +20,13 @@ import org.jspecify.annotations.Nullable;
 import java.util.*;
 
 /**
- * 通用、流式 LLM Agent 执行器。每次 {@link #interact} 都是相互隔离的一次用户交互：
- * 用户需求进入 LLM，观察器判断完成或继续；继续时执行必要的工具并再次交给 LLM，
- * 直至完成或达到轮次上限。
+ * 表示一个基于 {@link CatholicLLM} 的通用 Agent 执行器，是 Agent 编排流程的核心实体。
+ * 它负责组装模型、提示消息、工具、观察器和技能提供器，并在一次交互内循环完成
+ * LLM 调用、响应观察、工具执行及工具结果回填，直至任务完成或达到轮次上限。
  * <p>
- * 本类不保存会话历史，也不承载“必须调用某个工具”等特定业务策略。
+ * 每次 {@link #interact} 都会创建相互隔离的执行记录；本类不保存跨交互的会话历史，
+ * 也不承载“必须调用某个工具”等特定业务策略。需要延续上下文时，调用方应显式传入
+ * 既有消息；需要首轮强制调用工具时，应使用 {@link CatholicRequiredToolAgent}。
  */
 public final class CatholicAgent {
     public static final String ACTIVATE_SKILL_FUNCTION_NAME = "activate_skill";
@@ -339,6 +341,11 @@ public final class CatholicAgent {
                                 @Nullable CatholicSystemMessage catalogMessage) {
     }
 
+    /**
+     * 表示 {@link CatholicAgent} 的配置构建器。
+     * 负责收集模型、工具定义、工具处理器、观察策略、轮次限制、系统提示和技能提供器，
+     * 并在 {@link #build()} 时校验这些配置之间的约束，生成不可变的 Agent 执行器。
+     */
     public static final class Builder {
         private final LateObject<CatholicLLM> lateLlm = new LateObject<>();
         private final LateObject<String> lateModel = new LateObject<>();

@@ -6,7 +6,12 @@ import io.vertx.core.Future;
 import java.util.List;
 import java.util.Objects;
 
-/** “首次 LLM 分析必须选择指定工具”的特殊 Agent；该策略不污染通用 Agent。 */
+/**
+ * 表示“首轮 LLM 响应必须调用指定函数工具”的策略型 Agent。
+ * 它包装一个已配置该函数的 {@link CatholicAgent}，在请求中声明强制工具选择，并校验
+ * 首轮响应确实包含目标函数调用；这样可复用通用 Agent 的执行循环而不向其引入特定
+ * 业务约束。
+ */
 public final class CatholicRequiredToolAgent {
     private final CatholicAgent delegate;
     private final String functionName;

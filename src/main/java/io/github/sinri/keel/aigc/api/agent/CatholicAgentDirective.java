@@ -5,7 +5,11 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicChatMessage;
 import java.util.List;
 import java.util.Objects;
 
-/** 观察器对当前交互的控制指令。 */
+/**
+ * 表示 {@link CatholicAgentObserver} 对当前 Agent 轮次作出的控制指令。
+ * 它同时描述交互是否已经完成，以及继续执行前需要追加到 transcript 的机制观察消息，
+ * 由 {@link CatholicAgent} 据此决定结束交互、执行模型请求的工具或发起下一轮 LLM 调用。
+ */
 public record CatholicAgentDirective(boolean completed, List<CatholicChatMessage> messagesToAppend) {
     public CatholicAgentDirective {
         messagesToAppend = List.copyOf(Objects.requireNonNull(messagesToAppend, "messagesToAppend"));

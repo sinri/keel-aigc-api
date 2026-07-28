@@ -6,9 +6,12 @@ import io.github.sinri.keel.logger.api.logger.Logger;
 import java.util.Objects;
 
 /**
- * Logger-backed tool execution audit observer.
+ * 表示将工具执行审计事件写入 {@link Logger} 的观察器实现。
+ * 它记录调用标识、工具标识、函数名、开始时间、耗时以及成功结果或失败原因，
+ * 用于形成结构化的工具调用日志。
  * <p>
- * Arguments, results and failure messages are redacted before being placed in the log context.
+ * 参数、结果和失败消息在进入日志上下文前会经过 {@link CatholicLLMLogRedactor} 脱敏，
+ * 过长的参数或结果也会被截断，以控制敏感信息暴露和日志体积。
  */
 public final class LoggingCatholicToolInvocationObserver implements CatholicToolInvocationObserver {
     private static final int DEFAULT_MAX_PAYLOAD_LENGTH = 1_048_576;
