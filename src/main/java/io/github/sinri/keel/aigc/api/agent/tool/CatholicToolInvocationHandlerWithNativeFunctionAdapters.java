@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.agent;
+package io.github.sinri.keel.aigc.api.agent.tool;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.NativeFunctionAdapter;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;

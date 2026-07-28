@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.agent;
 
+import io.github.sinri.keel.aigc.api.agent.tool.CatholicToolInvocationHandler;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkill;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillFrontmatter;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillProvider;

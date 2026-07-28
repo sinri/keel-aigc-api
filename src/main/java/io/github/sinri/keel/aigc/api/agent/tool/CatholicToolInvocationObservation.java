@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.agent;
+package io.github.sinri.keel.aigc.api.agent.tool;
 
 import java.time.Instant;
 import java.util.Objects;

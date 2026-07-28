@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.agent;
+package io.github.sinri.keel.aigc.api.agent.tool;
 
 /**
  * 表示 {@link CatholicToolInvocationHandler} 执行过程的审计观察器。

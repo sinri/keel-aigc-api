@@ -1,4 +1,4 @@
-package io.github.sinri.keel.aigc.api.agent;
+package io.github.sinri.keel.aigc.api.agent.tool;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.observation.CatholicLLMLogRedactor;
 import io.github.sinri.keel.logger.api.logger.Logger;
