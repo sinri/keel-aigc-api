@@ -61,7 +61,7 @@ class CatholicAgentTest {
             .llm(llm)
             .model("m")
             .tools(List.of(CatholicToolDefinition.function(FunctionDefinition.of("get_x", "desc"))))
-            .toolHandler(tc -> Future.succeededFuture("{\"ok\":true}"))
+            .toolHandler(CatholicToolInvocationHandler.of(tc -> Future.succeededFuture("{\"ok\":true}")))
             .build();
 
         CatholicAgentResult r = agent.interact("run").toCompletionStage().toCompletableFuture().join();
@@ -85,7 +85,7 @@ class CatholicAgentTest {
             .model("m")
             .maxRounds(1)
             .tools(List.of(CatholicToolDefinition.function(FunctionDefinition.of("f", "d"))))
-            .toolHandler(tc -> Future.succeededFuture("{}"))
+            .toolHandler(CatholicToolInvocationHandler.of(tc -> Future.succeededFuture("{}")))
             .build();
 
         CatholicAgentResult result = agent.interact("x").toCompletionStage().toCompletableFuture().join();
@@ -354,7 +354,7 @@ class CatholicAgentTest {
         llm.queue.add(textOnlyResponse("done"));
         CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m").maxRounds(2)
             .tools(List.of(CatholicToolDefinition.function(FunctionDefinition.of("f", "d"))))
-            .toolHandler(tc -> Future.succeededFuture("{}"))
+            .toolHandler(CatholicToolInvocationHandler.of(tc -> Future.succeededFuture("{}")))
             .build();
 
         CatholicAgentResult result = new CatholicRequiredToolAgent(agent, "f").interact("x")
@@ -370,7 +370,7 @@ class CatholicAgentTest {
         llm.queue.add(textOnlyResponse("ignored tool choice"));
         CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
             .tools(List.of(CatholicToolDefinition.function(FunctionDefinition.of("required", "d"))))
-            .toolHandler(tc -> Future.succeededFuture("{}"))
+            .toolHandler(CatholicToolInvocationHandler.of(tc -> Future.succeededFuture("{}")))
             .build();
 
         Throwable cause = failureOf(new CatholicRequiredToolAgent(agent, "required").interact("x"));
@@ -390,10 +390,10 @@ class CatholicAgentTest {
             .tools(List.of(
                 CatholicToolDefinition.function(FunctionDefinition.of("required", "d")),
                 CatholicToolDefinition.function(FunctionDefinition.of("other", "d"))))
-            .toolHandler(tc -> {
+            .toolHandler(CatholicToolInvocationHandler.of(tc -> {
                 handlerCalls[0]++;
                 return Future.succeededFuture("{}");
-            })
+            }))
             .build();
 
         Throwable cause = failureOf(new CatholicRequiredToolAgent(agent, "required").interact("x"));

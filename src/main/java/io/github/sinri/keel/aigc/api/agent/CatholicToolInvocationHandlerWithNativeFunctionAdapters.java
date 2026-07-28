@@ -16,17 +16,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * 收到 {@link CatholicFunctionToolCall} 后解析 JSON 参数、查找同名适配器并异步执行。
  * 所有调用还会通过配置的 {@link CatholicToolInvocationObserver} 产生审计事件。
  */
-public class CatholicToolInvocationHandlerWithNativeFunctionAdapters implements CatholicToolInvocationHandler {
+public class CatholicToolInvocationHandlerWithNativeFunctionAdapters extends CatholicToolInvocationHandler {
 
     private final Map<String, NativeFunctionAdapter> functionAdapterMap = new ConcurrentHashMap<>();
-    private final CatholicToolInvocationHandler observedHandler;
 
     public CatholicToolInvocationHandlerWithNativeFunctionAdapters() {
-        this(CatholicToolInvocationObserver.noop());
     }
 
     public CatholicToolInvocationHandlerWithNativeFunctionAdapters(CatholicToolInvocationObserver observer) {
-        observedHandler = CatholicToolInvocationHandler.observed(this::handleUnobserved, observer);
+        observedBy(observer);
     }
 
     public void registerNativeFunctionAdapter(NativeFunctionAdapter functionAdapter) {
@@ -40,11 +38,7 @@ public class CatholicToolInvocationHandlerWithNativeFunctionAdapters implements 
     }
 
     @Override
-    public Future<String> handle(CatholicFunctionToolCall toolCall) {
-        return observedHandler.handle(toolCall);
-    }
-
-    private Future<String> handleUnobserved(CatholicFunctionToolCall toolCall) {
+    protected Future<String> handleToolCall(CatholicFunctionToolCall toolCall) {
         NativeFunctionAdapter nativeFunctionAdapter = functionAdapterMap.get(toolCall.functionName());
         if (nativeFunctionAdapter == null) {
             return Future.failedFuture(new IllegalArgumentException(

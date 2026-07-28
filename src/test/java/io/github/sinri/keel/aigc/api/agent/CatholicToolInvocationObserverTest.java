@@ -23,11 +23,13 @@ class CatholicToolInvocationObserverTest {
     @Test
     void observesSuccessfulInvocation() {
         RecordingObserver observer = new RecordingObserver();
-        CatholicToolInvocationHandler handler = CatholicToolInvocationHandler
-            .observed(call -> Future.succeededFuture("{\"temperature\":30}"), observer);
+        CatholicToolInvocationHandler handler = CatholicToolInvocationHandler.of(
+            call -> Future.succeededFuture("{\"temperature\":30}"));
 
-        String result = handler.handle(TOOL_CALL).toCompletionStage().toCompletableFuture().join();
+        CatholicToolInvocationHandler observed = handler.observedBy(observer);
+        String result = observed.handle(TOOL_CALL).toCompletionStage().toCompletableFuture().join();
 
+        assertSame(handler, observed);
         assertEquals("{\"temperature\":30}", result);
         assertEquals(List.of("started", "succeeded"), observer.events);
         assertEquals("call-1", observer.observation.toolCallId());
@@ -43,7 +45,7 @@ class CatholicToolInvocationObserverTest {
         RuntimeException asynchronous = new RuntimeException("async");
         RecordingObserver asyncObserver = new RecordingObserver();
         CatholicToolInvocationHandler asyncHandler = CatholicToolInvocationHandler.observed(
-            call -> Future.failedFuture(asynchronous), asyncObserver
+            CatholicToolInvocationHandler.of(call -> Future.failedFuture(asynchronous)), asyncObserver
         );
         assertSame(asynchronous, failureOf(asyncHandler.handle(TOOL_CALL)));
         assertEquals(List.of("started", "failed"), asyncObserver.events);
@@ -52,9 +54,9 @@ class CatholicToolInvocationObserverTest {
         RuntimeException synchronous = new RuntimeException("sync");
         RecordingObserver syncObserver = new RecordingObserver();
         CatholicToolInvocationHandler syncHandler = CatholicToolInvocationHandler.observed(
-            call -> {
+            CatholicToolInvocationHandler.of(call -> {
                 throw synchronous;
-            }, syncObserver
+            }), syncObserver
         );
         assertSame(synchronous, failureOf(syncHandler.handle(TOOL_CALL)));
         assertEquals(List.of("started", "failed"), syncObserver.events);
@@ -77,7 +79,7 @@ class CatholicToolInvocationObserverTest {
             }
         };
         CatholicToolInvocationHandler handler = CatholicToolInvocationHandler.observed(
-            call -> Future.succeededFuture("ok"), broken
+            CatholicToolInvocationHandler.of(call -> Future.succeededFuture("ok")), broken
         );
 
         assertEquals("ok", handler.handle(TOOL_CALL).toCompletionStage().toCompletableFuture().join());

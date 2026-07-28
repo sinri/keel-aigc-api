@@ -301,7 +301,7 @@ public final class CatholicAgent {
                     "Load the full instructions for one available skill before applying it.", parameters)));
 
             Set<String> activatedSkillNames = new HashSet<>();
-            CatholicToolInvocationHandler interactionHandler = call -> {
+            CatholicToolInvocationHandler interactionHandler = CatholicToolInvocationHandler.of(call -> {
                 if (!ACTIVATE_SKILL_FUNCTION_NAME.equals(call.functionName())) return toolHandler.handle(call);
                 String name;
                 try {
@@ -332,7 +332,7 @@ public final class CatholicAgent {
                     return Future.succeededFuture("<skill_instructions name=\"" + name + "\">\n"
                             + skill.instructions() + "\n</skill_instructions>");
                 });
-            };
+            });
             return Future.succeededFuture(new SkillContext(List.copyOf(interactionTools), interactionHandler,
                     CatholicSystemMessage.of(buildSkillCatalog(byName.values().stream().toList()))));
         });
@@ -431,7 +431,8 @@ public final class CatholicAgent {
                 throw new IllegalArgumentException("reserved tool name: " + ACTIVATE_SKILL_FUNCTION_NAME);
             }
             CatholicToolInvocationHandler handler = tools.isEmpty()
-                    ? tc -> Future.failedFuture(new IllegalStateException("no tools configured"))
+                    ? CatholicToolInvocationHandler.of(
+                            tc -> Future.failedFuture(new IllegalStateException("no tools configured")))
                     : lateToolHandler.get();
             return new CatholicAgent(lateLlm.get(), lateModel.get(), List.copyOf(tools), options,
                     handler, observer, maxRounds, List.copyOf(initialMessages), skillProvider);

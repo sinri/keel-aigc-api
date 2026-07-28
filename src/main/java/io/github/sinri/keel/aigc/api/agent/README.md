@@ -60,10 +60,10 @@ return agent.interact("分析这份需求")
 工具定义和工具执行器必须成对配置：
 
 ```java
-CatholicToolInvocationHandler handler = toolCall -> {
+CatholicToolInvocationHandler handler = CatholicToolInvocationHandler.of(toolCall -> {
     return queryWeather(toolCall.parseArguments())
         .map(JsonObject::encode);
-};
+});
 
 CatholicAgent agent = CatholicAgent.builder()
     .llm(llm)
