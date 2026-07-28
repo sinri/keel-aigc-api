@@ -1,5 +1,7 @@
-package io.github.sinri.keel.aigc.api.agent;
+package io.github.sinri.keel.aigc.api.agent.reqtool;
 
+import io.github.sinri.keel.aigc.api.agent.CatholicAgent;
+import io.github.sinri.keel.aigc.api.agent.CatholicAgentResult;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.vertx.core.Future;
 

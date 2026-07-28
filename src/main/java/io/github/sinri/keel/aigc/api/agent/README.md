@@ -198,6 +198,9 @@ null、加载结果名称不一致或正文为空时，当前交互会失败。`
 “本次交互的首次 LLM 请求必须选择某个函数”属于特殊策略，不由通用 `CatholicAgent` 保存状态。使用独立的 `CatholicRequiredToolAgent`：
 
 ```java
+import io.github.sinri.keel.aigc.api.agent.reqtool.CatholicRequiredToolAgent;
+import io.github.sinri.keel.aigc.api.agent.reqtool.CatholicRequiredToolNotCalledException;
+
 CatholicAgent baseAgent = CatholicAgent.builder()
     .llm(llm)
     .model("model-name")

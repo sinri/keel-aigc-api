@@ -96,6 +96,9 @@ CatholicAgent agent = CatholicAgent.builder()
 ## 首轮必须调用指定工具
 
 ```java
+import io.github.sinri.keel.aigc.api.agent.reqtool.CatholicRequiredToolAgent;
+import io.github.sinri.keel.aigc.api.agent.reqtool.CatholicRequiredToolNotCalledException;
+
 CatholicRequiredToolAgent reportAgent =
     new CatholicRequiredToolAgent(baseAgent, "submit_report");
 

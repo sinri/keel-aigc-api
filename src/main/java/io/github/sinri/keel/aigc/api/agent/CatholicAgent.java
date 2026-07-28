@@ -1,5 +1,7 @@
 package io.github.sinri.keel.aigc.api.agent;
 
+import io.github.sinri.keel.aigc.api.agent.reqtool.CatholicAgentFirstResponseValidator;
+import io.github.sinri.keel.aigc.api.agent.reqtool.CatholicRequiredToolAgent;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillFrontmatter;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillProvider;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
@@ -154,10 +156,10 @@ public final class CatholicAgent {
         return interact(priorMessages, userMessage, null, response -> Future.succeededFuture());
     }
 
-    Future<CatholicAgentResult> interact(List<? extends CatholicChatMessage> priorMessages,
-                                         CatholicUserMessage userMessage,
-                                         @Nullable String requiredTool,
-                                         CatholicAgentFirstResponseValidator firstResponseValidator) {
+    public Future<CatholicAgentResult> interact(List<? extends CatholicChatMessage> priorMessages,
+                                                CatholicUserMessage userMessage,
+                                                @Nullable String requiredTool,
+                                                CatholicAgentFirstResponseValidator firstResponseValidator) {
         Objects.requireNonNull(priorMessages, "priorMessages");
         Objects.requireNonNull(userMessage, "userMessage");
         Objects.requireNonNull(firstResponseValidator, "firstResponseValidator");
@@ -176,7 +178,7 @@ public final class CatholicAgent {
         });
     }
 
-    boolean supportsFunction(String functionName) {
+    public boolean supportsFunction(String functionName) {
         return tools.stream()
                     .filter(CatholicFunctionToolDefinition.class::isInstance)
                     .map(CatholicFunctionToolDefinition.class::cast)

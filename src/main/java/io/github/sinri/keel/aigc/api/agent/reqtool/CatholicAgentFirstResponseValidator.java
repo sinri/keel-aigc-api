@@ -1,5 +1,6 @@
-package io.github.sinri.keel.aigc.api.agent;
+package io.github.sinri.keel.aigc.api.agent.reqtool;
 
+import io.github.sinri.keel.aigc.api.agent.CatholicAgentObserver;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.vertx.core.Future;
 
@@ -9,6 +10,6 @@ import io.vertx.core.Future;
  * 用于实现首轮响应必须满足的内部约束，例如确认模型调用了指定工具。
  */
 @FunctionalInterface
-interface CatholicAgentFirstResponseValidator {
+public interface CatholicAgentFirstResponseValidator {
     Future<Void> validate(CatholicLLMResponse response);
 }
