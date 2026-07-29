@@ -8,7 +8,7 @@ module io.github.sinri.keel.integration.llm.api {
     requires transitive org.commonmark;
     requires transitive org.commonmark.ext.gfm.tables;
 
-    requires static org.jspecify;
+    requires static transitive org.jspecify;
     requires io.vertx.jsonschema;
     requires org.yaml.snakeyaml;
 
@@ -31,7 +31,8 @@ module io.github.sinri.keel.integration.llm.api {
     // OpenAI Responses API
     exports io.github.sinri.keel.aigc.api.llm.openai.responses;
 
-    // DashScope API（根包无公开类型，仅导出子包）
+    // DashScope API
+    exports io.github.sinri.keel.aigc.api.llm.dashscope;
     exports io.github.sinri.keel.aigc.api.llm.dashscope.textgeneration;
     exports io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration;
 
@@ -42,4 +43,5 @@ module io.github.sinri.keel.integration.llm.api {
     exports io.github.sinri.keel.aigc.api.agent;
     exports io.github.sinri.keel.aigc.api.agent.reqtool;
     exports io.github.sinri.keel.aigc.api.agent.skill;
+    exports io.github.sinri.keel.aigc.api.agent.tool;
 }
