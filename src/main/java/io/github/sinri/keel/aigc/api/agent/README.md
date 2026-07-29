@@ -181,7 +181,9 @@ CatholicAgent agent = CatholicAgent.builder()
 `name` 和 `description` 放入本次 system context；存在候选时才注册内置
 `activate_skill` 工具，且其 `name` 参数枚举限定为本次候选名称。模型调用该工具后，
 框架再通过 `loadSkillByName(...)` 加载完整 frontmatter、正文及轻量资源清单，并将它们
-作为工具结果送回下一轮。资源清单只包含相对路径、类型、大小和媒体类型。
+作为工具结果送回下一轮。资源清单只包含相对路径、类型、大小和媒体类型。本地 Provider
+还会通过 `CatholicSkill.directory()` 披露 Skill 的绝对根目录，使模型可以直接解析正文和
+资源清单中的相对路径，而不必搜索文件系统；远程 Provider 可返回 `null`。
 同一次 `interact(...)` 内已成功激活的 Skill 会被记录；模型重复激活时不会再次访问 Provider
 或重复注入正文，只会收到“已在当前上下文中”的简短工具结果。该记录不会跨交互共享。
 

@@ -128,6 +128,7 @@ public class LocalSkillProvider implements CatholicSkillProvider {
         Map<String, String> metadata = metadata(frontmatter.get("metadata"), skillFile);
         return new LocalSkill(name, description, license, compatibility, metadata, allowedTools,
             includeInstructions ? document.instructions() : "",
+            includeInstructions ? skillFile.getParent().toAbsolutePath().normalize() : null,
             includeInstructions ? discoverResources(skillFile.getParent()) : List.of());
     }
 
@@ -295,5 +296,6 @@ public class LocalSkillProvider implements CatholicSkillProvider {
     private record LocalSkill(String name, String description, @Nullable String license,
                               @Nullable String compatibility, Map<String, String> metadata,
                               @Nullable String allowedTools, String instructions,
+                              @Nullable Path directory,
                               List<CatholicSkillResource> resources) implements CatholicSkill {}
 }

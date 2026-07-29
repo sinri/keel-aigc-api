@@ -17,6 +17,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
+import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function.FunctionDefinition;
@@ -26,6 +27,7 @@ import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.FunctionCall;
 import io.vertx.core.Future;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -230,6 +232,54 @@ class CatholicAgentTest {
             .filter(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::isInstance)
             .map(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::cast)
             .anyMatch(message -> message.content().contains("First inspect the PDF")));
+    }
+
+    @Test
+    void activatedSkillDisclosesItsLocalDirectory() {
+        CountingLlm llm = new CountingLlm();
+        llm.queue.add(toolOnlyResponse(new CatholicFunctionToolCallImpl(
+                "activate", new FunctionCall(CatholicAgent.ACTIVATE_SKILL_FUNCTION_NAME,
+                "{\"name\":\"random-namer\"}"))));
+        llm.queue.add(textOnlyResponse("done"));
+        Path skillDirectory = Path.of("/opt/skills/random-namer");
+
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+                .skillProvider(new CatholicSkillProvider() {
+                    @Override
+                    public Future<List<CatholicSkillFrontmatter>> getSkillCandidates() {
+                        return Future.succeededFuture(List.of(frontmatter(
+                                "random-namer", "Generate random names.")));
+                    }
+
+                    @Override
+                    public Future<CatholicSkill> loadSkillByName(String skillName) {
+                        return Future.succeededFuture(new CatholicSkill() {
+                            @Override public String name() { return skillName; }
+                            @Override public String description() { return "Generate random names."; }
+                            @Override public String instructions() {
+                                return "Run scripts/random_namer.py.";
+                            }
+                            @Override public Path directory() { return skillDirectory; }
+                            @Override public List<CatholicSkillResource> resources() {
+                                return List.of(new CatholicSkillResource(
+                                        "scripts/random_namer.py",
+                                        CatholicSkillResourceKind.SCRIPT, 1, "text/x-python"));
+                            }
+                        });
+                    }
+                }).build();
+
+        CatholicAgentResult result = agent.interact("generate a name")
+                .toCompletionStage().toCompletableFuture().join();
+
+        String activationResult = result.transcript().stream()
+                .filter(CatholicToolCallMessage.class::isInstance)
+                .map(CatholicToolCallMessage.class::cast)
+                .map(CatholicToolCallMessage::content)
+                .filter(content -> content.contains("<skill_directory"))
+                .findFirst().orElseThrow();
+        assertTrue(activationResult.contains(skillDirectory.toString()));
+        assertTrue(activationResult.contains("Do not search the filesystem"));
     }
 
     @Test

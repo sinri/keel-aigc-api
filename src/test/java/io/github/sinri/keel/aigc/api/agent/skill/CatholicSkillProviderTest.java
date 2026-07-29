@@ -78,6 +78,8 @@ class CatholicSkillProviderTest {
         assertEquals("code-review", skill.name());
         assertEquals("Review source code", skill.description());
         assertEquals("# Review instructions\n\nInspect the code carefully.", skill.instructions());
+        assertEquals(temporaryDirectory.resolve("code-review").toAbsolutePath().normalize(),
+                skill.directory());
         assertTrue(skill.metadata().isEmpty());
     }
 

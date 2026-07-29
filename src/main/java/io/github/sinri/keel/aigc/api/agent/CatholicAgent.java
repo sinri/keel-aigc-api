@@ -537,6 +537,18 @@ public final class CatholicAgent {
                     }
                     activatedSkillNames.add(name);
                     activatedSkills.put(name, skill);
+                    String directoryContext = "";
+                    if (skill.directory() != null) {
+                        directoryContext = "\n<skill_directory name=\"" + name + "\">\n"
+                                + new JsonObject()
+                                .put("path", skill.directory().toString())
+                                .put("path_type", "absolute")
+                                .put("usage", "Resolve relative paths in skill instructions and "
+                                        + "skill_resources against this directory. Do not search "
+                                        + "the filesystem for disclosed resources.")
+                                .encodePrettily()
+                                + "\n</skill_directory>";
+                    }
                     return Future.succeededFuture("<skill_frontmatter name=\"" + name + "\">\n"
                             + skillFrontmatter(skill).encodePrettily()
                             + "\n</skill_frontmatter>\n"
@@ -544,7 +556,8 @@ public final class CatholicAgent {
                             + skill.instructions() + "\n</skill_instructions>\n"
                             + "<skill_resources name=\"" + name + "\">\n"
                             + resourceManifest(skill).encodePrettily()
-                            + "\n</skill_resources>");
+                            + "\n</skill_resources>"
+                            + directoryContext);
                 });
             });
             return Future.succeededFuture(new SkillContext(List.copyOf(interactionTools), interactionHandler,
