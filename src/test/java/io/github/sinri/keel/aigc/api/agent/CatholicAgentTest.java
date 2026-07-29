@@ -6,6 +6,10 @@ import io.github.sinri.keel.aigc.api.agent.reqtool.CatholicRequiredToolNotCalled
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkill;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillFrontmatter;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillProvider;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillResource;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillResourceContent;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillResourceKind;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillScriptResult;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
@@ -288,6 +292,170 @@ class CatholicAgentTest {
             .filter(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::isInstance)
             .map(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::cast)
             .anyMatch(message -> message.content().contains("already active")));
+    }
+
+    @Test
+    void activeSkillResourcesAreDisclosedAndReadProgressively() {
+        CountingLlm llm = new CountingLlm();
+        llm.queue.add(toolOnlyResponse(new CatholicFunctionToolCallImpl(
+                "activate", new FunctionCall(CatholicAgent.ACTIVATE_SKILL_FUNCTION_NAME,
+                "{\"name\":\"code-review\"}"))));
+        llm.queue.add(toolOnlyResponse(new CatholicFunctionToolCallImpl(
+                "read", new FunctionCall(CatholicAgent.READ_SKILL_RESOURCE_FUNCTION_NAME,
+                "{\"name\":\"code-review\",\"path\":\"references/rules.md\"}"))));
+        llm.queue.add(textOnlyResponse("done"));
+        int[] reads = {0};
+
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+                .skillProvider(new CatholicSkillProvider() {
+                    @Override
+                    public Future<List<CatholicSkillFrontmatter>> getSkillCandidates() {
+                        return Future.succeededFuture(List.of(frontmatter(
+                                "code-review", "Review code using bundled rules.")));
+                    }
+
+                    @Override
+                    public Future<CatholicSkill> loadSkillByName(String skillName) {
+                        return Future.succeededFuture(new CatholicSkill() {
+                            @Override public String name() { return skillName; }
+                            @Override public String description() { return "Review code using bundled rules."; }
+                            @Override public String instructions() { return "Read references/rules.md."; }
+                            @Override public List<CatholicSkillResource> resources() {
+                                return List.of(new CatholicSkillResource("references/rules.md",
+                                        CatholicSkillResourceKind.REFERENCE, 11, "text/markdown"));
+                            }
+                        });
+                    }
+
+                    @Override
+                    public Future<CatholicSkillResourceContent> readSkillResource(
+                            String skillName, String relativePath) {
+                        reads[0]++;
+                        return Future.succeededFuture(new CatholicSkillResourceContent(
+                                relativePath, "text/markdown", "Always test".getBytes()));
+                    }
+                }).build();
+
+        CatholicAgentResult result = agent.interact("review this")
+                .toCompletionStage().toCompletableFuture().join();
+
+        assertTrue(result.completed());
+        assertEquals(1, reads[0]);
+        assertTrue(result.transcript().stream()
+                .filter(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::isInstance)
+                .map(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::cast)
+                .anyMatch(message -> message.content().contains("references/rules.md")));
+        assertTrue(result.transcript().stream()
+                .filter(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::isInstance)
+                .map(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::cast)
+                .anyMatch(message -> message.content().contains("Always test")));
+    }
+
+    @Test
+    void skillResourceCannotBeReadBeforeActivation() {
+        CountingLlm llm = new CountingLlm();
+        llm.queue.add(toolOnlyResponse(new CatholicFunctionToolCallImpl(
+                "read", new FunctionCall(CatholicAgent.READ_SKILL_RESOURCE_FUNCTION_NAME,
+                "{\"name\":\"code-review\",\"path\":\"references/rules.md\"}"))));
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+                .skillProvider(new CatholicSkillProvider() {
+                    @Override
+                    public Future<List<CatholicSkillFrontmatter>> getSkillCandidates() {
+                        return Future.succeededFuture(List.of(
+                                frontmatter("code-review", "Review code using bundled rules.")));
+                    }
+
+                    @Override
+                    public Future<CatholicSkill> loadSkillByName(String skillName) {
+                        return Future.failedFuture("must not load");
+                    }
+                }).build();
+
+        assertTrue(failureOf(agent.interact("review this")).getMessage()
+                .contains("must be activated"));
+    }
+
+    @Test
+    void configuredExecutorRunsOnlyDisclosedScriptOfActiveSkill() {
+        CountingLlm llm = new CountingLlm();
+        llm.queue.add(toolOnlyResponse(new CatholicFunctionToolCallImpl(
+                "activate", new FunctionCall(CatholicAgent.ACTIVATE_SKILL_FUNCTION_NAME,
+                "{\"name\":\"data-export\"}"))));
+        llm.queue.add(toolOnlyResponse(new CatholicFunctionToolCallImpl(
+                "execute", new FunctionCall(CatholicAgent.EXECUTE_SKILL_SCRIPT_FUNCTION_NAME,
+                "{\"name\":\"data-export\",\"path\":\"scripts/export.py\",\"arguments\":[\"--json\"]}"))));
+        llm.queue.add(textOnlyResponse("done"));
+        List<String> receivedArguments = new ArrayList<>();
+
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+                .skillProvider(new CatholicSkillProvider() {
+                    @Override
+                    public Future<List<CatholicSkillFrontmatter>> getSkillCandidates() {
+                        return Future.succeededFuture(List.of(
+                                frontmatter("data-export", "Export data using a bundled script.")));
+                    }
+
+                    @Override
+                    public Future<CatholicSkill> loadSkillByName(String skillName) {
+                        return Future.succeededFuture(new CatholicSkill() {
+                            @Override public String name() { return skillName; }
+                            @Override public String description() { return "Export data using a bundled script."; }
+                            @Override public String instructions() { return "Run scripts/export.py."; }
+                            @Override public List<CatholicSkillResource> resources() {
+                                return List.of(new CatholicSkillResource("scripts/export.py",
+                                        CatholicSkillResourceKind.SCRIPT, 11, "text/x-python"));
+                            }
+                        });
+                    }
+
+                    @Override
+                    public Future<CatholicSkillResourceContent> readSkillResource(
+                            String skillName, String relativePath) {
+                        return Future.succeededFuture(new CatholicSkillResourceContent(
+                                relativePath, "text/x-python", "print('ok')".getBytes()));
+                    }
+                })
+                .skillScriptExecutor((skillName, script, content, arguments) -> {
+                    receivedArguments.addAll(arguments);
+                    return Future.succeededFuture(new CatholicSkillScriptResult(0, "ok\n", ""));
+                })
+                .build();
+
+        CatholicAgentResult result = agent.interact("export")
+                .toCompletionStage().toCompletableFuture().join();
+
+        assertTrue(result.completed());
+        assertEquals(List.of("--json"), receivedArguments);
+        assertTrue(result.transcript().stream()
+                .filter(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::isInstance)
+                .map(io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage.class::cast)
+                .anyMatch(message -> message.content().contains("\"exit_code\":0")));
+    }
+
+    @Test
+    void scriptToolIsAbsentWithoutConfiguredExecutor() {
+        CountingLlm llm = new CountingLlm();
+        llm.nextResponse = textOnlyResponse("done");
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+                .skillProvider(new CatholicSkillProvider() {
+                    @Override
+                    public Future<List<CatholicSkillFrontmatter>> getSkillCandidates() {
+                        return Future.succeededFuture(List.of(
+                                frontmatter("data-export", "Export data using a bundled script.")));
+                    }
+
+                    @Override
+                    public Future<CatholicSkill> loadSkillByName(String skillName) {
+                        return Future.failedFuture("not activated");
+                    }
+                }).build();
+
+        agent.interact("hello").toCompletionStage().toCompletableFuture().join();
+        assertFalse(llm.requests.get(0).tools().stream()
+                .filter(io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicFunctionToolDefinition.class::isInstance)
+                .map(io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicFunctionToolDefinition.class::cast)
+                .anyMatch(tool -> tool.function().name()
+                        .equals(CatholicAgent.EXECUTE_SKILL_SCRIPT_FUNCTION_NAME)));
     }
 
     @Test

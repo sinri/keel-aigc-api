@@ -5,6 +5,12 @@ import io.github.sinri.keel.aigc.api.agent.reqtool.CatholicAgentFirstResponseVal
 import io.github.sinri.keel.aigc.api.agent.reqtool.CatholicRequiredToolAgent;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillFrontmatter;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillProvider;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkill;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillResource;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillResourceContent;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillResourceKind;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillScriptExecutor;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillScriptResult;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
@@ -21,6 +27,8 @@ import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
 
 import java.util.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 /**
  * 表示一个基于 {@link CatholicLLM} 的通用 Agent 执行器，是 Agent 编排流程的核心实体。
@@ -33,6 +41,8 @@ import java.util.*;
  */
 public final class CatholicAgent {
     public static final String ACTIVATE_SKILL_FUNCTION_NAME = "activate_skill";
+    public static final String READ_SKILL_RESOURCE_FUNCTION_NAME = "read_skill_resource";
+    public static final String EXECUTE_SKILL_SCRIPT_FUNCTION_NAME = "execute_skill_script";
     private final CatholicLLM llm;
     private final String model;
     private final List<CatholicToolDefinition> tools;
@@ -42,12 +52,14 @@ public final class CatholicAgent {
     private final int maxRounds;
     private final List<CatholicChatMessage> initialMessages;
     private final @Nullable CatholicSkillProvider skillProvider;
+    private final @Nullable CatholicSkillScriptExecutor skillScriptExecutor;
 
     private CatholicAgent(CatholicLLM llm, String model, List<CatholicToolDefinition> tools,
                           CatholicLLMRequestOptions options, CatholicToolInvocationHandler toolHandler,
                           CatholicAgentObserver observer, int maxRounds,
                           List<CatholicChatMessage> initialMessages,
-                          @Nullable CatholicSkillProvider skillProvider) {
+                          @Nullable CatholicSkillProvider skillProvider,
+                          @Nullable CatholicSkillScriptExecutor skillScriptExecutor) {
         this.llm = llm;
         this.model = model;
         this.tools = tools;
@@ -57,6 +69,7 @@ public final class CatholicAgent {
         this.maxRounds = maxRounds;
         this.initialMessages = initialMessages;
         this.skillProvider = skillProvider;
+        this.skillScriptExecutor = skillScriptExecutor;
     }
 
     public static Builder builder() {
@@ -120,7 +133,88 @@ public final class CatholicAgent {
                 && (compatibility.isBlank() || compatibility.length() > 500)) {
             throw new IllegalArgumentException("invalid compatibility for skill: " + name);
         }
-        Objects.requireNonNull(skill.metadata(), "skill metadata");
+        Map<String, String> metadata = Objects.requireNonNull(skill.metadata(), "skill metadata");
+        metadata.forEach((key, value) -> {
+            if (key == null || value == null) {
+                throw new IllegalArgumentException("skill metadata contains null: " + name);
+            }
+        });
+    }
+
+    private static void validateSkill(CatholicSkill skill) {
+        validateSkillFrontmatter(skill);
+        List<CatholicSkillResource> resources = Objects.requireNonNull(
+                skill.resources(), "skill resources");
+        HashSet<String> paths = new HashSet<>();
+        for (CatholicSkillResource resource : resources) {
+            Objects.requireNonNull(resource, "skill resources contains null");
+            if (!paths.add(resource.path())) {
+                throw new IllegalArgumentException("duplicate resource path in skill "
+                        + skill.name() + ": " + resource.path());
+            }
+        }
+    }
+
+    private static JsonArray resourceManifest(CatholicSkill skill) {
+        JsonArray manifest = new JsonArray();
+        skill.resources().forEach(resource -> manifest.add(new JsonObject()
+                .put("path", resource.path())
+                .put("kind", resource.kind().name().toLowerCase(Locale.ROOT))
+                .put("size", resource.size())
+                .put("media_type", resource.mediaType())));
+        return manifest;
+    }
+
+    private static JsonObject skillFrontmatter(CatholicSkill skill) {
+        JsonObject metadata = new JsonObject();
+        skill.metadata().forEach(metadata::put);
+        return new JsonObject()
+                .put("name", skill.name())
+                .put("description", skill.description())
+                .put("license", skill.license())
+                .put("compatibility", skill.compatibility())
+                .put("metadata", metadata)
+                .put("allowed-tools", skill.allowedTools());
+    }
+
+    private static String resourceToolResult(String skillName, CatholicSkillResource expected,
+                                             CatholicSkillResourceContent content) {
+        if (!expected.path().equals(content.path())) {
+            throw new IllegalStateException("skill resource path mismatch: expected "
+                    + expected.path() + ", got " + content.path());
+        }
+        byte[] bytes = content.bytes();
+        if (bytes.length != expected.size()) {
+            throw new IllegalStateException("skill resource size mismatch for "
+                    + skillName + ": " + expected.path());
+        }
+        String mediaType = content.mediaType() != null ? content.mediaType() : expected.mediaType();
+        JsonObject result = new JsonObject()
+                .put("skill", skillName)
+                .put("path", expected.path())
+                .put("media_type", mediaType);
+        if (isTextResource(expected.path(), mediaType)) {
+            result.put("encoding", "utf-8")
+                    .put("content", new String(bytes, StandardCharsets.UTF_8));
+        } else {
+            result.put("encoding", "base64")
+                    .put("content", Base64.getEncoder().encodeToString(bytes));
+        }
+        return result.encode();
+    }
+
+    private static boolean isTextResource(String path, @Nullable String mediaType) {
+        if (mediaType != null && (mediaType.startsWith("text/")
+                || mediaType.contains("json") || mediaType.contains("xml")
+                || mediaType.contains("yaml") || mediaType.contains("javascript"))) {
+            return true;
+        }
+        String lower = path.toLowerCase(Locale.ROOT);
+        return lower.endsWith(".md") || lower.endsWith(".txt") || lower.endsWith(".json")
+                || lower.endsWith(".yaml") || lower.endsWith(".yml") || lower.endsWith(".xml")
+                || lower.endsWith(".csv") || lower.endsWith(".java") || lower.endsWith(".js")
+                || lower.endsWith(".ts") || lower.endsWith(".py") || lower.endsWith(".sh")
+                || lower.endsWith(".html") || lower.endsWith(".css");
     }
 
     private static CatholicLLMRequestOptions copyOptions(CatholicLLMRequestOptions source,
@@ -300,9 +394,121 @@ public final class CatholicAgent {
             interactionTools.add(CatholicToolDefinition.function(FunctionDefinition.of(
                     ACTIVATE_SKILL_FUNCTION_NAME,
                     "Load the full instructions for one available skill before applying it.", parameters)));
+            JsonObject resourceParameters = new JsonObject()
+                    .put("type", "object")
+                    .put("properties", new JsonObject()
+                            .put("name", new JsonObject().put("type", "string").put("enum", names)
+                                    .put("description", "The active skill containing the resource."))
+                            .put("path", new JsonObject().put("type", "string")
+                                    .put("description", "A resource path disclosed when the skill was activated.")))
+                    .put("required", new JsonArray().add("name").add("path"))
+                    .put("additionalProperties", false);
+            interactionTools.add(CatholicToolDefinition.function(FunctionDefinition.of(
+                    READ_SKILL_RESOURCE_FUNCTION_NAME,
+                    "Read one disclosed resource from an already active skill. "
+                            + "Text is returned as UTF-8 and binary content as Base64.", resourceParameters)));
+            if (skillScriptExecutor != null) {
+                JsonObject scriptParameters = new JsonObject()
+                        .put("type", "object")
+                        .put("properties", new JsonObject()
+                                .put("name", new JsonObject().put("type", "string").put("enum", names)
+                                        .put("description", "The active skill containing the script."))
+                                .put("path", new JsonObject().put("type", "string")
+                                        .put("description", "A script path disclosed when the skill was activated."))
+                                .put("arguments", new JsonObject().put("type", "array")
+                                        .put("items", new JsonObject().put("type", "string"))
+                                        .put("description", "Arguments passed verbatim to the configured executor.")))
+                        .put("required", new JsonArray().add("name").add("path"))
+                        .put("additionalProperties", false);
+                interactionTools.add(CatholicToolDefinition.function(FunctionDefinition.of(
+                        EXECUTE_SKILL_SCRIPT_FUNCTION_NAME,
+                        "Execute one disclosed script from an active skill using the application's "
+                                + "configured sandbox and authorization policy.", scriptParameters)));
+            }
 
             Set<String> activatedSkillNames = new HashSet<>();
+            Map<String, CatholicSkill> activatedSkills = new HashMap<>();
             CatholicToolInvocationHandler interactionHandler = CatholicToolInvocationHandler.of(call -> {
+                if (EXECUTE_SKILL_SCRIPT_FUNCTION_NAME.equals(call.functionName())) {
+                    if (skillScriptExecutor == null) {
+                        return Future.failedFuture(new IllegalStateException(
+                                "skill script execution is not configured"));
+                    }
+                    JsonObject arguments;
+                    try {
+                        arguments = call.parseArguments();
+                    } catch (RuntimeException e) {
+                        return Future.failedFuture(e);
+                    }
+                    String name = arguments.getString("name");
+                    String path = arguments.getString("path");
+                    CatholicSkill activeSkill = activatedSkills.get(name);
+                    if (activeSkill == null) {
+                        return Future.failedFuture(new IllegalStateException(
+                                "skill must be activated before executing scripts: " + name));
+                    }
+                    CatholicSkillResource script = activeSkill.resources().stream()
+                            .filter(item -> item.path().equals(path)
+                                    && item.kind() == CatholicSkillResourceKind.SCRIPT)
+                            .findFirst().orElse(null);
+                    if (script == null) {
+                        return Future.failedFuture(new IllegalArgumentException(
+                                "script was not disclosed by skill '" + name + "': " + path));
+                    }
+                    JsonArray argumentArray = arguments.getJsonArray("arguments", new JsonArray());
+                    List<String> scriptArguments;
+                    try {
+                        scriptArguments = argumentArray.stream()
+                                .map(value -> Objects.requireNonNull((String) value,
+                                        "script arguments contains null"))
+                                .toList();
+                    } catch (RuntimeException e) {
+                        return Future.failedFuture(new IllegalArgumentException(
+                                "script arguments must be strings", e));
+                    }
+                    return skillProvider.readSkillResource(name, path).compose(content -> {
+                        Objects.requireNonNull(content, "skill provider returned null script");
+                        if (!script.path().equals(content.path())
+                                || script.size() != content.bytes().length) {
+                            return Future.failedFuture(new IllegalStateException(
+                                    "skill script content does not match disclosed metadata: " + path));
+                        }
+                        return skillScriptExecutor.execute(name, script, content, scriptArguments);
+                    }).map(result -> {
+                        CatholicSkillScriptResult nonNullResult =
+                                Objects.requireNonNull(result, "skill script executor returned null");
+                        return new JsonObject()
+                                .put("skill", name).put("path", path)
+                                .put("exit_code", nonNullResult.exitCode())
+                                .put("stdout", nonNullResult.stdout())
+                                .put("stderr", nonNullResult.stderr()).encode();
+                    });
+                }
+                if (READ_SKILL_RESOURCE_FUNCTION_NAME.equals(call.functionName())) {
+                    JsonObject arguments;
+                    try {
+                        arguments = call.parseArguments();
+                    } catch (RuntimeException e) {
+                        return Future.failedFuture(e);
+                    }
+                    String name = arguments.getString("name");
+                    String path = arguments.getString("path");
+                    CatholicSkill activeSkill = activatedSkills.get(name);
+                    if (activeSkill == null) {
+                        return Future.failedFuture(new IllegalStateException(
+                                "skill must be activated before reading resources: " + name));
+                    }
+                    CatholicSkillResource resource = activeSkill.resources().stream()
+                            .filter(item -> item.path().equals(path))
+                            .findFirst().orElse(null);
+                    if (resource == null) {
+                        return Future.failedFuture(new IllegalArgumentException(
+                                "resource was not disclosed by skill '" + name + "': " + path));
+                    }
+                    return skillProvider.readSkillResource(name, path)
+                            .map(content -> resourceToolResult(name, resource,
+                                    Objects.requireNonNull(content, "skill provider returned null resource")));
+                }
                 if (!ACTIVATE_SKILL_FUNCTION_NAME.equals(call.functionName())) return toolHandler.handle(call);
                 String name;
                 try {
@@ -321,7 +527,7 @@ public final class CatholicAgent {
                     if (skill == null) {
                         return Future.failedFuture(new IllegalStateException("skill provider returned null: " + name));
                     }
-                    validateSkillFrontmatter(skill);
+                    validateSkill(skill);
                     if (!name.equals(skill.name())) {
                         return Future.failedFuture(new IllegalStateException(
                                 "loaded skill name mismatch: expected " + name + ", got " + skill.name()));
@@ -330,8 +536,15 @@ public final class CatholicAgent {
                         return Future.failedFuture(new IllegalStateException("skill instructions are blank: " + name));
                     }
                     activatedSkillNames.add(name);
-                    return Future.succeededFuture("<skill_instructions name=\"" + name + "\">\n"
-                            + skill.instructions() + "\n</skill_instructions>");
+                    activatedSkills.put(name, skill);
+                    return Future.succeededFuture("<skill_frontmatter name=\"" + name + "\">\n"
+                            + skillFrontmatter(skill).encodePrettily()
+                            + "\n</skill_frontmatter>\n"
+                            + "<skill_instructions name=\"" + name + "\">\n"
+                            + skill.instructions() + "\n</skill_instructions>\n"
+                            + "<skill_resources name=\"" + name + "\">\n"
+                            + resourceManifest(skill).encodePrettily()
+                            + "\n</skill_resources>");
                 });
             });
             return Future.succeededFuture(new SkillContext(List.copyOf(interactionTools), interactionHandler,
@@ -359,6 +572,7 @@ public final class CatholicAgent {
         private CatholicAgentObserver observer = CatholicAgentObserver.defaultObserver();
         private int maxRounds = 32;
         private @Nullable CatholicSkillProvider skillProvider;
+        private @Nullable CatholicSkillScriptExecutor skillScriptExecutor;
 
         public Builder llm(CatholicLLM llm) {
             lateLlm.set(Objects.requireNonNull(llm, "llm"));
@@ -406,6 +620,11 @@ public final class CatholicAgent {
             return this;
         }
 
+        public Builder skillScriptExecutor(@Nullable CatholicSkillScriptExecutor skillScriptExecutor) {
+            this.skillScriptExecutor = skillScriptExecutor;
+            return this;
+        }
+
         /**
          * @deprecated use {@link #maxRounds(int)}
          */
@@ -428,15 +647,21 @@ public final class CatholicAgent {
                 throw new IllegalArgumentException("toolHandler is required when tools are non-empty");
             if (tools.stream().filter(CatholicFunctionToolDefinition.class::isInstance)
                      .map(CatholicFunctionToolDefinition.class::cast)
-                     .anyMatch(tool -> ACTIVATE_SKILL_FUNCTION_NAME.equals(tool.function().name()))) {
-                throw new IllegalArgumentException("reserved tool name: " + ACTIVATE_SKILL_FUNCTION_NAME);
+                     .anyMatch(tool -> ACTIVATE_SKILL_FUNCTION_NAME.equals(tool.function().name())
+                             || READ_SKILL_RESOURCE_FUNCTION_NAME.equals(tool.function().name())
+                             || EXECUTE_SKILL_SCRIPT_FUNCTION_NAME.equals(tool.function().name()))) {
+                throw new IllegalArgumentException("reserved skill tool name");
+            }
+            if (skillScriptExecutor != null && skillProvider == null) {
+                throw new IllegalArgumentException("skillProvider is required for skillScriptExecutor");
             }
             CatholicToolInvocationHandler handler = tools.isEmpty()
                     ? CatholicToolInvocationHandler.of(
                             tc -> Future.failedFuture(new IllegalStateException("no tools configured")))
                     : lateToolHandler.get();
             return new CatholicAgent(lateLlm.get(), lateModel.get(), List.copyOf(tools), options,
-                    handler, observer, maxRounds, List.copyOf(initialMessages), skillProvider);
+                    handler, observer, maxRounds, List.copyOf(initialMessages), skillProvider,
+                    skillScriptExecutor);
         }
     }
 }

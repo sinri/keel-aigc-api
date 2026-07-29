@@ -3,6 +3,9 @@ package io.github.sinri.keel.aigc.api.internal.agent.skill;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillProvider;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkill;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillFrontmatter;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillResource;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillResourceContent;
+import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillResourceKind;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.jspecify.annotations.Nullable;
@@ -15,6 +18,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.LinkOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -29,12 +33,28 @@ import java.util.function.Supplier;
  */
 public class LocalSkillProvider implements CatholicSkillProvider {
     private static final String SKILL_FILE_NAME = "SKILL.md";
+    public static final int DEFAULT_MAX_RESOURCE_COUNT = 256;
+    public static final long DEFAULT_MAX_RESOURCE_BYTES = 1024 * 1024;
 
     private final Path skillsDirectory;
+    private final int maxResourceCount;
+    private final long maxResourceBytes;
 
     public LocalSkillProvider(Path skillsDirectory) {
+        this(skillsDirectory, DEFAULT_MAX_RESOURCE_COUNT, DEFAULT_MAX_RESOURCE_BYTES);
+    }
+
+    public LocalSkillProvider(Path skillsDirectory, int maxResourceCount, long maxResourceBytes) {
         this.skillsDirectory = Objects.requireNonNull(skillsDirectory, "skillsDirectory")
             .toAbsolutePath().normalize();
+        if (maxResourceCount < 1) {
+            throw new IllegalArgumentException("maxResourceCount must be at least 1");
+        }
+        if (maxResourceBytes < 1) {
+            throw new IllegalArgumentException("maxResourceBytes must be at least 1");
+        }
+        this.maxResourceCount = maxResourceCount;
+        this.maxResourceBytes = maxResourceBytes;
     }
 
     public LocalSkillProvider(String skillsDirectory) {
@@ -50,6 +70,13 @@ public class LocalSkillProvider implements CatholicSkillProvider {
     public Future<CatholicSkill> loadSkillByName(String skillName) {
         Objects.requireNonNull(skillName, "skillName");
         return asynchronously(() -> readSkill(skillFileFor(skillName), skillName, true));
+    }
+
+    @Override
+    public Future<CatholicSkillResourceContent> readSkillResource(String skillName, String relativePath) {
+        Objects.requireNonNull(skillName, "skillName");
+        Objects.requireNonNull(relativePath, "relativePath");
+        return asynchronously(() -> readResource(skillName, relativePath));
     }
 
     private List<CatholicSkillFrontmatter> readCandidates() {
@@ -100,7 +127,75 @@ public class LocalSkillProvider implements CatholicSkillProvider {
         String allowedTools = optionalString(frontmatter, "allowed-tools", skillFile);
         Map<String, String> metadata = metadata(frontmatter.get("metadata"), skillFile);
         return new LocalSkill(name, description, license, compatibility, metadata, allowedTools,
-            includeInstructions ? document.instructions() : "");
+            includeInstructions ? document.instructions() : "",
+            includeInstructions ? discoverResources(skillFile.getParent()) : List.of());
+    }
+
+    private List<CatholicSkillResource> discoverResources(Path skillDirectory) {
+        ArrayList<CatholicSkillResource> resources = new ArrayList<>();
+        try (var paths = Files.walk(skillDirectory)) {
+            paths.filter(path -> !path.equals(skillDirectory))
+                    .filter(path -> !Files.isSymbolicLink(path))
+                    .filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
+                    .filter(path -> !path.getFileName().toString().equals(SKILL_FILE_NAME)
+                            || !path.getParent().equals(skillDirectory))
+                    .sorted(Comparator.comparing(path -> skillDirectory.relativize(path).toString()))
+                    .forEach(path -> {
+                        if (resources.size() >= maxResourceCount) {
+                            throw new IllegalArgumentException("too many resources in skill: " + skillDirectory);
+                        }
+                        try {
+                            long size = Files.size(path);
+                            if (size > maxResourceBytes) {
+                                throw new IllegalArgumentException("skill resource exceeds "
+                                        + maxResourceBytes + " bytes: " + path);
+                            }
+                            String relative = skillDirectory.relativize(path).toString().replace('\\', '/');
+                            resources.add(new CatholicSkillResource(relative,
+                                    CatholicSkillResourceKind.fromPath(relative), size,
+                                    Files.probeContentType(path)));
+                        } catch (IOException e) {
+                            throw new IllegalStateException("failed to inspect skill resource: " + path, e);
+                        }
+                    });
+            return List.copyOf(resources);
+        } catch (IOException e) {
+            throw new IllegalStateException("failed to list skill resources: " + skillDirectory, e);
+        }
+    }
+
+    private CatholicSkillResourceContent readResource(String skillName, String relativePath) {
+        Path skillFile = skillFileFor(skillName);
+        Path skillDirectory = skillFile.getParent();
+        if (relativePath.isBlank() || relativePath.indexOf('\\') >= 0) {
+            throw new IllegalArgumentException("invalid skill resource path: " + relativePath);
+        }
+        Path relative = Path.of(relativePath);
+        if (relative.isAbsolute() || !relative.normalize().equals(relative)
+                || relativePath.equals(SKILL_FILE_NAME)) {
+            throw new IllegalArgumentException("invalid skill resource path: " + relativePath);
+        }
+        Path resource = skillDirectory.resolve(relative).normalize();
+        if (!resource.startsWith(skillDirectory) || Files.isSymbolicLink(resource)
+                || !Files.isRegularFile(resource, LinkOption.NOFOLLOW_LINKS)) {
+            throw new IllegalArgumentException("unknown or unsafe skill resource: " + relativePath);
+        }
+        try {
+            Path realSkillDirectory = skillDirectory.toRealPath();
+            Path realResource = resource.toRealPath();
+            if (!realResource.startsWith(realSkillDirectory)) {
+                throw new IllegalArgumentException("skill resource escapes skill directory: " + relativePath);
+            }
+            long size = Files.size(realResource);
+            if (size > maxResourceBytes) {
+                throw new IllegalArgumentException("skill resource exceeds "
+                        + maxResourceBytes + " bytes: " + relativePath);
+            }
+            return new CatholicSkillResourceContent(relativePath, Files.probeContentType(realResource),
+                    Files.readAllBytes(realResource));
+        } catch (IOException e) {
+            throw new IllegalStateException("failed to read skill resource: " + resource, e);
+        }
     }
 
     private static ParsedDocument readDocument(Path skillFile, boolean includeInstructions) {
@@ -199,5 +294,6 @@ public class LocalSkillProvider implements CatholicSkillProvider {
 
     private record LocalSkill(String name, String description, @Nullable String license,
                               @Nullable String compatibility, Map<String, String> metadata,
-                              @Nullable String allowedTools, String instructions) implements CatholicSkill {}
+                              @Nullable String allowedTools, String instructions,
+                              List<CatholicSkillResource> resources) implements CatholicSkill {}
 }

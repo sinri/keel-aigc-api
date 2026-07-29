@@ -180,18 +180,44 @@ CatholicAgent agent = CatholicAgent.builder()
 框架采用渐进披露：每次交互开始时调用 `getSkillCandidates()`，只把候选 Skill 的
 `name` 和 `description` 放入本次 system context；存在候选时才注册内置
 `activate_skill` 工具，且其 `name` 参数枚举限定为本次候选名称。模型调用该工具后，
-框架再通过 `loadSkillByName(...)` 加载完整正文，并将 `instructions()` 作为工具结果送回下一轮。
+框架再通过 `loadSkillByName(...)` 加载完整 frontmatter、正文及轻量资源清单，并将它们
+作为工具结果送回下一轮。资源清单只包含相对路径、类型、大小和媒体类型。
 同一次 `interact(...)` 内已成功激活的 Skill 会被记录；模型重复激活时不会再次访问 Provider
 或重复注入正文，只会收到“已在当前上下文中”的简短工具结果。该记录不会跨交互共享。
+
+Skill 可包含 `scripts/`、`references/`、`assets/` 及其他文件。资源内容不会随激活一起加载；
+模型只能对已激活 Skill 清单中披露的路径调用内置 `read_skill_resource`。文本内容以 UTF-8
+返回，二进制内容以 Base64 返回。本地 Provider 递归发现资源，并拒绝目录逃逸、符号链接、
+直接读取 `SKILL.md`。默认限制为 256 个资源和 1 MiB 单文件；需要处理较大素材时可调用
+`createLocalSkillProvider(path, maxResourceCount, maxResourceBytes)` 显式调整。
+
+需要运行 `scripts/` 时，由应用显式配置执行边界：
+
+```java
+CatholicAgent agent = CatholicAgent.builder()
+    .llm(llm)
+    .model("model-name")
+    .skillProvider(CatholicSkillProvider.createLocalSkillProvider(skillsDirectory))
+    .skillScriptExecutor((skillName, script, content, arguments) -> {
+        // 在应用批准的沙箱中选择运行时、写入脚本、设置超时并限制输出。
+        return runInSandbox(skillName, script, content, arguments);
+    })
+    .build();
+```
+
+只有配置执行器后，框架才注册 `execute_skill_script`。它只接受已激活 Skill 中被披露且分类为
+`SCRIPT` 的资源。框架不提供默认 Shell，不把 `allowed-tools` 当作授权，也不替应用决定
+网络、文件系统、进程、超时及人工审批策略。
 
 `CatholicSkillFrontmatter` 对应规范的 frontmatter：`name`、`description` 为必填，
 `license`、`compatibility`、`metadata`、`allowedTools` 为可选；其中 `allowed-tools`
 仍是实验字段，框架目前仅表达和披露其值，不据此绕过应用自身的权限控制。
 
 候选为空时不会注入空目录或注册激活工具。候选名称重复、字段违反规范、Provider 返回
-null、加载结果名称不一致或正文为空时，当前交互会失败。`activate_skill` 是保留函数名，
-不能作为业务工具注册。Skill 中引用的 scripts、references、assets 仍需由应用已有工具
-按 Skill 指令按需读取或执行；CatholicAgent 本身不隐式取得文件系统或命令执行能力。
+null、加载结果名称不一致或正文为空时，当前交互会失败。`activate_skill`、
+`read_skill_resource`、`execute_skill_script` 是保留函数名，不能作为业务工具注册。
+自定义或远程 Provider 可通过 `CatholicSkill.resources()` 披露清单，并实现
+`readSkillResource(...)` 按需提供内容。
 
 ## 首轮强制调用指定工具
 

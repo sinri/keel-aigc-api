@@ -41,4 +41,5 @@ module io.github.sinri.keel.integration.llm.api {
     // Agent（Catholic LLM 工具循环编排）
     exports io.github.sinri.keel.aigc.api.agent;
     exports io.github.sinri.keel.aigc.api.agent.reqtool;
+    exports io.github.sinri.keel.aigc.api.agent.skill;
 }
