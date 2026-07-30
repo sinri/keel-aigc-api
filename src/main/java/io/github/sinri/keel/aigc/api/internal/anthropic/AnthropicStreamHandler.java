@@ -49,8 +49,8 @@ public class AnthropicStreamHandler {
         final JsonObject json;
         try {
             json = new JsonObject(data);
-        } catch (Exception ignored) {
-            return null;
+        } catch (io.vertx.core.json.DecodeException e) {
+            throw new IllegalArgumentException("Invalid Anthropic SSE data", e);
         }
 
         String type = json.getString("type");

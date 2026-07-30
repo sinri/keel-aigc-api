@@ -107,8 +107,12 @@ class OpenAIChatCompletionsStreamHandlerTest {
 
     @Test
     void testProcessInvalidJson() {
-        CatholicLLMResponseChunk chunk = handler.processSseLine("data: {invalid json}");
-        assertNull(chunk);
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> handler.processSseLine("data: {invalid json}")
+        );
+        assertEquals("Invalid OpenAI Chat Completions SSE data", exception.getMessage());
+        assertNotNull(exception.getCause());
     }
 
     @Test

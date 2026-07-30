@@ -105,4 +105,14 @@ class AnthropicStreamHandlerTest {
             .encode();
         assertThrows(RuntimeException.class, () -> handler.processSseLine("data: " + err));
     }
+
+    @Test
+    void testProcessInvalidJson() {
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> handler.processSseLine("data: {invalid")
+        );
+        assertEquals("Invalid Anthropic SSE data", exception.getMessage());
+        assertNotNull(exception.getCause());
+    }
 }

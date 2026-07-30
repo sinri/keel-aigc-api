@@ -160,7 +160,12 @@ class OpenAIResponsesStreamHandlerTest {
 
     @Test
     void testProcessInvalidJson() {
-        assertNull(handler.processSseLine("data: {invalid"));
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> handler.processSseLine("data: {invalid")
+        );
+        assertEquals("Invalid OpenAI Responses SSE data", exception.getMessage());
+        assertNotNull(exception.getCause());
     }
 
     @Test

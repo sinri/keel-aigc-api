@@ -49,8 +49,7 @@ public class OpenAIChatCompletionsStreamHandler {
             JsonObject chunkJson = new JsonObject(data);
             return convertChunk(chunkJson);
         } catch (io.vertx.core.json.DecodeException e) {
-            // 解析失败返回 null
-            return null;
+            throw new IllegalArgumentException("Invalid OpenAI Chat Completions SSE data", e);
         }
     }
 

@@ -45,8 +45,8 @@ public class OpenAIResponsesStreamHandler {
         final JsonObject json;
         try {
             json = new JsonObject(data);
-        } catch (Exception ignored) {
-            return null;
+        } catch (io.vertx.core.json.DecodeException e) {
+            throw new IllegalArgumentException("Invalid OpenAI Responses SSE data", e);
         }
 
         String type = json.getString("type");
