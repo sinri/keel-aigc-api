@@ -235,7 +235,7 @@ class CatholicAgentTest {
     }
 
     @Test
-    void activatedSkillDisclosesItsLocalDirectory() {
+    void activatedRemoteSkillDisclosesItsLocalCacheDirectory() {
         CountingLlm llm = new CountingLlm();
         llm.queue.add(toolOnlyResponse(new CatholicFunctionToolCallImpl(
                 "activate", new FunctionCall(CatholicAgent.ACTIVATE_SKILL_FUNCTION_NAME,
@@ -280,6 +280,73 @@ class CatholicAgentTest {
                 .findFirst().orElseThrow();
         assertTrue(activationResult.contains(skillDirectory.toString()));
         assertTrue(activationResult.contains("Do not search the filesystem"));
+    }
+
+    @Test
+    void activatedRemoteSkillWithoutLocalCacheOmitsDirectory() {
+        CountingLlm llm = new CountingLlm();
+        llm.queue.add(toolOnlyResponse(new CatholicFunctionToolCallImpl(
+                "activate", new FunctionCall(CatholicAgent.ACTIVATE_SKILL_FUNCTION_NAME,
+                "{\"name\":\"remote-skill\"}"))));
+        llm.queue.add(textOnlyResponse("done"));
+
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+                .skillProvider(new CatholicSkillProvider() {
+                    @Override
+                    public Future<List<CatholicSkillFrontmatter>> getSkillCandidates() {
+                        return Future.succeededFuture(List.of(frontmatter(
+                                "remote-skill", "Use remotely hosted instructions.")));
+                    }
+
+                    @Override
+                    public Future<CatholicSkill> loadSkillByName(String skillName) {
+                        return Future.succeededFuture(skill(
+                                skillName, "Use remotely hosted instructions.", "Follow the instructions."));
+                    }
+                }).build();
+
+        CatholicAgentResult result = agent.interact("use the remote skill")
+                .toCompletionStage().toCompletableFuture().join();
+
+        String activationResult = result.transcript().stream()
+                .filter(CatholicToolCallMessage.class::isInstance)
+                .map(CatholicToolCallMessage.class::cast)
+                .map(CatholicToolCallMessage::content)
+                .filter(content -> content.contains("<skill_instructions"))
+                .findFirst().orElseThrow();
+        assertFalse(activationResult.contains("<skill_directory"));
+    }
+
+    @Test
+    void activatedSkillRejectsRelativeCacheDirectory() {
+        CountingLlm llm = new CountingLlm();
+        llm.queue.add(toolOnlyResponse(new CatholicFunctionToolCallImpl(
+                "activate", new FunctionCall(CatholicAgent.ACTIVATE_SKILL_FUNCTION_NAME,
+                "{\"name\":\"remote-skill\"}"))));
+
+        CatholicAgent agent = CatholicAgent.builder().llm(llm).model("m")
+                .skillProvider(new CatholicSkillProvider() {
+                    @Override
+                    public Future<List<CatholicSkillFrontmatter>> getSkillCandidates() {
+                        return Future.succeededFuture(List.of(frontmatter(
+                                "remote-skill", "Use remotely hosted instructions.")));
+                    }
+
+                    @Override
+                    public Future<CatholicSkill> loadSkillByName(String skillName) {
+                        return Future.succeededFuture(new CatholicSkill() {
+                            @Override public String name() { return skillName; }
+                            @Override public String description() {
+                                return "Use remotely hosted instructions.";
+                            }
+                            @Override public String instructions() { return "Follow the instructions."; }
+                            @Override public Path directory() { return Path.of("cache/remote-skill"); }
+                        });
+                    }
+                }).build();
+
+        assertTrue(failureOf(agent.interact("use the remote skill")).getMessage()
+                .contains("skill directory must be absolute"));
     }
 
     @Test

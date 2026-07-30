@@ -26,8 +26,9 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
 
-import java.util.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.Base64;
 
 /**
@@ -538,10 +539,15 @@ public final class CatholicAgent {
                     activatedSkillNames.add(name);
                     activatedSkills.put(name, skill);
                     String directoryContext = "";
-                    if (skill.directory() != null) {
+                    Path skillDirectory = skill.directory();
+                    if (skillDirectory != null) {
+                        if (!skillDirectory.isAbsolute()) {
+                            return Future.failedFuture(new IllegalStateException(
+                                    "skill directory must be absolute: " + name));
+                        }
                         directoryContext = "\n<skill_directory name=\"" + name + "\">\n"
                                 + new JsonObject()
-                                .put("path", skill.directory().toString())
+                                .put("path", skillDirectory.toString())
                                 .put("path_type", "absolute")
                                 .put("usage", "Resolve relative paths in skill instructions and "
                                         + "skill_resources against this directory. Do not search "
