@@ -73,10 +73,53 @@ class DashScopeStreamHandlerTest {
         handler.processSseLine("id:1");
         handler.processSseLine("event:add");
         handler.processSseLine("data:{invalid json}");
-        CatholicLLMResponseChunk chunk = handler.processSseLine(""); // 空行触发处理
 
-        // JSON 解析失败，应返回 null
-        assertNull(chunk);
+        assertThrows(DashScopeStreamHandler.DashScopeStreamException.class,
+            () -> handler.processSseLine(""));
+    }
+
+    @Test
+    void extractsTextFromMultimodalStreamContent() {
+        handler.processSseLine("id:1");
+        handler.processSseLine("event:add");
+        handler.processSseLine(
+            "data:{\"request_id\":\"req-vl\",\"output\":{\"choices\":[{\"message\":{\"content\":[{\"text\":\"看\"},{\"text\":\"到了\"}]}}]}}"
+        );
+        CatholicLLMResponseChunk chunk = handler.processSseLine("");
+
+        assertNotNull(chunk);
+        assertEquals("看到了", chunk.deltaText());
+        assertEquals("看到了", handler.buildFinalResponse().text());
+    }
+
+    @Test
+    void rejectsDashScopeErrorEvent() {
+        handler.processSseLine("id:1");
+        handler.processSseLine("event:error");
+        handler.processSseLine(
+            "data:{\"request_id\":\"req-error\",\"code\":\"InvalidParameter\",\"message\":\"bad request\"}"
+        );
+
+        DashScopeStreamHandler.DashScopeStreamException error = assertThrows(
+            DashScopeStreamHandler.DashScopeStreamException.class,
+            () -> handler.processSseLine("")
+        );
+        assertTrue(error.getMessage().contains("req-error"));
+        assertTrue(error.getMessage().contains("InvalidParameter"));
+    }
+
+    @Test
+    void joinsMultipleSseDataLines() {
+        handler.processSseLine("id:1");
+        handler.processSseLine("event:add");
+        handler.processSseLine("data:{\"request_id\":\"req-multiline\",");
+        handler.processSseLine(
+            "data:\"output\":{\"choices\":[{\"message\":{\"content\":\"ok\"}}]}}"
+        );
+
+        CatholicLLMResponseChunk chunk = handler.processSseLine("");
+        assertNotNull(chunk);
+        assertEquals("ok", chunk.deltaText());
     }
 
     @Test

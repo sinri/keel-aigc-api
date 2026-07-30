@@ -28,7 +28,7 @@ public class DashScopeStreamHandler {
     private CatholicResponseChunkCollector collector;
     private String currentEventId;
     private String currentEventType;
-    private String currentEventData;
+    private final StringBuilder currentEventData = new StringBuilder();
     private @Nullable String responseId;
 
     public DashScopeStreamHandler() {
@@ -39,7 +39,7 @@ public class DashScopeStreamHandler {
     private void resetCurrentEvent() {
         this.currentEventId = null;
         this.currentEventType = null;
-        this.currentEventData = null;
+        this.currentEventData.setLength(0);
     }
 
     /**
@@ -57,7 +57,10 @@ public class DashScopeStreamHandler {
         } else if (sseLine.startsWith("event:")) {
             currentEventType = sseLine.substring(6).trim();
         } else if (sseLine.startsWith("data:")) {
-            currentEventData = sseLine.substring(5).trim();
+            if (!currentEventData.isEmpty()) {
+                currentEventData.append('\n');
+            }
+            currentEventData.append(sseLine.substring(5).stripLeading());
         }
         // 其他行（如冒号开头的注释）忽略
 
@@ -68,23 +71,48 @@ public class DashScopeStreamHandler {
      * 处理当前事件块，返回对应的 chunk
      */
     private CatholicLLMResponseChunk processCurrentEvent() {
-        if (currentEventData == null || currentEventData.isEmpty()) {
+        if (currentEventData.isEmpty()) {
             resetCurrentEvent();
             return null;
         }
 
-        // 处理事件数据
-        CatholicLLMResponseChunk chunk = null;
-
         try {
-            JsonObject dataJson = new JsonObject(currentEventData);
-            chunk = convertEvent(currentEventId, currentEventType, dataJson);
+            JsonObject dataJson = new JsonObject(currentEventData.toString());
+            if ("error".equals(currentEventType) || isErrorPayload(dataJson)) {
+                throw dashScopeError(dataJson);
+            }
+            return convertEvent(currentEventId, currentEventType, dataJson);
+        } catch (DashScopeStreamException e) {
+            throw e;
         } catch (Exception e) {
-            // JSON 解析失败
+            throw new DashScopeStreamException(
+                "Invalid DashScope SSE data for event " + currentEventDescription(), e
+            );
+        } finally {
+            resetCurrentEvent();
         }
+    }
 
-        resetCurrentEvent();
-        return chunk;
+    private boolean isErrorPayload(JsonObject data) {
+        String code = data.getString("code");
+        Object statusCode = data.getValue("status_code");
+        boolean failedStatus = statusCode instanceof Number number
+            ? number.intValue() != 200
+            : statusCode instanceof String string && !"200".equals(string);
+        return (code != null && !code.isBlank()) || failedStatus;
+    }
+
+    private DashScopeStreamException dashScopeError(JsonObject data) {
+        String requestId = data.getString("request_id", currentEventId);
+        String code = data.getString("code", "unknown");
+        String message = data.getString("message", "DashScope stream error");
+        return new DashScopeStreamException(
+            "DashScope SSE error [request_id=" + requestId + ", code=" + code + "]: " + message
+        );
+    }
+
+    private String currentEventDescription() {
+        return "[id=" + currentEventId + ", type=" + currentEventType + "]";
     }
 
     /**
@@ -127,7 +155,7 @@ public class DashScopeStreamHandler {
 
         if (message != null) {
             // 文本增量
-            deltaText = message.getString("content");
+            deltaText = DashScopeContentExtractor.extractText(message);
 
             // 工具调用增量
             JsonArray toolCalls = message.getJsonArray("tool_calls");
@@ -235,5 +263,15 @@ public class DashScopeStreamHandler {
         this.collector = new CatholicResponseChunkCollector();
         this.responseId = null;
         resetCurrentEvent();
+    }
+
+    public static class DashScopeStreamException extends RuntimeException {
+        public DashScopeStreamException(String message) {
+            super(message);
+        }
+
+        public DashScopeStreamException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

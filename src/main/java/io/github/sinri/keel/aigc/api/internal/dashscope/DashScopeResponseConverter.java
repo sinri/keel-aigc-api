@@ -72,7 +72,7 @@ public class DashScopeResponseConverter {
                         return CatholicAssistantMessage.ofText("");
         }
 
-        String content = message.getString("content");
+        String content = DashScopeContentExtractor.extractText(message);
         JsonArray toolCalls = message.getJsonArray("tool_calls");
         
         // 处理工具调用

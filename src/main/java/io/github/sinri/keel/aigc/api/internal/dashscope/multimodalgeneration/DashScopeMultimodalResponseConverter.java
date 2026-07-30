@@ -1,6 +1,7 @@
 package io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration;
 
 import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicLLMResponseImpl;
+import io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeContentExtractor;
 import io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration.DashScopeMultimodalResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
@@ -121,33 +122,8 @@ public class DashScopeMultimodalResponseConverter {
      * content 可以是字符串或 DashScope 多模态数组格式 [{"text": "..."}]
      */
     private String extractTextContent(JsonObject message) {
-        Object content = message.getValue("content");
-        if (content == null) {
-            return "";
-        }
-
-        if (content instanceof String text) {
-            return text;
-        }
-
-        // 多模态数组格式
-        if (content instanceof JsonArray contentArray) {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < contentArray.size(); i++) {
-                Object item = contentArray.getValue(i);
-                if (item instanceof String textItem) {
-                    sb.append(textItem);
-                } else if (item instanceof JsonObject jsonItem) {
-                    String text = jsonItem.getString("text");
-                    if (text != null) {
-                        sb.append(text);
-                    }
-                }
-            }
-            return sb.toString();
-        }
-
-        return content.toString();
+        String text = DashScopeContentExtractor.extractText(message);
+        return text != null ? text : "";
     }
 
     /**
