@@ -13,6 +13,8 @@ import java.util.List;
 
 /**
  * 将 {@link CatholicLLMRequest} 转为 Anthropic Messages API 请求体。
+ *
+ * @see <a href="https://platform.claude.com/docs/en/api/messages">Anthropic Messages API</a>
  */
 public class AnthropicRequestConverter {
 

@@ -13,6 +13,10 @@ import java.util.List;
 
 /**
  * 将 {@link CatholicLLMRequest} 转换为 OpenAI Responses API（{@code POST /v1/responses}）请求体。
+ *
+ * @see <a href="https://developers.openai.com/api/reference/resources/responses">OpenAI Responses API Reference</a>
+ * @see <a href="https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-responses">
+ *     Alibaba Cloud Model Studio: Responses API</a>
  */
 public class OpenAIResponsesRequestConverter {
 

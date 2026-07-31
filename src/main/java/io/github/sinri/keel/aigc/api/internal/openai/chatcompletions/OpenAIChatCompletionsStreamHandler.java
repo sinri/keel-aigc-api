@@ -15,6 +15,10 @@ import java.util.List;
 
 /**
  * 处理 OpenAI Chat Completions API SSE 流式数据，转换为 CatholicLLMResponseChunk。
+ *
+ * @see <a href="https://developers.openai.com/api/reference/resources/chat">OpenAI Chat API Reference</a>
+ * @see <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html#parsing-an-event-stream">
+ *     WHATWG HTML: Parsing an event stream</a>
  */
 public class OpenAIChatCompletionsStreamHandler {
 

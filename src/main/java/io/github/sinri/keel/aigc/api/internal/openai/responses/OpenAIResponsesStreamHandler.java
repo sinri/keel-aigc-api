@@ -16,6 +16,11 @@ import java.util.Objects;
 
 /**
  * 解析 OpenAI Responses API 的 SSE 事件流，并转换为 {@link CatholicLLMResponseChunk}。
+ *
+ * @see <a href="https://platform.openai.com/docs/api-reference/responses-streaming">
+ *     OpenAI Responses streaming events</a>
+ * @see <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html#parsing-an-event-stream">
+ *     WHATWG HTML: Parsing an event stream</a>
  */
 public class OpenAIResponsesStreamHandler {
 
@@ -25,6 +30,9 @@ public class OpenAIResponsesStreamHandler {
 
     /**
      * 处理单行 SSE（通常为 {@code data: {...}}；忽略 {@code event:} 行）。
+     *
+     * @see <a href="https://platform.openai.com/docs/api-reference/responses-streaming">
+     *     OpenAI Responses streaming events</a>
      */
     public @Nullable CatholicLLMResponseChunk processSseLine(@Nullable String sseLine) {
         if (sseLine == null || sseLine.isEmpty()) {

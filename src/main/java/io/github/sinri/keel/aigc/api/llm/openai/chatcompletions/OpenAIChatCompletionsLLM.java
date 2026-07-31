@@ -25,6 +25,12 @@ import java.util.Map;
 
 /**
  * OpenAI Chat Completions API 客户端，实现 CatholicLLM 接口。
+ *
+ * @see <a href="https://developers.openai.com/api/reference/resources/chat">OpenAI Chat API Reference</a>
+ * @see <a href="https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions">
+ *     Alibaba Cloud Model Studio: OpenAI-compatible Chat API</a>
+ * @see <a href="https://api.volcengine.com/api-docs/view?action=ChatCompletions&amp;serviceCode=ark&amp;version=2024-01-01">
+ *     Volcengine Ark ChatCompletions API</a>
  */
 public class OpenAIChatCompletionsLLM implements CatholicLLM {
 

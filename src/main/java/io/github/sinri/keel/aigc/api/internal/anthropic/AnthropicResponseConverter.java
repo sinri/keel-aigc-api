@@ -15,6 +15,8 @@ import java.util.List;
 
 /**
  * 将 Anthropic Messages API 非流式响应 JSON 转为 {@link CatholicLLMResponse}。
+ *
+ * @see <a href="https://platform.claude.com/docs/en/api/messages">Anthropic Messages API</a>
  */
 public class AnthropicResponseConverter {
 

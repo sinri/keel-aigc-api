@@ -15,6 +15,11 @@ import java.util.Map;
 
 /**
  * 解析 Anthropic Messages API 的 SSE 事件，转为 {@link CatholicLLMResponseChunk}。
+ *
+ * @see <a href="https://platform.claude.com/docs/en/build-with-claude/streaming">
+ *     Anthropic streaming Messages</a>
+ * @see <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html#parsing-an-event-stream">
+ *     WHATWG HTML: Parsing an event stream</a>
  */
 public class AnthropicStreamHandler {
 

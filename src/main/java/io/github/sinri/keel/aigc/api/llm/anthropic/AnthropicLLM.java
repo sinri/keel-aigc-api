@@ -24,6 +24,10 @@ import java.util.Map;
 
 /**
  * Anthropic Messages API 客户端，实现 {@link CatholicLLM}。
+ *
+ * @see <a href="https://platform.claude.com/docs/en/api/messages">Anthropic Messages API</a>
+ * @see <a href="https://platform.claude.com/docs/en/build-with-claude/streaming">
+ *     Anthropic streaming Messages</a>
  */
 public class AnthropicLLM implements CatholicLLM {
 

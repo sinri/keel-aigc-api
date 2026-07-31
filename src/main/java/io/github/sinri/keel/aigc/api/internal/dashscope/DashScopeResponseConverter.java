@@ -15,6 +15,9 @@ import java.util.List;
 
 /**
  * 将 DashScope API 回复转换为 CatholicLLMResponse。
+ *
+ * @see <a href="https://help.aliyun.com/en/model-studio/qwen-api-via-dashscope">
+ *     DashScope API Reference</a>
  */
 public class DashScopeResponseConverter {
 

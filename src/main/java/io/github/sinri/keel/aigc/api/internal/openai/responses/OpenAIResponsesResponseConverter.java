@@ -16,6 +16,11 @@ import java.util.List;
 
 /**
  * 将 OpenAI Responses API 的非流式响应 JSON 转为 {@link CatholicLLMResponse}。
+ *
+ * @see <a href="https://developers.openai.com/api/reference/resources/responses">
+ *     OpenAI Responses API Reference</a>
+ * @see <a href="https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-responses">
+ *     Alibaba Cloud Model Studio: Responses API</a>
  */
 public class OpenAIResponsesResponseConverter {
 

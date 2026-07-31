@@ -11,6 +11,9 @@ import io.vertx.core.json.JsonObject;
 
 /**
  * 将 CatholicLLMRequest 转换为 DashScope API 请求格式。
+ *
+ * @see <a href="https://help.aliyun.com/en/model-studio/qwen-api-via-dashscope">
+ *     DashScope API Reference</a>
  */
 public class DashScopeRequestConverter {
 

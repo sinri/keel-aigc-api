@@ -22,6 +22,11 @@ import java.util.List;
  * data:{...}
  * <p>
  * 事件块用空行分隔
+ *
+ * @see <a href="https://help.aliyun.com/en/model-studio/qwen-api-via-dashscope">
+ *     DashScope API Reference</a>
+ * @see <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html#parsing-an-event-stream">
+ *     WHATWG HTML: Parsing an event stream</a>
  */
 public class DashScopeStreamHandler {
 

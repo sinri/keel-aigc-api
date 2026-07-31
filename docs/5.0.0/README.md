@@ -8,7 +8,9 @@
 1. [快速开始](getting-started.md)：依赖、统一请求、非流式和流式调用；
 2. [Provider 配置](providers.md)：OpenAI、Anthropic、DashScope 的选择和构造；
 3. [Agent 指南](agent.md)：工具循环、Observer、必调工具和 Agent Skills；
-4. [迁移到 5.0.0](migration.md)：5.0.0 的运行要求和废弃 API 替代方式。
+4. [迁移到 5.0.0](migration.md)：5.0.0 的运行要求和废弃 API 替代方式；
+5. [LLM 协议兼容性与易用性优化计划](llm-compatibility-plan.md)：可信来源、分阶段
+   改造、`@see` 规则和兼容性发布门槛。
 
 ## 公开 API 分层
 
@@ -28,4 +30,3 @@
 - Agent 的工具按模型返回顺序执行，不并行；
 - 一次 `interact(...)` 是独立交互，长期会话、重试、超时和持久化由应用负责；
 - `allowed-tools` 可随 Skill 披露，但不会绕过应用自己的权限控制。
-

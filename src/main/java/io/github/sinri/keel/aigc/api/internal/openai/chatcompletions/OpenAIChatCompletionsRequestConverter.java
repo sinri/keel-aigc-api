@@ -11,11 +11,18 @@ import io.vertx.core.json.JsonObject;
 
 /**
  * 将 CatholicLLMRequest 转换为 OpenAI Chat Completions API 请求格式。
+ *
+ * @see <a href="https://developers.openai.com/api/reference/resources/chat">OpenAI Chat API Reference</a>
  */
 public class OpenAIChatCompletionsRequestConverter {
 
     /**
      * 转换请求为 OpenAI API JSON 格式
+     *
+     * @see <a href="https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions">
+     *     Alibaba Cloud Model Studio: OpenAI-compatible Chat API</a>
+     * @see <a href="https://api.volcengine.com/api-docs/view?action=ChatCompletions&amp;serviceCode=ark&amp;version=2024-01-01">
+     *     Volcengine Ark ChatCompletions API</a>
      */
     public JsonObject convert(CatholicLLMRequest request) {
         JsonObject openaiRequest = new JsonObject();

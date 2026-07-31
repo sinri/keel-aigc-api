@@ -15,6 +15,12 @@ import java.util.List;
 
 /**
  * 将 OpenAI Chat Completions API 回复转换为 CatholicLLMResponse。
+ *
+ * @see <a href="https://developers.openai.com/api/reference/resources/chat">OpenAI Chat API Reference</a>
+ * @see <a href="https://help.aliyun.com/zh/model-studio/deep-thinking">
+ *     Alibaba Cloud Model Studio: Deep thinking</a>
+ * @see <a href="https://api.volcengine.com/api-docs/view?action=ChatCompletions&amp;serviceCode=ark&amp;version=2024-01-01">
+ *     Volcengine Ark ChatCompletions API</a>
  */
 public class OpenAIChatCompletionsResponseConverter {
 

@@ -21,6 +21,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 工具类，用于处理 LLM 的流式调用产生的 SSE 事件。
+ *
+ * @see <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html#parsing-an-event-stream">
+ *     WHATWG HTML: Parsing an event stream</a>
  */
 public class SSE2Chunk {
 
@@ -280,6 +283,8 @@ public class SSE2Chunk {
      * @param dropProcessor      逐块处理器。
      * @param timeout            每块处理超时（毫秒），0 表示不限时。
      * @return 所有块处理完成后的 Future。
+     * @see <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html#parsing-an-event-stream">
+     *     WHATWG HTML: Parsing an event stream</a>
      */
     public static Future<Void> processSSEStream(
         Keel keel,
