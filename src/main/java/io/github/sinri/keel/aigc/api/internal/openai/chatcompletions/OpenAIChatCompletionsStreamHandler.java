@@ -71,11 +71,16 @@ public class OpenAIChatCompletionsStreamHandler {
             return null;
         }
 
+        JsonObject usageJson = chunkJson.getJsonObject("usage");
+        CatholicLLMUsage usage = convertUsage(usageJson);
         JsonArray choices = chunkJson.getJsonArray("choices");
         if (choices == null || choices.isEmpty()) {
-            return CatholicLLMResponseChunkImpl.builder()
+            CatholicLLMResponseChunkImpl chunk = CatholicLLMResponseChunkImpl.builder()
                 .id(id)
+                .usage(usage)
                 .build();
+            collector.collect(chunk);
+            return chunk;
         }
 
         JsonObject firstChoice = choices.getJsonObject(0);
@@ -106,9 +111,6 @@ public class OpenAIChatCompletionsStreamHandler {
         boolean finished = finishReason != null;
 
         // usage (OpenAI 在最后一个 chunk 可能包含 usage)
-        JsonObject usageJson = chunkJson.getJsonObject("usage");
-        CatholicLLMUsage usage = convertUsage(usageJson);
-
         CatholicLLMResponseChunkImpl chunk = CatholicLLMResponseChunkImpl.builder()
             .id(id)
             .index(index)

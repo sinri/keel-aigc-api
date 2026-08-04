@@ -21,7 +21,7 @@ import io.vertx.core.json.JsonObject;
 import java.util.function.Function;
 
 /**
- * DashScope 图+文→文 API 客户端，对应端点 /services/aigc/multimodal-generation/generation。
+ * DashScope 图+文→文 API 客户端，对应端点 /api/v1/services/aigc/multimodal-generation/generation。
  * 适用于多模态模型（如 qwen3-vl-plus, qwen-vl-plus, qwen-audio, qvq）。
  * <p>
  * call() 方法返回 DashScopeMultimodalResponse，在 CatholicLLMResponse 基础上
@@ -29,7 +29,7 @@ import java.util.function.Function;
  */
 public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
 
-    private static final String MULTIMODAL_GENERATION_PATH = "/services/aigc/multimodal-generation/generation";
+    private static final String MULTIMODAL_GENERATION_PATH = "/api/v1/services/aigc/multimodal-generation/generation";
 
     @Deprecated
     public DashScopeMultimodalGenerationLLM(HttpClient httpClient, String apiKey) {

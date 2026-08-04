@@ -8,8 +8,8 @@
 | OpenAI Responses | `OpenAIResponsesLLM` | `https://api.openai.com/v1/responses` | 是 | 是 |
 | OpenAI Chat Completions | `OpenAIChatCompletionsLLM` | `https://api.openai.com/v1/chat/completions` | 是 | 是 |
 | Anthropic Messages | `AnthropicLLM` | `https://api.anthropic.com/v1/messages` | 是 | 是 |
-| DashScope Text Generation | `DashScopeTextGenerationLLM` | `/services/aigc/text-generation/generation` | 是 | 文本 |
-| DashScope Multimodal Generation | `DashScopeMultimodalGenerationLLM` | `/services/aigc/multimodal-generation/generation` | 是 | 是 |
+| DashScope Text Generation | `DashScopeTextGenerationLLM` | `/api/v1/services/aigc/text-generation/generation` | 是 | 文本 |
+| DashScope Multimodal Generation | `DashScopeMultimodalGenerationLLM` | `/api/v1/services/aigc/multimodal-generation/generation` | 是 | 是 |
 
 “多模态”表示库可转换图片消息；实际支持范围仍取决于所选模型。
 
@@ -81,4 +81,3 @@ CatholicLLMRequestOptions options = CatholicLLMRequestOptions.builder()
 
 专有参数是否透传以及其语义由相应转换器和服务端决定。切换 Provider 时应重新核对
 `model`、参数范围、工具调用和多模态支持。
-

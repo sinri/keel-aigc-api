@@ -170,8 +170,13 @@ public class AnthropicStreamHandler {
 
     private void absorbMessageDelta(JsonObject event) {
         JsonObject usage = event.getJsonObject("usage");
-        if (usage != null && usage.getInteger("output_tokens") != null) {
-            this.lastOutputTokens = usage.getInteger("output_tokens");
+        if (usage != null) {
+            if (usage.getInteger("input_tokens") != null) {
+                this.inputTokensHint = usage.getInteger("input_tokens");
+            }
+            if (usage.getInteger("output_tokens") != null) {
+                this.lastOutputTokens = usage.getInteger("output_tokens");
+            }
         }
     }
 

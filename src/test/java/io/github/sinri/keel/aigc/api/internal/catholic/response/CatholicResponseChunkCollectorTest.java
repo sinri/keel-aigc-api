@@ -1,6 +1,7 @@
 package io.github.sinri.keel.aigc.api.internal.catholic.response;
 
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta;
+import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import org.junit.jupiter.api.Test;
 
@@ -11,6 +12,46 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CatholicResponseChunkCollectorTest {
+
+    @Test
+    void mergesUsageFromTrailingNonFinishedChunkWithoutLosingFinishedState() {
+        CatholicResponseChunkCollector collector = new CatholicResponseChunkCollector();
+        collector.collect(CatholicLLMResponseChunkImpl.builder()
+                .id("response_1")
+                .markFinished()
+                .usage(new CatholicLLMUsage(null, 7, null))
+                .build());
+        collector.collect(CatholicLLMResponseChunkImpl.builder()
+                .id("response_1")
+                .usage(new CatholicLLMUsage(11, null, null))
+                .build());
+
+        CatholicLLMResponseImpl response = collector.build();
+
+        assertTrue(response.finished());
+        assertEquals(11, response.usage().promptTokens());
+        assertEquals(7, response.usage().completionTokens());
+        assertEquals(null, response.usage().totalTokens());
+    }
+
+    @Test
+    void emptyFinishedUsageDoesNotEraseEarlierUsage() {
+        CatholicResponseChunkCollector collector = new CatholicResponseChunkCollector();
+        collector.collect(CatholicLLMResponseChunkImpl.builder()
+                .id("response_1")
+                .usage(new CatholicLLMUsage(3, 4, 7))
+                .build());
+        collector.collect(CatholicLLMResponseChunkImpl.builder()
+                .id("response_1")
+                .markFinished()
+                .build());
+
+        CatholicLLMResponseImpl response = collector.build();
+
+        assertEquals(3, response.usage().promptTokens());
+        assertEquals(4, response.usage().completionTokens());
+        assertEquals(7, response.usage().totalTokens());
+    }
 
     @Test
     void buildsToolCallsWithContinuousIndexes() {

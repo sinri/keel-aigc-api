@@ -135,18 +135,15 @@ public class DashScopeStreamHandler {
             return null;
         }
 
+        CatholicLLMUsage usage = convertUsage(dataJson.getJsonObject("usage"));
         JsonObject output = dataJson.getJsonObject("output");
         if (output == null) {
-            return CatholicLLMResponseChunkImpl.builder()
-                .id(id)
-                .build();
+            return collectMetadataChunk(id, usage);
         }
 
         JsonArray choices = output.getJsonArray("choices");
         if (choices == null || choices.isEmpty()) {
-            return CatholicLLMResponseChunkImpl.builder()
-                .id(id)
-                .build();
+            return collectMetadataChunk(id, usage);
         }
 
         JsonObject firstChoice = choices.getJsonObject(0);
@@ -174,12 +171,10 @@ public class DashScopeStreamHandler {
         }
 
         // 判断是否完成
-        // DashScope: event=result 或 finish_reason 存在表示完成
-        boolean finished = "result".equals(eventType) || finishReason != null;
-
-        // usage（仅在 result 事件或 finishReason 存在时有）
-        JsonObject usageJson = dataJson.getJsonObject("usage");
-        CatholicLLMUsage usage = convertUsage(usageJson);
+        // DashScope and compatible gateways may use event=result for every
+        // incremental chunk. Only a meaningful finish_reason is terminal; some
+        // gateways encode the absent value as the string "null".
+        boolean finished = isTerminalFinishReason(finishReason);
 
         CatholicLLMResponseChunkImpl chunk = CatholicLLMResponseChunkImpl.builder()
             .id(id)
@@ -194,6 +189,21 @@ public class DashScopeStreamHandler {
         collector.collect(chunk);
 
         return chunk;
+    }
+
+    private CatholicLLMResponseChunk collectMetadataChunk(String id, CatholicLLMUsage usage) {
+        CatholicLLMResponseChunkImpl chunk = CatholicLLMResponseChunkImpl.builder()
+            .id(id)
+            .usage(usage)
+            .build();
+        collector.collect(chunk);
+        return chunk;
+    }
+
+    private boolean isTerminalFinishReason(@Nullable String finishReason) {
+        return finishReason != null
+            && !finishReason.isBlank()
+            && !"null".equalsIgnoreCase(finishReason);
     }
 
     /**

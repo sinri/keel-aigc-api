@@ -42,11 +42,33 @@ public class CatholicResponseChunkCollector {
             collector.collect(delta);
         }
 
+        // Usage may arrive in a dedicated trailing chunk after the chunk carrying
+        // finish_reason. Merge every non-empty usage update instead of coupling it
+        // to the finished flag.
+        mergeUsage(chunk.usage());
+
         // 标记完成
         if (chunk.isFinished()) {
             this.finished = true;
-            this.usage = chunk.usage();
         }
+    }
+
+    private void mergeUsage(CatholicLLMUsage update) {
+        if (update.promptTokens() == null
+            && update.completionTokens() == null
+            && update.totalTokens() == null) {
+            return;
+        }
+
+        Integer promptTokens = update.promptTokens();
+        Integer completionTokens = update.completionTokens();
+        Integer totalTokens = update.totalTokens();
+        if (usage != null) {
+            if (promptTokens == null) promptTokens = usage.promptTokens();
+            if (completionTokens == null) completionTokens = usage.completionTokens();
+            if (totalTokens == null) totalTokens = usage.totalTokens();
+        }
+        this.usage = new CatholicLLMUsage(promptTokens, completionTokens, totalTokens);
     }
 
     /**

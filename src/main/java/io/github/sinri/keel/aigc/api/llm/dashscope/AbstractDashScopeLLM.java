@@ -20,7 +20,7 @@ import java.util.Map;
  */
 public abstract class AbstractDashScopeLLM implements CatholicLLM {
 
-    protected static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/api/v1";
+    protected static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com";
     protected static final AuthMethod DEFAULT_AUTH_METHOD = AuthMethod.Bearer;
 
     private final HttpClient httpClient;
@@ -73,7 +73,8 @@ public abstract class AbstractDashScopeLLM implements CatholicLLM {
     protected CatholicLLMObservationSupport.Exchange observeRequest(
         String provider, String path, JsonObject body, boolean stream
     ) {
-        var exchange = CatholicLLMObservationSupport.exchange(provider, baseUrl + path, stream);
+        String endpoint = resolveEndpoint(baseUrl, path);
+        var exchange = CatholicLLMObservationSupport.exchange(provider, endpoint, stream);
         var headers = new java.util.LinkedHashMap<String, String>();
         headers.put("Content-Type", "application/json");
         headers.put(authMethod == AuthMethod.Bearer ? "Authorization" : "api-key",
@@ -90,9 +91,10 @@ public abstract class AbstractDashScopeLLM implements CatholicLLM {
      * 发送 JSON POST 请求到 DashScope API。
      */
     protected Future<HttpClientResponse> sendJsonPost(JsonObject requestBody, String path, boolean stream) {
+        String endpoint = resolveEndpoint(baseUrl, path);
         RequestOptions options = new RequestOptions()
             .setMethod(HttpMethod.POST)
-            .setAbsoluteURI(baseUrl + path)
+            .setAbsoluteURI(endpoint)
             .putHeader("Content-Type", "application/json");
 
         if (authMethod == AuthMethod.Bearer) {
@@ -111,6 +113,21 @@ public abstract class AbstractDashScopeLLM implements CatholicLLM {
 
         return httpClient.request(options)
             .compose(httpClientRequest -> sendJsonBody(httpClientRequest, requestBody));
+    }
+
+    static String resolveEndpoint(String baseUrl, String path) {
+        String normalizedBaseUrl = baseUrl.endsWith("/")
+            ? baseUrl.substring(0, baseUrl.length() - 1)
+            : baseUrl;
+        String normalizedPath = path.startsWith("/") ? path : "/" + path;
+
+        // Before 5.0, callers commonly supplied a DashScope base URL ending in
+        // /api/v1. Keep that form compatible now that provider paths are complete.
+        String apiPrefix = "/api/v1";
+        if (normalizedBaseUrl.endsWith(apiPrefix) && normalizedPath.startsWith(apiPrefix + "/")) {
+            normalizedPath = normalizedPath.substring(apiPrefix.length());
+        }
+        return normalizedBaseUrl + normalizedPath;
     }
 
     private Future<HttpClientResponse> sendJsonBody(HttpClientRequest httpClientRequest, JsonObject requestBody) {

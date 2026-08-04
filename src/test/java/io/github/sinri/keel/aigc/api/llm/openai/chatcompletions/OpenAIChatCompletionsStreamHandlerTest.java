@@ -57,6 +57,24 @@ class OpenAIChatCompletionsStreamHandlerTest {
     }
 
     @Test
+    void collectsUsageFromDedicatedTrailingChunk() {
+        handler.processSseLine(
+            "data: {\"id\":\"chatcmpl-usage\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}"
+        );
+        CatholicLLMResponseChunk usageChunk = handler.processSseLine(
+            "data: {\"id\":\"chatcmpl-usage\",\"choices\":[],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":10,\"total_tokens\":15}}"
+        );
+
+        assertNotNull(usageChunk);
+        assertEquals(5, usageChunk.usage().promptTokens());
+        CatholicLLMResponse response = handler.buildFinalResponse();
+        assertTrue(response.finished());
+        assertEquals(5, response.usage().promptTokens());
+        assertEquals(10, response.usage().completionTokens());
+        assertEquals(15, response.usage().totalTokens());
+    }
+
+    @Test
     void testProcessToolCallStream() {
         // 模拟 OpenAI SSE 工具调用流
         // arguments 片段: "{\"location\"" + ": \"Beijing\"" + "}"

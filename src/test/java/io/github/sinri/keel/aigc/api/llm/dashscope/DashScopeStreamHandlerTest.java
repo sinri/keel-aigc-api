@@ -147,7 +147,7 @@ class DashScopeStreamHandlerTest {
     }
 
     @Test
-    void testEventResultMarksFinished() {
+    void finishReasonMarksResultEventFinished() {
         handler.processSseLine("id:1");
         handler.processSseLine("event:result");
         handler.processSseLine("data:{\"request_id\":\"req-done\",\"output\":{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\"}}]},\"usage\":{\"input_tokens\":1,\"output_tokens\":2}}");
@@ -155,6 +155,48 @@ class DashScopeStreamHandlerTest {
 
         assertNotNull(chunk);
         assertTrue(chunk.isFinished());
+    }
+
+    @Test
+    void resultEventsWithStringNullFinishReasonRemainIncrementalAndKeepLatestUsage() {
+        handler.processSseLine("id:1");
+        handler.processSseLine("event:result");
+        handler.processSseLine("data:{\"request_id\":\"req-cumulative\",\"output\":{\"choices\":[{\"finish_reason\":\"null\",\"message\":{\"content\":[]}}]},\"usage\":{\"input_tokens\":13,\"output_tokens\":3,\"total_tokens\":16}}");
+        CatholicLLMResponseChunk first = handler.processSseLine("");
+
+        assertNotNull(first);
+        assertFalse(first.isFinished());
+
+        handler.processSseLine("id:2");
+        handler.processSseLine("event:result");
+        handler.processSseLine("data:{\"request_id\":\"req-cumulative\",\"output\":{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"content\":[]}}]},\"usage\":{\"input_tokens\":13,\"output_tokens\":33,\"total_tokens\":46}}");
+        CatholicLLMResponseChunk last = handler.processSseLine("");
+
+        assertNotNull(last);
+        assertTrue(last.isFinished());
+        CatholicLLMResponse response = handler.buildFinalResponse();
+        assertTrue(response.finished());
+        assertEquals(13, response.usage().promptTokens());
+        assertEquals(33, response.usage().completionTokens());
+        assertEquals(46, response.usage().totalTokens());
+    }
+
+    @Test
+    void collectsUsageFromResultEventWithoutChoices() {
+        handler.processSseLine("id:1");
+        handler.processSseLine("event:result");
+        handler.processSseLine(
+            "data:{\"request_id\":\"req-usage\",\"output\":{},\"usage\":{\"input_tokens\":8,\"output_tokens\":3}}"
+        );
+        CatholicLLMResponseChunk chunk = handler.processSseLine("");
+
+        assertNotNull(chunk);
+        assertFalse(chunk.isFinished());
+        CatholicLLMResponse response = handler.buildFinalResponse();
+        assertFalse(response.finished());
+        assertEquals(8, response.usage().promptTokens());
+        assertEquals(3, response.usage().completionTokens());
+        assertEquals(11, response.usage().totalTokens());
     }
 
     @Test

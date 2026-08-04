@@ -21,12 +21,12 @@ import io.vertx.core.json.JsonObject;
 import java.util.function.Function;
 
 /**
- * DashScope 文→文 API 客户端，对应端点 /services/aigc/text-generation/generation。
+ * DashScope 文→文 API 客户端，对应端点 /api/v1/services/aigc/text-generation/generation。
  * 适用于纯文本模型（如 qwen-plus, qwen-turbo, qwen-max）。
  */
 public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
 
-    private static final String TEXT_GENERATION_PATH = "/services/aigc/text-generation/generation";
+    private static final String TEXT_GENERATION_PATH = "/api/v1/services/aigc/text-generation/generation";
 
     @Deprecated
     public DashScopeTextGenerationLLM(HttpClient httpClient, String apiKey) {

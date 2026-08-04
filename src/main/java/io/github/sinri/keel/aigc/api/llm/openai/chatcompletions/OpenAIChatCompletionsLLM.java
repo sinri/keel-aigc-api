@@ -109,6 +109,7 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
         JsonObject openaiRequest = new OpenAIChatCompletionsRequestConverter()
             .convert(request);
         openaiRequest.put("stream", true);
+        includeStreamUsage(openaiRequest);
         var exchange = observeRequest(openaiRequest, true);
 
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
@@ -126,6 +127,7 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
         JsonObject openaiRequest = new OpenAIChatCompletionsRequestConverter()
             .convert(request);
         openaiRequest.put("stream", true);
+        includeStreamUsage(openaiRequest);
         var exchange = observeRequest(openaiRequest, true);
 
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
@@ -137,6 +139,15 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
             ))
             .andThen(ar -> observeFailure(exchange, ar.cause()));
         return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
+    }
+
+    private static void includeStreamUsage(JsonObject request) {
+        JsonObject streamOptions = request.getJsonObject("stream_options");
+        if (streamOptions == null) {
+            streamOptions = new JsonObject();
+            request.put("stream_options", streamOptions);
+        }
+        streamOptions.put("include_usage", true);
     }
 
     private CatholicLLMObservationSupport.Exchange observeRequest(JsonObject body, boolean stream) {

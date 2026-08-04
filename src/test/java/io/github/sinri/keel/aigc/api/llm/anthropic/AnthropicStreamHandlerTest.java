@@ -56,6 +56,26 @@ class AnthropicStreamHandlerTest {
     }
 
     @Test
+    void acceptsInputAndOutputUsageFromMessageDelta() {
+        handler.processSseLine("data: " + new JsonObject()
+            .put("type", "message_start")
+            .put("message", new JsonObject().put("id", "msg_usage"))
+            .encode());
+        handler.processSseLine("data: " + new JsonObject()
+            .put("type", "message_delta")
+            .put("usage", new JsonObject()
+                .put("input_tokens", 9)
+                .put("output_tokens", 4))
+            .encode());
+        handler.processSseLine("data: " + new JsonObject().put("type", "message_stop").encode());
+
+        CatholicLLMResponse response = handler.buildFinalResponse();
+        assertEquals(9, response.usage().promptTokens());
+        assertEquals(4, response.usage().completionTokens());
+        assertEquals(13, response.usage().totalTokens());
+    }
+
+    @Test
     void testToolInputJsonStream() {
         handler.processSseLine("data: " + new JsonObject()
             .put("type", "message_start")
