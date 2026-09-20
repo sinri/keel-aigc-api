@@ -4,9 +4,9 @@ import io.github.sinri.keel.aigc.api.agent.tool.CatholicToolInvocationHandler;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkill;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillFrontmatter;
 import io.github.sinri.keel.aigc.api.agent.skill.CatholicSkillProvider;
+import io.github.sinri.keel.aigc.api.llm.MopassLiveLlmConfig;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.NativeFunctionAdapter;
 import io.github.sinri.keel.aigc.api.llm.dashscope.multimodalgeneration.DashScopeMultimodalGenerationLLM;
-import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.logger.api.factory.LoggerFactory;
 import io.github.sinri.keel.tesuto.KeelInstantRunner;
 import io.vertx.core.Future;
@@ -18,7 +18,6 @@ import org.jspecify.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * CatholicAgent 渐进加载 Skill，并由 Skill 指令引导工具调用的示例。
@@ -27,15 +26,15 @@ public class CatholicAgentSkillSampleTest extends KeelInstantRunner {
     private static final String WEATHER_SKILL_NAME = "weather-reporting";
 
     private String getBaseUrl() {
-        return Objects.requireNonNull(ConfigElement.root().readProperty("dashscope.test2.api"));
+        return MopassLiveLlmConfig.endpoint();
     }
 
     private String getApiKey() {
-        return Objects.requireNonNull(ConfigElement.root().readProperty("dashscope.test2.key"));
+        return MopassLiveLlmConfig.apiKey();
     }
 
     private String getModel() {
-        return Objects.requireNonNull(ConfigElement.root().readProperty("dashscope.test2.model"));
+        return MopassLiveLlmConfig.dashscopeMultimodalModel();
     }
 
     @Override

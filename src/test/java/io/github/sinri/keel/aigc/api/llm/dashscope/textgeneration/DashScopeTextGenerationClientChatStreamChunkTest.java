@@ -1,30 +1,21 @@
 package io.github.sinri.keel.aigc.api.llm.dashscope.textgeneration;
 
+import io.github.sinri.keel.aigc.api.llm.MopassLiveLlmConfig;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
-import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.tesuto.KeelInstantRunner;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
-
-import java.util.Objects;
 
 public class DashScopeTextGenerationClientChatStreamChunkTest extends KeelInstantRunner {
     @Override
     protected Future<Void> run() {
         HttpClient httpClient = getKeel().createHttpClient();
 
-        String baseUrl = ConfigElement.root().readProperty("dashscope.test1.api");
-        String apiKey = ConfigElement.root().readProperty("dashscope.test1.key");
-        String model = ConfigElement.root().readProperty("dashscope.test1.model");
-
-        Objects.requireNonNull(apiKey, "DashScope API key must be set");
-        Objects.requireNonNull(model, "DashScope model must be set");
-
-        if (baseUrl == null) {
-            baseUrl = "https://dashscope.aliyuncs.com/api/v1";
-        }
+        String baseUrl = MopassLiveLlmConfig.endpoint();
+        String apiKey = MopassLiveLlmConfig.apiKey();
+        String model = MopassLiveLlmConfig.dashscopeTextModel();
 
         DashScopeTextGenerationLLM client = DashScopeTextGenerationLLM.builder()
                                                                       .httpClient(httpClient)

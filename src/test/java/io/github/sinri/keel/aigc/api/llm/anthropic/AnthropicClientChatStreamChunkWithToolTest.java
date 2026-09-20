@@ -1,34 +1,28 @@
 package io.github.sinri.keel.aigc.api.llm.anthropic;
 
+import io.github.sinri.keel.aigc.api.llm.MopassLiveLlmConfig;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicSystemMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function.FunctionDefinition;
-import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.tesuto.KeelInstantRunner;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-import java.util.Objects;
-
 /**
- * 流式逐 chunk + 工具（需 {@code anthropic.test1.*} 配置）。
+ * 流式逐 chunk + 工具（需 {@code llm.mopass} 配置）。
  */
 public class AnthropicClientChatStreamChunkWithToolTest extends KeelInstantRunner {
     @Override
     protected Future<Void> run() {
         HttpClient httpClient = getKeel().createHttpClient();
 
-        String baseUrl = ConfigElement.root().readProperty("anthropic.test1.api");
-        String apiKey = ConfigElement.root().readProperty("anthropic.test1.key");
-        String model = ConfigElement.root().readProperty("anthropic.test1.model");
-
-        Objects.requireNonNull(apiKey, "Anthropic API key must be set (anthropic.test1.key)");
-        Objects.requireNonNull(model, "Anthropic model must be set (anthropic.test1.model)");
-        Objects.requireNonNull(baseUrl, "Base URL must be set (anthropic.test1.api)");
+        String baseUrl = MopassLiveLlmConfig.endpoint();
+        String apiKey = MopassLiveLlmConfig.apiKey();
+        String model = MopassLiveLlmConfig.anthropicModel();
 
         AnthropicLLM client = new AnthropicLLM(
             httpClient,

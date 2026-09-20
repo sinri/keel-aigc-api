@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.openai.responses;
 
+import io.github.sinri.keel.aigc.api.llm.MopassLiveLlmConfig;
 import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
@@ -9,7 +10,6 @@ import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function.FunctionDefinition;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
-import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.tesuto.KeelInstantRunner;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
@@ -18,21 +18,16 @@ import io.vertx.core.json.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class OpenAIResponsesClientChatStreamWithToolTest extends KeelInstantRunner {
     @Override
     protected Future<Void> run() {
         HttpClient httpClient = getKeel().createHttpClient();
 
-        String baseUrl = ConfigElement.root().readProperty("openai.test1.api");
-        String apiKey = ConfigElement.root().readProperty("openai.test1.key");
-        String model = ConfigElement.root().readProperty("openai.test1.model");
-        AuthMethod authMethod = AuthMethod.valueOf(ConfigElement.root().readProperty("openai.test1.authMethod") != null ? ConfigElement.root().readProperty("openai.test1.authMethod") : "Bearer");
-
-        Objects.requireNonNull(apiKey, "OpenAI API key must be set");
-        Objects.requireNonNull(model, "OpenAI model must be set");
-        Objects.requireNonNull(baseUrl, "Base URL must be set");
+        String baseUrl = MopassLiveLlmConfig.endpoint();
+        String apiKey = MopassLiveLlmConfig.apiKey();
+        String model = MopassLiveLlmConfig.openaiModel();
+        AuthMethod authMethod = MopassLiveLlmConfig.authMethod();
 
         OpenAIResponsesLLM client = new OpenAIResponsesLLM(
             httpClient,

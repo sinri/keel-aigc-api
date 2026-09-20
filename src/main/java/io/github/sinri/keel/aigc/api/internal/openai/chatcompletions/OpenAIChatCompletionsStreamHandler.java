@@ -35,7 +35,7 @@ public class OpenAIChatCompletionsStreamHandler {
      * 适用于外部已由 {@link #getCollector()} 管理收集的场景（如流式回调模式）。
      * </p>
      */
-    public CatholicLLMResponseChunk processSseLine(String sseLine) {
+    public @Nullable CatholicLLMResponseChunk processSseLine(String sseLine) {
         // OpenAI SSE 格式: "data: {...}" 或 "data: [DONE]"
         if (sseLine == null || sseLine.isEmpty()) {
             return null;

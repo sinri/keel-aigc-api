@@ -1,5 +1,6 @@
 package io.github.sinri.keel.aigc.api.llm.dashscope.textgeneration;
 
+import io.github.sinri.keel.aigc.api.llm.MopassLiveLlmConfig;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicToolCallMessage;
@@ -9,14 +10,12 @@ import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.function.Funct
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
-import io.github.sinri.keel.base.configuration.ConfigElement;
 import io.github.sinri.keel.tesuto.KeelInstantRunner;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * DashScope 文→文 API 工具调用（Function Calling）测试。
@@ -31,16 +30,9 @@ public class DashScopeTextGenerationClientChatToolCallTest extends KeelInstantRu
     protected Future<Void> run() {
         HttpClient httpClient = getKeel().createHttpClient();
 
-        String baseUrl = ConfigElement.root().readProperty("dashscope.test1.api");
-        String apiKey = ConfigElement.root().readProperty("dashscope.test1.key");
-        String model = ConfigElement.root().readProperty("dashscope.test1.model");
-
-        Objects.requireNonNull(apiKey, "DashScope API key must be set");
-        Objects.requireNonNull(model, "DashScope model must be set");
-
-        if (baseUrl == null) {
-            baseUrl = "https://dashscope.aliyuncs.com/api/v1";
-        }
+        String baseUrl = MopassLiveLlmConfig.endpoint();
+        String apiKey = MopassLiveLlmConfig.apiKey();
+        String model = MopassLiveLlmConfig.dashscopeTextModel();
 
         DashScopeTextGenerationLLM client = DashScopeTextGenerationLLM.builder()
                                                                       .httpClient(httpClient)
