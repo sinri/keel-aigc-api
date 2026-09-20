@@ -6,6 +6,8 @@ import io.github.sinri.keel.aigc.api.internal.openai.OpenAiVertxSupport;
 import io.github.sinri.keel.aigc.api.internal.openai.chatcompletions.OpenAIChatCompletionsRequestConverter;
 import io.github.sinri.keel.aigc.api.internal.openai.chatcompletions.OpenAIChatCompletionsResponseConverter;
 import io.github.sinri.keel.aigc.api.internal.openai.chatcompletions.OpenAIChatCompletionsStreamHandler;
+import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicLLMResponseChunkImpl;
+import io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicResponseChunkCollector;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMRequest;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
@@ -132,13 +134,26 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
 
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
 
+        // 使用独立 collector 收集 chunk，collect() 在 chunkAsyncProcessor 中执行。
+        // 这样"所有 chunk 已收集"与 streamFuture 的完成严格绑定，
+        // 避免 Intravenous drop 出队但 handleDrops() 尚未执行时 waitForAllHandled() 就
+        // 判定队列为空、提前触发 build()，导致 toolCallCollectors 为空的竞态。
+        CatholicResponseChunkCollector safeCollector = new CatholicResponseChunkCollector();
+
         Future<Void> streamFuture = sendJsonPost(openaiRequest, true)
             .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
-                keel, response, CHAT_API_ERROR, streamHandler::processSseLine,
-                chunk -> Future.succeededFuture(), observer, exchange
+                keel, response, CHAT_API_ERROR,
+                streamHandler::parseSseLineOnly,   // 仅解析，不写内部 collector
+                chunk -> {
+                    if (chunk instanceof CatholicLLMResponseChunkImpl impl) {
+                        safeCollector.collect(impl); // 在 Future 链内收集，顺序有保证
+                    }
+                    return Future.succeededFuture();
+                },
+                observer, exchange
             ))
             .andThen(ar -> observeFailure(exchange, ar.cause()));
-        return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
+        return SSE2Chunk.buildResponseOnSuccess(streamFuture, safeCollector::build);
     }
 
     private static void includeStreamUsage(JsonObject request) {
