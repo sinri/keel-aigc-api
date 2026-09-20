@@ -32,6 +32,12 @@ public interface CatholicLLMObserver {
     ) {
     }
 
+    /** Metadata-only diagnostics; raw model content remains in onStreamEvent. */
+    default void onStreamDiagnostic(
+        String exchangeId, String provider, String phase, Map<String, Object> details, long elapsedMillis
+    ) {
+    }
+
     default void onFailure(
         String exchangeId, String provider, CatholicLLMObservationStage stage,
         Throwable cause, long elapsedMillis

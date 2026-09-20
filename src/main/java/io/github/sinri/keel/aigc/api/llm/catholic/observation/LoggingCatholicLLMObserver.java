@@ -85,6 +85,16 @@ public final class LoggingCatholicLLMObserver implements CatholicLLMObserver {
     }
 
     @Override
+    public void onStreamDiagnostic(
+        String exchangeId, String provider, String phase, Map<String, Object> details, long elapsedMillis
+    ) {
+        logger.debug("LLM stream diagnostic", context -> context
+            .put("exchange_id", exchangeId).put("provider", provider)
+            .put("phase", phase).put("elapsed_ms", elapsedMillis)
+            .put("details", payload(new io.vertx.core.json.JsonObject(details).encode())));
+    }
+
+    @Override
     public void onFailure(
         String exchangeId, String provider, CatholicLLMObservationStage stage,
         Throwable cause, long elapsedMillis

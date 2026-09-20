@@ -44,6 +44,27 @@ public class SSE2Chunk {
         return streamFuture.map(v -> responseBuilder.get());
     }
 
+    /** Validate protocol completion before exposing an aggregated response. */
+    public static Future<io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse> buildCollectedResponse(
+        Future<Void> streamFuture,
+        io.github.sinri.keel.aigc.api.internal.catholic.response.CatholicResponseChunkCollector collector,
+        String terminalEvent, CatholicLLMObserver observer, Exchange exchange
+    ) {
+        return SSE2Chunk.<io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse>buildResponseOnSuccess(streamFuture, () -> {
+            diagnostic(observer, exchange, "response_build", collector.diagnosticSnapshot());
+            if (!collector.isIdInitialized()) {
+                throw new IllegalStateException("No valid response chunks collected; exchange=" + exchange.id());
+            }
+            if (!collector.isFinished()) {
+                throw new IllegalStateException("Stream ended before " + terminalEvent + "; exchange=" + exchange.id());
+            }
+            return collector.build();
+        }).andThen(ar -> {
+            if (ar.failed() && streamFuture.succeeded()) CatholicLLMObservationSupport.failure(
+                observer, exchange, CatholicLLMObservationStage.RESPONSE_CONVERSION, ar.cause());
+        });
+    }
+
     /**
      * 状态码 200 时返回 body，否则失败并附带响应体文本。
      */
@@ -88,30 +109,9 @@ public class SSE2Chunk {
         Function<String, @Nullable CatholicLLMResponseChunk> processSseLine,
         Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
     ) {
-        if (httpClientResponse.statusCode() != 200) {
-            return requireSuccessAndReadBody(httpClientResponse, serviceName).mapEmpty();
-        }
-
-        Intravenous.SingleDropProcessor<String> dropProcessor = drop -> {
-            Future<Void> chain = Future.succeededFuture();
-            for (String rawLine : drop.split("\n")) {
-                String line = rawLine.endsWith("\r")
-                    ? rawLine.substring(0, rawLine.length() - 1)
-                    : rawLine;
-                CatholicLLMResponseChunk chunk;
-                try {
-                    chunk = processSseLine.apply(line);
-                } catch (Exception e) {
-                    return Future.failedFuture(e);
-                }
-                if (chunk != null) {
-                    chain = chain.compose(v -> chunkAsyncProcessor.apply(chunk));
-                }
-            }
-            return chain;
-        };
-
-        return processSSEStream(keel, httpClientResponse, dropProcessor, 0L);
+        return processOpenAiStyleSSEStream(keel, httpClientResponse, serviceName, processSseLine,
+            chunkAsyncProcessor, CatholicLLMObserver.noop(),
+            CatholicLLMObservationSupport.exchange(serviceName, "", true));
     }
 
     public static Future<Void> processOpenAiStyleSSEStream(
@@ -123,46 +123,77 @@ public class SSE2Chunk {
         CatholicLLMObserver observer,
         Exchange exchange
     ) {
+        return processProtocolStream(keel, httpClientResponse, serviceName, processSseLine,
+            chunkAsyncProcessor, observer, exchange, false);
+    }
+
+    private static Future<Void> processProtocolStream(
+        Keel keel, HttpClientResponse httpClientResponse, String serviceName,
+        Function<String, @Nullable CatholicLLMResponseChunk> processSseLine,
+        Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor,
+        CatholicLLMObserver observer, Exchange exchange, boolean dispatchEventBoundary
+    ) {
         if (httpClientResponse.statusCode() != 200) {
             return requireSuccessAndReadBody(httpClientResponse, serviceName, observer, exchange).mapEmpty();
         }
         CatholicLLMObservationSupport.responseStarted(observer, exchange, httpClientResponse);
-        AtomicLong sequence = new AtomicLong();
+        AtomicLong events = new AtomicLong();
+        AtomicLong parsed = new AtomicLong();
+        AtomicLong processed = new AtomicLong();
+        AtomicLong terminalChunks = new AtomicLong();
+        java.util.concurrent.atomic.AtomicBoolean done = new java.util.concurrent.atomic.AtomicBoolean();
         Intravenous.SingleDropProcessor<String> dropProcessor = drop -> {
-            long currentSequence = sequence.getAndIncrement();
+            long sequence = events.getAndIncrement();
             CatholicLLMObservationSupport.safely(() -> observer.onStreamEvent(
-                exchange.id(), exchange.provider(), currentSequence, drop, exchange.elapsedMillis()
-            ));
+                exchange.id(), exchange.provider(), sequence, drop, exchange.elapsedMillis()));
             Future<Void> chain = Future.succeededFuture();
-            for (String rawLine : drop.split("\n")) {
-                String line = rawLine.endsWith("\r")
-                    ? rawLine.substring(0, rawLine.length() - 1)
-                    : rawLine;
-                CatholicLLMResponseChunk chunk;
-                try {
-                    chunk = processSseLine.apply(line);
-                } catch (Exception e) {
-                    return Future.failedFuture(e);
-                }
-                if (chunk != null) {
-                    chain = chain.compose(v -> chunkAsyncProcessor.apply(chunk));
-                }
+            var lines = new java.util.ArrayList<>(java.util.Arrays.asList(drop.split("\n")));
+            // DashScope assembles an event across data lines and dispatches on the empty line.
+            if (dispatchEventBoundary) lines.add("");
+            for (String rawLine : lines) {
+                String line = rawLine.endsWith("\r") ? rawLine.substring(0, rawLine.length() - 1) : rawLine;
+                // Parse inside the chain: a failed callback must prevent subsequent parsing.
+                chain = chain.compose(v -> {
+                    if (line.equals("data: [DONE]")) done.set(true);
+                    CatholicLLMResponseChunk chunk;
+                    try {
+                        chunk = processSseLine.apply(line);
+                    } catch (Exception e) {
+                        diagnostic(observer, exchange, "parse_failed", java.util.Map.of("sequence", sequence));
+                        return Future.failedFuture(e);
+                    }
+                    if (chunk == null) return Future.succeededFuture();
+                    parsed.incrementAndGet();
+                    if (chunk.isFinished()) terminalChunks.incrementAndGet();
+                    return Future.succeededFuture().compose(ignored -> chunkAsyncProcessor.apply(chunk))
+                        .andThen(ar -> {
+                            if (ar.succeeded()) processed.incrementAndGet();
+                            else diagnostic(observer, exchange, "processor_failed", java.util.Map.of("sequence", sequence));
+                        });
+                });
             }
             return chain;
         };
-        return processSSEStream(keel, httpClientResponse, dropProcessor, 0L)
+        return processSSEStream(keel, httpClientResponse, dropProcessor, 0L,
+            details -> diagnostic(observer, exchange, "transport_completed", details))
             .andThen(ar -> {
-                if (ar.failed()) {
-                    CatholicLLMObservationSupport.failure(
-                        observer, exchange, CatholicLLMObservationStage.STREAM_READING, ar.cause()
-                    );
-                }
+                diagnostic(observer, exchange, "stream_completed", java.util.Map.of(
+                    "events", events.get(), "parsed_chunks", parsed.get(), "processed_chunks", processed.get(),
+                    "done_seen", done.get(), "terminal_chunks", terminalChunks.get(), "success", ar.succeeded()));
+                if (ar.failed()) CatholicLLMObservationSupport.failure(
+                    observer, exchange, CatholicLLMObservationStage.STREAM_READING, ar.cause());
             });
+    }
+
+    public static void diagnostic(CatholicLLMObserver observer, Exchange exchange,
+                                  String phase, java.util.Map<String, Object> details) {
+        CatholicLLMObservationSupport.safely(() -> observer.onStreamDiagnostic(
+            exchange.id(), exchange.provider(), phase, details, exchange.elapsedMillis()));
     }
 
     /**
      * 消费 DashScope 风格的 SSE 流：每个 {@code \n\n} 分隔的事件块被逐行传给 {@code streamHandler.processSseLine}，
-     * 并在块末尾模拟空行边界以触发事件完成。流结束后调用 {@code streamHandler.flush()} 处理残留数据。
+     * 并在块末尾模拟空行边界以触发事件完成。未形成事件边界的底层残留数据仅在诊断中报告。
      * 非 null chunk 串行传给 {@code chunkAsyncProcessor}。
      */
     public static Future<Void> processDashScopeSSEStream(
@@ -172,47 +203,9 @@ public class SSE2Chunk {
         DashScopeStreamHandler streamHandler,
         Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
     ) {
-        if (httpClientResponse.statusCode() != 200) {
-            return requireSuccessAndReadBody(httpClientResponse, serviceName).mapEmpty();
-        }
-
-        Intravenous.SingleDropProcessor<String> dropProcessor = drop -> {
-            Future<Void> chain = Future.succeededFuture();
-            for (String rawLine : drop.split("\n")) {
-                String line = rawLine.endsWith("\r")
-                    ? rawLine.substring(0, rawLine.length() - 1)
-                    : rawLine;
-                CatholicLLMResponseChunk chunk;
-                try {
-                    chunk = streamHandler.processSseLine(line);
-                } catch (Exception e) {
-                    return Future.failedFuture(e);
-                }
-                if (chunk != null) {
-                    chain = chain.compose(v -> chunkAsyncProcessor.apply(chunk));
-                }
-            }
-            // \n\n 分隔消耗了空行边界，模拟它以触发 DashScope 事件块完成
-            CatholicLLMResponseChunk flushChunk;
-            try {
-                flushChunk = streamHandler.processSseLine("");
-            } catch (Exception e) {
-                return Future.failedFuture(e);
-            }
-            if (flushChunk != null) {
-                chain = chain.compose(v -> chunkAsyncProcessor.apply(flushChunk));
-            }
-            return chain;
-        };
-
-        return processSSEStream(keel, httpClientResponse, dropProcessor, 0L)
-            .compose(v -> {
-                CatholicLLMResponseChunk finalChunk = streamHandler.flush();
-                if (finalChunk != null) {
-                    return chunkAsyncProcessor.apply(finalChunk);
-                }
-                return Future.succeededFuture();
-            });
+        return processDashScopeSSEStream(keel, httpClientResponse, serviceName, streamHandler,
+            chunkAsyncProcessor, CatholicLLMObserver.noop(),
+            CatholicLLMObservationSupport.exchange(serviceName, "", true));
     }
 
     public static Future<Void> processDashScopeSSEStream(
@@ -224,54 +217,8 @@ public class SSE2Chunk {
         CatholicLLMObserver observer,
         Exchange exchange
     ) {
-        if (httpClientResponse.statusCode() != 200) {
-            return requireSuccessAndReadBody(httpClientResponse, serviceName, observer, exchange).mapEmpty();
-        }
-        CatholicLLMObservationSupport.responseStarted(observer, exchange, httpClientResponse);
-        AtomicLong sequence = new AtomicLong();
-        Intravenous.SingleDropProcessor<String> dropProcessor = drop -> {
-            long currentSequence = sequence.getAndIncrement();
-            CatholicLLMObservationSupport.safely(() -> observer.onStreamEvent(
-                exchange.id(), exchange.provider(), currentSequence, drop, exchange.elapsedMillis()
-            ));
-            Future<Void> chain = Future.succeededFuture();
-            for (String rawLine : drop.split("\n")) {
-                String line = rawLine.endsWith("\r")
-                    ? rawLine.substring(0, rawLine.length() - 1)
-                    : rawLine;
-                CatholicLLMResponseChunk chunk;
-                try {
-                    chunk = streamHandler.processSseLine(line);
-                } catch (Exception e) {
-                    return Future.failedFuture(e);
-                }
-                if (chunk != null) {
-                    chain = chain.compose(v -> chunkAsyncProcessor.apply(chunk));
-                }
-            }
-            CatholicLLMResponseChunk flushChunk;
-            try {
-                flushChunk = streamHandler.processSseLine("");
-            } catch (Exception e) {
-                return Future.failedFuture(e);
-            }
-            if (flushChunk != null) {
-                chain = chain.compose(v -> chunkAsyncProcessor.apply(flushChunk));
-            }
-            return chain;
-        };
-        return processSSEStream(keel, httpClientResponse, dropProcessor, 0L)
-            .compose(v -> {
-                CatholicLLMResponseChunk finalChunk = streamHandler.flush();
-                return finalChunk == null ? Future.succeededFuture() : chunkAsyncProcessor.apply(finalChunk);
-            })
-            .andThen(ar -> {
-                if (ar.failed()) {
-                    CatholicLLMObservationSupport.failure(
-                        observer, exchange, CatholicLLMObservationStage.STREAM_READING, ar.cause()
-                    );
-                }
-            });
+        return processProtocolStream(keel, httpClientResponse, serviceName, streamHandler::processSseLine,
+            chunkAsyncProcessor, observer, exchange, true);
     }
 
     /**
@@ -292,18 +239,54 @@ public class SSE2Chunk {
         Intravenous.SingleDropProcessor<String> dropProcessor,
         long timeout
     ) {
-        var cutter = new IntravenouslyCutterOnString(dropProcessor, timeout);
+        return processSSEStream(keel, httpClientResponse, dropProcessor, timeout, details -> {});
+    }
+
+    private static Future<Void> processSSEStream(
+        Keel keel, HttpClientResponse httpClientResponse,
+        Intravenous.SingleDropProcessor<String> dropProcessor, long timeout,
+        java.util.function.Consumer<java.util.Map<String, Object>> diagnostic
+    ) {
+        // Pause before asynchronous deployment; a fast HTTP body can otherwise end unobserved.
+        httpClientResponse.pause();
+        var processingFailure = new java.util.concurrent.atomic.AtomicReference<Throwable>();
+        Intravenous.SingleDropProcessor<String> guarded = drop -> {
+            if (processingFailure.get() != null) return Future.succeededFuture();
+            return Future.succeededFuture().compose(v -> dropProcessor.process(drop))
+                .andThen(ar -> {
+                    if (ar.failed()) processingFailure.compareAndSet(null, ar.cause());
+                });
+        };
+        AtomicLong bytes = new AtomicLong();
+        java.util.concurrent.atomic.AtomicBoolean eof = new java.util.concurrent.atomic.AtomicBoolean();
+        var cutter = new IntravenouslyCutterOnString(guarded, timeout) {
+            java.util.Map<String, Object> snapshot() {
+                synchronized (getBufferRef()) {
+                    Buffer pending = getBufferRef().get();
+                    return java.util.Map.of("received_bytes", bytes.get(), "http_eof", eof.get(),
+                        "pending_bytes", pending.length(), "pending_has_crlf", pending.toString().contains("\r\n"));
+                }
+            }
+        };
         return cutter.deployMe(keel, new DeploymentOptions())
                      .compose(deploymentId -> {
                          httpClientResponse.pause();
-                         httpClientResponse.handler(cutter::acceptFromStream);
+                         httpClientResponse.handler(buffer -> {
+                             bytes.addAndGet(buffer.length());
+                             cutter.acceptFromStream(buffer);
+                         });
                          httpClientResponse.exceptionHandler(cutter::stopHere);
-                         httpClientResponse.endHandler(v -> cutter.stopHere(null));
+                         httpClientResponse.endHandler(v -> {
+                             eof.set(true);
+                             cutter.stopHere(null);
+                         });
                          httpClientResponse.resume();
 
-                         return cutter.waitForAllHandled();
+                         return cutter.waitForAllHandled().compose(v -> processingFailure.get() == null
+                             ? Future.<Void>succeededFuture() : Future.<Void>failedFuture(processingFailure.get()));
                      })
                      .andThen(ar -> {
+                         CatholicLLMObservationSupport.safely(() -> diagnostic.accept(cutter.snapshot()));
                          cutter.undeployMe();
                      });
     }

@@ -134,10 +134,7 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
 
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
 
-        // 使用独立 collector 收集 chunk，collect() 在 chunkAsyncProcessor 中执行。
-        // 这样"所有 chunk 已收集"与 streamFuture 的完成严格绑定，
-        // 避免 Intravenous drop 出队但 handleDrops() 尚未执行时 waitForAllHandled() 就
-        // 判定队列为空、提前触发 build()，导致 toolCallCollectors 为空的竞态。
+        // Aggregate in the sequential processor; completion and failures are tracked by SSE2Chunk.
         CatholicResponseChunkCollector safeCollector = new CatholicResponseChunkCollector();
 
         Future<Void> streamFuture = sendJsonPost(openaiRequest, true)
@@ -146,14 +143,17 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
                 streamHandler::parseSseLineOnly,   // 仅解析，不写内部 collector
                 chunk -> {
                     if (chunk instanceof CatholicLLMResponseChunkImpl impl) {
-                        safeCollector.collect(impl); // 在 Future 链内收集，顺序有保证
+                        safeCollector.collect(impl);
+                        if (safeCollector.collectedChunkCount() == 1) {
+                            SSE2Chunk.diagnostic(observer, exchange, "collector_started", safeCollector.diagnosticSnapshot());
+                        }
                     }
                     return Future.succeededFuture();
                 },
                 observer, exchange
             ))
             .andThen(ar -> observeFailure(exchange, ar.cause()));
-        return SSE2Chunk.buildResponseOnSuccess(streamFuture, safeCollector::build);
+        return SSE2Chunk.buildCollectedResponse(streamFuture, safeCollector, "finish_reason", observer, exchange);
     }
 
     private static void includeStreamUsage(JsonObject request) {

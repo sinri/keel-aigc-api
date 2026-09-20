@@ -125,7 +125,8 @@ public class OpenAIResponsesLLM implements CatholicLLM {
                 chunk -> Future.succeededFuture(), observer, exchange
             ))
             .andThen(ar -> observeFailure(exchange, ar.cause()));
-        return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
+        return SSE2Chunk.buildCollectedResponse(streamFuture, streamHandler.getCollector(),
+            "response.completed", observer, exchange);
     }
 
     private CatholicLLMObservationSupport.Exchange observeRequest(JsonObject body, boolean stream) {

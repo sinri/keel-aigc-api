@@ -115,7 +115,8 @@ public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
                 chunk -> Future.succeededFuture(), getObserver(), exchange
             ))
             .andThen(ar -> observeFailure(exchange, ar.cause()));
-        return SSE2Chunk.buildResponseOnSuccess(streamFuture, streamHandler::buildFinalResponse);
+        return SSE2Chunk.buildCollectedResponse(streamFuture, streamHandler.getCollector(),
+            "finish_reason", getObserver(), exchange);
     }
 
     private void observeFailure(CatholicLLMObservationSupport.Exchange exchange, Throwable cause) {

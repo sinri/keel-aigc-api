@@ -66,6 +66,13 @@ public class OpenAIResponsesStreamHandler {
             throw new RuntimeException("OpenAI Responses stream error: " + data);
         }
 
+        if ("response.failed".equals(type) || "response.incomplete".equals(type)) {
+            JsonObject response = json.getJsonObject("response", new JsonObject());
+            Object details = response.getValue("error");
+            if (details == null) details = response.getValue("incomplete_details");
+            throw new IllegalStateException("OpenAI Responses " + type + ": " + details);
+        }
+
         switch (type) {
             case "response.created", "response.in_progress" -> {
                 absorbResponseEnvelope(json);
@@ -205,6 +212,10 @@ public class OpenAIResponsesStreamHandler {
      */
     public io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse buildFinalResponse() {
         return collector.build();
+    }
+
+    public CatholicResponseChunkCollector getCollector() {
+        return collector;
     }
 
     /**

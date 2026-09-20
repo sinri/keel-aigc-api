@@ -202,6 +202,10 @@ public class AnthropicStreamHandler {
         return collector.build();
     }
 
+    public CatholicResponseChunkCollector getCollector() {
+        return collector;
+    }
+
     public void reset() {
         this.collector = new CatholicResponseChunkCollector();
         messageId = null;
