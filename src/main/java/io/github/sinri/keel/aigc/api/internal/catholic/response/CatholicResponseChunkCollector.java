@@ -71,24 +71,49 @@ public class CatholicResponseChunkCollector {
         this.usage = new CatholicLLMUsage(promptTokens, completionTokens, totalTokens);
     }
 
-    /**
-     * 构建最终的回复
-     */
-    public CatholicLLMResponseImpl build() {
-        String text = !textBuilder.isEmpty() ? textBuilder.toString() : null;
+/**
+ * 构建最终的回复。
+ * <p>
+ * 若因 SSE 流在无 {@code [DONE]} 终结符的情况下关闭（如 LLM 仅发送 {@code finish_reason: "tool_calls"}
+ * 后即断流），可能出现 {@link #lateId} 尚未被赋值的竞态窗口。为避免因此产生
+ * {@link IllegalStateException}，此处使用 {@link LateObject#isInitialized()} 作保护。
+ * </p>
+ */
+public CatholicLLMResponseImpl build() {
+    String text = !textBuilder.isEmpty() ? textBuilder.toString() : null;
 
-        List<CatholicFunctionToolCall> toolCalls = null;
-        if (!toolCallCollectors.isEmpty()) {
-            toolCalls = toolCallCollectors.entrySet().stream()
-                                          .sorted(Map.Entry.comparingByKey())
-                                          .map(Map.Entry::getValue)
-                                          .map(ToolCallCollector::build)
-                                          .toList();
-        }
-
-        CatholicAssistantMessage message = new CatholicAssistantMessage(text, toolCalls);
-        return new CatholicLLMResponseImpl(lateId.get(), message, usage != null ? usage : CatholicLLMUsage.empty(), finished);
+    List<CatholicFunctionToolCall> toolCalls = null;
+    if (!toolCallCollectors.isEmpty()) {
+        toolCalls = toolCallCollectors.entrySet().stream()
+                                      .sorted(Map.Entry.comparingByKey())
+                                      .map(Map.Entry::getValue)
+                                      .map(ToolCallCollector::build)
+                                      .toList();
     }
+
+    CatholicAssistantMessage message = new CatholicAssistantMessage(text, toolCalls);
+    // Guard: in rare cases (e.g. stream closed without [DONE]) collect() may not have been
+    // called yet when build() runs. Fall back to an empty id rather than throwing.
+    String id = lateId.isInitialized() ? lateId.get() : "";
+    return new CatholicLLMResponseImpl(id, message, usage != null ? usage : CatholicLLMUsage.empty(), finished);
+}
+
+/**
+ * 是否已收集到至少一个有效 id 的响应块。
+ */
+public boolean isIdInitialized() {
+    return lateId.isInitialized();
+}
+
+/**
+ * 在 SSE 流异常关闭（无 {@code [DONE]}）导致 id 竞态未就绪时，由调用方补丁注入已知 id。
+ * 仅应在 {@link #isIdInitialized()} 为 {@code false} 时调用；若 id 已设置则为空操作。
+ */
+public void patchId(String fallbackId) {
+    if (!lateId.isInitialized() && fallbackId != null && !fallbackId.isBlank()) {
+        lateId.ensure(() -> fallbackId);
+    }
+}
 
     /**
      * 是否已完成收集
