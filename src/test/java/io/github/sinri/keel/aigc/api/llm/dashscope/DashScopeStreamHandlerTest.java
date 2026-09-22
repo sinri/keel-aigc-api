@@ -225,4 +225,38 @@ class DashScopeStreamHandlerTest {
             response.message().toolCalls().get(0).function().arguments()
         );
     }
+    @Test
+    void keepsParallelToolArgumentsSeparateAcrossReorderedSparseChunks() {
+        feedToolCalls("""
+            [{"index":3,"id":"call_3","function":{"name":"third","arguments":"["}},
+             {"index":1,"id":"call_1","function":{"name":"first","arguments":"["}}]
+            """);
+        feedToolCalls("""
+            [{"index":1,"function":{"arguments":"1"}}]
+            """);
+        feedToolCalls("""
+            [{"index":3,"function":{"arguments":"3"}}]
+            """);
+        feedToolCalls("""
+            [{"index":1,"function":{"arguments":"]"}},
+             {"index":3,"function":{"arguments":"]"}}]
+            """);
+
+        var calls = handler.buildFinalResponse().message().toolCalls();
+        assertEquals(2, calls.size());
+        assertEquals("call_1", calls.get(0).id());
+        assertEquals("first", calls.get(0).functionName());
+        assertEquals("[1]", calls.get(0).function().arguments());
+        assertEquals("call_3", calls.get(1).id());
+        assertEquals("third", calls.get(1).functionName());
+        assertEquals("[3]", calls.get(1).function().arguments());
+    }
+
+    private void feedToolCalls(String calls) {
+        handler.processSseLine("data:" + """
+            {"request_id":"req-parallel","output":{"choices":[{"message":{"tool_calls":%s}}]}}
+            """.formatted(calls).replace("\n", ""));
+        handler.processSseLine("");
+    }
+
 }

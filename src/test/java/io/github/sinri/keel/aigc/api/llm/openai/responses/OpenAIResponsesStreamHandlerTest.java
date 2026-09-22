@@ -123,6 +123,62 @@ class OpenAIResponsesStreamHandlerTest {
     }
 
     @Test
+    void matchesItemIdentitySeparatelyFromCallId() {
+        addFunctionMetadata("item_1");
+        handler.processSseLine("data: " + argumentsEvent("item_1").encode());
+        CatholicLLMResponse response = handler.buildFinalResponse();
+        assertEquals("call_1", response.message().toolCalls().get(0).id());
+        assertEquals("search", response.message().toolCalls().get(0).functionName());
+        assertEquals("{}", response.message().toolCalls().get(0).function().arguments());
+    }
+
+    @Test
+    void rejectsMismatchedOrMissingItemIdentityBeforeCollectingArguments() {
+        for (String[] ids : new String[][] {
+            {"item_1", "item_2"}, {"item_1", null}, {null, "item_1"}
+        }) {
+            handler.reset();
+            addFunctionMetadata(ids[0]);
+            IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> handler.processSseLine("data: " + argumentsEvent(ids[1]).encode()));
+            assertEquals("function call arguments item_id does not match metadata for output index 0",
+                exception.getMessage());
+            assertFalse(handler.buildFinalResponse().hasToolCalls());
+        }
+    }
+
+    @Test
+    void rejectsArgumentsForDifferentOutputIndex() {
+        addFunctionMetadata("item_1");
+        assertThrows(IllegalStateException.class, () -> handler.processSseLine(
+            "data: " + argumentsEvent("item_1").put("output_index", 1).encode()));
+        assertFalse(handler.buildFinalResponse().hasToolCalls());
+    }
+
+    @Test
+    void resetDiscardsFunctionMetadata() {
+        addFunctionMetadata("item_1");
+        handler.reset();
+        assertThrows(IllegalStateException.class, () -> handler.processSseLine(
+            "data: " + argumentsEvent("item_1").encode()));
+    }
+
+    private void addFunctionMetadata(String itemId) {
+        handler.processSseLine("data: " + new JsonObject()
+            .put("type", "response.created")
+            .put("response", new JsonObject().put("id", "resp_tool")).encode());
+        handler.processSseLine("data: " + new JsonObject()
+            .put("type", "response.output_item.added").put("output_index", 0)
+            .put("item", new JsonObject().put("type", "function_call")
+                .put("id", itemId).put("call_id", "call_1").put("name", "search")).encode());
+    }
+
+    private JsonObject argumentsEvent(String itemId) {
+        return new JsonObject().put("type", "response.function_call_arguments.delta")
+            .put("output_index", 0).put("item_id", itemId).put("delta", "{}");
+    }
+
+    @Test
     void testProcessEmptyLineAndEventLine() {
         assertNull(handler.processSseLine(""));
         assertNull(handler.processSseLine("event: ping"));

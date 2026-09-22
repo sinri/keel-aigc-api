@@ -132,6 +132,19 @@ class CatholicResponseChunkCollectorTest {
         assertEquals("incomplete streamed tool call at index 2: missing id", exception.getMessage());
     }
 
+    @Test
+    void rejectsBlankRequiredMetadataAtResponseBoundary() {
+        for (String blank : List.of("", " ", "\t\n")) {
+            CatholicResponseChunkCollector missingName = new CatholicResponseChunkCollector();
+            missingName.collect(chunk(null, toolCall(0, "call_0", blank, "{}")));
+            assertThrows(IllegalStateException.class, missingName::build);
+
+            CatholicResponseChunkCollector missingId = new CatholicResponseChunkCollector();
+            missingId.collect(chunk(null, toolCall(0, blank, "search", "{}")));
+            assertThrows(IllegalStateException.class, missingId::build);
+        }
+    }
+
     private static CatholicLLMResponseChunkImpl chunk(String text, CatholicToolCallChunkDelta... toolCalls) {
         return CatholicLLMResponseChunkImpl.builder()
                 .id("response_1")

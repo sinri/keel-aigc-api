@@ -125,7 +125,7 @@ public class OpenAIResponsesStreamHandler {
         int outputIndex = event.getInteger("output_index", 0);
         String callId = item.getString("call_id");
         String name = item.getString("name");
-        functionCallsByOutputIndex.put(outputIndex, new FunctionCallStreamState(callId, name));
+        functionCallsByOutputIndex.put(outputIndex, new FunctionCallStreamState(item.getString("id"), callId, name));
     }
 
     private @Nullable CatholicLLMResponseChunk emitTextDelta(JsonObject event) {
@@ -156,6 +156,12 @@ public class OpenAIResponsesStreamHandler {
         if (state == null) {
             throw new IllegalStateException(
                     "function call arguments received before metadata for output index " + outputIndex);
+        }
+        // Some compatible providers omit item IDs on both events. If either
+        // event supplies one, require an exact match before collecting arguments.
+        if (!Objects.equals(state.itemId, event.getString("item_id"))) {
+            throw new IllegalStateException(
+                    "function call arguments item_id does not match metadata for output index " + outputIndex);
         }
 
         CatholicToolCallChunkDelta toolDelta = new CatholicToolCallChunkDelta(
@@ -229,6 +235,6 @@ public class OpenAIResponsesStreamHandler {
         responseId = null;
     }
 
-    private record FunctionCallStreamState(String callId, String name) {
+    private record FunctionCallStreamState(@Nullable String itemId, String callId, String name) {
     }
 }
