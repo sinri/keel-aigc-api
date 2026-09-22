@@ -107,6 +107,7 @@ CatholicLLM llm = OpenAIResponsesLLM.builder()
 - [5.0.0 快速开始](docs/5.0.0/getting-started.md)
 - [5.0.0 Provider 配置](docs/5.0.0/providers.md)
 - [5.0.0 Agent 指南](docs/5.0.0/agent.md)
+- [5.0.0 失败现场 Trace](docs/5.0.0/error-tracing.md)
 - [迁移到 5.0.0](docs/5.0.0/migration.md)
 - [源码 Javadoc](https://javadoc.io/doc/io.github.sinri/keel-aigc-api)
 

@@ -169,6 +169,8 @@ public class AnthropicStreamHandler {
     }
 
     private void absorbMessageDelta(JsonObject event) {
+        JsonObject delta = event.getJsonObject("delta");
+        if (delta != null) collector.terminal(delta.getString("stop_reason"));
         JsonObject usage = event.getJsonObject("usage");
         if (usage != null) {
             if (usage.getInteger("input_tokens") != null) {

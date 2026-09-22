@@ -1,5 +1,7 @@
 package io.github.sinri.keel.aigc.api.llm.catholic;
 
+import io.github.sinri.keel.aigc.api.trace.CatholicTraceContext;
+
 import io.github.sinri.keel.aigc.api.internal.catholic.request.CatholicLLMRequestImpl;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicChatMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions;
@@ -51,6 +53,23 @@ public interface CatholicLLMRequest {
      */
     default boolean hasTools() {
         return !tools().isEmpty();
+    }
+
+    /** Local diagnostics context, never serialized into provider options. */
+    default CatholicTraceContext traceContext() {
+        return CatholicTraceContext.none();
+    }
+
+    default CatholicLLMRequest withTrace(CatholicTraceContext trace) {
+        CatholicLLMRequest source = this;
+        return new CatholicLLMRequest() {
+            public String model() { return source.model(); }
+            public List<CatholicChatMessage> messages() { return source.messages(); }
+            public List<CatholicToolDefinition> tools() { return source.tools(); }
+            public CatholicLLMRequestOptions options() { return source.options(); }
+            public boolean stream() { return source.stream(); }
+            public CatholicTraceContext traceContext() { return trace; }
+        };
     }
 
     /**

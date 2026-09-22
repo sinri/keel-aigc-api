@@ -1,5 +1,7 @@
 package io.github.sinri.keel.aigc.api.llm.openai.responses;
 
+import io.github.sinri.keel.aigc.api.trace.CatholicTraceContext;
+
 import io.github.sinri.keel.aigc.api.internal.SSE2Chunk;
 import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
 import io.github.sinri.keel.aigc.api.internal.openai.OpenAiVertxSupport;
@@ -80,15 +82,17 @@ public class OpenAIResponsesLLM implements CatholicLLM {
         this.observer = CatholicLLMObservationSupport.orNoop(observer);
     }
 
+    @Override public boolean supportsTrace() { return true; }
+
     @Override
     public Future<CatholicLLMResponse> call(CatholicLLMRequest request) {
-        JsonObject responsesRequest = new OpenAIResponsesRequestConverter().convert(request);
+        JsonObject responsesRequest = CatholicLLMObservationSupport.convertRequest(request, () -> new OpenAIResponsesRequestConverter().convert(request));
         responsesRequest.put("stream", false);
-        var exchange = observeRequest(responsesRequest, false);
+        var exchange = observeRequest(responsesRequest, false, request.traceContext());
 
         return sendJsonPost(responsesRequest, false)
             .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, RESPONSES_API_ERROR, observer, exchange))
-            .map(body -> new OpenAIResponsesResponseConverter().convert(body.toJsonObject()))
+            .map(body -> CatholicLLMObservationSupport.convertResponse(exchange, () -> new OpenAIResponsesResponseConverter().convert(body.toJsonObject())))
             .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
@@ -97,11 +101,12 @@ public class OpenAIResponsesLLM implements CatholicLLM {
         CatholicLLMRequest request,
         Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
     ) {
-        JsonObject responsesRequest = new OpenAIResponsesRequestConverter().convert(request);
+        JsonObject responsesRequest = CatholicLLMObservationSupport.convertRequest(request, () -> new OpenAIResponsesRequestConverter().convert(request));
         responsesRequest.put("stream", true);
-        var exchange = observeRequest(responsesRequest, true);
+        var exchange = observeRequest(responsesRequest, true, request.traceContext());
 
         OpenAIResponsesStreamHandler streamHandler = new OpenAIResponsesStreamHandler();
+        streamHandler.getCollector().trace(exchange.trace());
 
         return sendJsonPost(responsesRequest, true)
             .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
@@ -113,11 +118,12 @@ public class OpenAIResponsesLLM implements CatholicLLM {
 
     @Override
     public Future<CatholicLLMResponse> callStream(CatholicLLMRequest request) {
-        JsonObject responsesRequest = new OpenAIResponsesRequestConverter().convert(request);
+        JsonObject responsesRequest = CatholicLLMObservationSupport.convertRequest(request, () -> new OpenAIResponsesRequestConverter().convert(request));
         responsesRequest.put("stream", true);
-        var exchange = observeRequest(responsesRequest, true);
+        var exchange = observeRequest(responsesRequest, true, request.traceContext());
 
         OpenAIResponsesStreamHandler streamHandler = new OpenAIResponsesStreamHandler();
+        streamHandler.getCollector().trace(exchange.trace());
 
         Future<Void> streamFuture = sendJsonPost(responsesRequest, true)
             .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
@@ -129,9 +135,9 @@ public class OpenAIResponsesLLM implements CatholicLLM {
             "response.completed", observer, exchange);
     }
 
-    private CatholicLLMObservationSupport.Exchange observeRequest(JsonObject body, boolean stream) {
+    private CatholicLLMObservationSupport.Exchange observeRequest(JsonObject body, boolean stream, CatholicTraceContext trace) {
         String endpoint = baseUrl + RESPONSES_PATH;
-        var exchange = CatholicLLMObservationSupport.exchange("openai-responses", endpoint, stream);
+        var exchange = CatholicLLMObservationSupport.exchange("openai-responses", endpoint, stream, trace);
         var headers = new java.util.LinkedHashMap<String, String>();
         headers.put("Content-Type", "application/json");
         headers.put(authMethod == AuthMethod.Bearer ? "Authorization" : "api-key",

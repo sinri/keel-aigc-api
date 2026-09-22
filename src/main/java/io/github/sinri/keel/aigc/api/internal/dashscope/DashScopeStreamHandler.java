@@ -148,6 +148,7 @@ public class DashScopeStreamHandler {
 
         JsonObject firstChoice = choices.getJsonObject(0);
         String finishReason = firstChoice.getString("finish_reason");
+        if (finishReason != null) collector.terminal(finishReason);
         JsonObject message = firstChoice.getJsonObject("message");
 
         // 提取增量内容

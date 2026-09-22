@@ -66,6 +66,8 @@ public class OpenAIResponsesStreamHandler {
             throw new RuntimeException("OpenAI Responses stream error: " + data);
         }
 
+        if ("response.completed".equals(type) || "response.failed".equals(type) || "response.incomplete".equals(type)) collector.terminal(type);
+
         if ("response.failed".equals(type) || "response.incomplete".equals(type)) {
             JsonObject response = json.getJsonObject("response", new JsonObject());
             Object details = response.getValue("error");

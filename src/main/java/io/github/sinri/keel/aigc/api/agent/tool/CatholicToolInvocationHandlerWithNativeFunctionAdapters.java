@@ -1,5 +1,7 @@
 package io.github.sinri.keel.aigc.api.agent.tool;
 
+import io.github.sinri.keel.aigc.api.trace.CatholicTraceContext;
+
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.NativeFunctionAdapter;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.call.CatholicFunctionToolCall;
 import io.github.sinri.keel.aigc.api.llm.catholic.tool.definition.CatholicToolDefinition;
@@ -39,13 +41,37 @@ public class CatholicToolInvocationHandlerWithNativeFunctionAdapters extends Cat
 
     @Override
     protected Future<String> handleToolCall(CatholicFunctionToolCall toolCall) {
+        return executeNative(toolCall, CatholicTraceContext.none());
+    }
+
+    @Override
+    protected Future<String> handleToolCall(CatholicFunctionToolCall toolCall,
+            CatholicTraceContext trace) {
+        // Preserve the legacy protected dispatch hook for existing subclasses.
+        if (getClass() != CatholicToolInvocationHandlerWithNativeFunctionAdapters.class) {
+            trace.event("custom_tool_handler", Map.of("capture_capability", "partial"));
+            return handleToolCall(toolCall);
+        }
+        return executeNative(toolCall, trace);
+    }
+
+    private Future<String> executeNative(CatholicFunctionToolCall toolCall, CatholicTraceContext trace) {
         NativeFunctionAdapter nativeFunctionAdapter = functionAdapterMap.get(toolCall.functionName());
         if (nativeFunctionAdapter == null) {
             return Future.failedFuture(new IllegalArgumentException(
                     "No native function adapter registered for tool: " + toolCall.functionName()));
         }
+        JsonObject args;
+        trace.event("parse_started", Map.of("native_function_entered", false));
         try {
-            JsonObject args = toolCall.parseArguments();
+            args = toolCall.parseArguments();
+        } catch (RuntimeException e) {
+            trace.event("parse_failed", Map.of("native_function_entered", false));
+            trace.failure("TOOL_ARGUMENT_PARSE", e);
+            return Future.failedFuture(e);
+        }
+        trace.event("native_function_entered", Map.of("native_function_entered", true));
+        try {
             return nativeFunctionAdapter.call(args);
         } catch (RuntimeException e) {
             return Future.failedFuture(e);

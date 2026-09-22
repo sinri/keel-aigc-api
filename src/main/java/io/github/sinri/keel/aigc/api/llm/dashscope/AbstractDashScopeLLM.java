@@ -1,5 +1,7 @@
 package io.github.sinri.keel.aigc.api.llm.dashscope;
 
+import io.github.sinri.keel.aigc.api.trace.CatholicTraceContext;
+
 import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLM;
 import io.github.sinri.keel.aigc.api.llm.catholic.observation.CatholicLLMObserver;
@@ -62,6 +64,8 @@ public abstract class AbstractDashScopeLLM implements CatholicLLM {
         this.observer = CatholicLLMObservationSupport.orNoop(observer);
     }
 
+    @Override public boolean supportsTrace() { return true; }
+
     protected Keel getKeel() {
         return keel;
     }
@@ -73,8 +77,15 @@ public abstract class AbstractDashScopeLLM implements CatholicLLM {
     protected CatholicLLMObservationSupport.Exchange observeRequest(
         String provider, String path, JsonObject body, boolean stream
     ) {
+        return observeRequest(provider, path, body, stream, CatholicTraceContext.none());
+    }
+
+    protected CatholicLLMObservationSupport.Exchange observeRequest(
+        String provider, String path, JsonObject body, boolean stream,
+        CatholicTraceContext trace
+    ) {
         String endpoint = resolveEndpoint(baseUrl, path);
-        var exchange = CatholicLLMObservationSupport.exchange(provider, endpoint, stream);
+        var exchange = CatholicLLMObservationSupport.exchange(provider, endpoint, stream, trace);
         var headers = new java.util.LinkedHashMap<String, String>();
         headers.put("Content-Type", "application/json");
         headers.put(authMethod == AuthMethod.Bearer ? "Authorization" : "api-key",

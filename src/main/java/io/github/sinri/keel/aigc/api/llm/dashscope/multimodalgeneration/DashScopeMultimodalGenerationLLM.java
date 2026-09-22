@@ -71,17 +71,17 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
      * 非流式调用，返回 DashScopeMultimodalResponse（包含多模态特有字段）
      */
     public Future<DashScopeMultimodalResponse> callMultimodal(CatholicLLMRequest request) {
-        JsonObject dashscopeRequest = new DashScopeMultimodalRequestConverter().convert(request);
+        JsonObject dashscopeRequest = CatholicLLMObservationSupport.convertRequest(request, () -> new DashScopeMultimodalRequestConverter().convert(request));
         dashscopeRequest.getJsonObject("parameters").put("stream", false);
         var exchange = observeRequest(
-            "dashscope-multimodal-generation", MULTIMODAL_GENERATION_PATH, dashscopeRequest, false
+            "dashscope-multimodal-generation", MULTIMODAL_GENERATION_PATH, dashscopeRequest, false, request.traceContext()
         );
 
         return sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, false)
             .compose(response -> SSE2Chunk.requireSuccessAndReadBody(
                 response, "DashScope Multimodal Generation API error", getObserver(), exchange
             ))
-            .map(body -> new DashScopeMultimodalResponseConverter().convert(body.toJsonObject()))
+            .map(body -> CatholicLLMObservationSupport.convertResponse(exchange, () -> new DashScopeMultimodalResponseConverter().convert(body.toJsonObject())))
             .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
@@ -95,15 +95,16 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
         CatholicLLMRequest request,
         Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
     ) {
-        JsonObject dashscopeRequest = new DashScopeMultimodalRequestConverter().convert(request);
+        JsonObject dashscopeRequest = CatholicLLMObservationSupport.convertRequest(request, () -> new DashScopeMultimodalRequestConverter().convert(request));
         JsonObject parameters = dashscopeRequest.getJsonObject("parameters");
         parameters.put("stream", true);
         parameters.put("incremental_output", true);
         var exchange = observeRequest(
-            "dashscope-multimodal-generation", MULTIMODAL_GENERATION_PATH, dashscopeRequest, true
+            "dashscope-multimodal-generation", MULTIMODAL_GENERATION_PATH, dashscopeRequest, true, request.traceContext()
         );
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
+        streamHandler.getCollector().trace(exchange.trace());
 
         return sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(
@@ -115,15 +116,16 @@ public class DashScopeMultimodalGenerationLLM extends AbstractDashScopeLLM {
 
     @Override
     public Future<CatholicLLMResponse> callStream(CatholicLLMRequest request) {
-        JsonObject dashscopeRequest = new DashScopeMultimodalRequestConverter().convert(request);
+        JsonObject dashscopeRequest = CatholicLLMObservationSupport.convertRequest(request, () -> new DashScopeMultimodalRequestConverter().convert(request));
         JsonObject parameters = dashscopeRequest.getJsonObject("parameters");
         parameters.put("stream", true);
         parameters.put("incremental_output", true);
         var exchange = observeRequest(
-            "dashscope-multimodal-generation", MULTIMODAL_GENERATION_PATH, dashscopeRequest, true
+            "dashscope-multimodal-generation", MULTIMODAL_GENERATION_PATH, dashscopeRequest, true, request.traceContext()
         );
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
+        streamHandler.getCollector().trace(exchange.trace());
 
         Future<Void> streamFuture = sendJsonPost(dashscopeRequest, MULTIMODAL_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(

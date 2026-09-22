@@ -1,5 +1,7 @@
 package io.github.sinri.keel.aigc.api.internal.catholic.response;
 
+import io.github.sinri.keel.aigc.api.trace.CatholicTraceContext;
+
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicAssistantMessage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicLLMUsage;
 import io.github.sinri.keel.aigc.api.llm.catholic.response.CatholicToolCallChunkDelta;
@@ -17,6 +19,12 @@ import java.util.Map;
  * 流式回复片段收集器，用于将多个CatholicLLMResponseChunk组装为完整的CatholicLLMResponse。
  */
 public class CatholicResponseChunkCollector {
+
+    private CatholicTraceContext trace = CatholicTraceContext.none();
+
+    public void trace(CatholicTraceContext trace) { this.trace = trace; }
+
+    public void terminal(String reason) { trace.event("provider_terminal", Map.of("reason", reason == null ? "" : reason)); }
 
     private final LateObject<String> lateId = new LateObject<>();
     private final StringBuilder textBuilder = new StringBuilder();
@@ -41,7 +49,11 @@ public class CatholicResponseChunkCollector {
         for (CatholicToolCallChunkDelta delta : chunk.deltaToolCalls()) {
             int index = delta.index();
             ToolCallCollector collector = toolCallCollectors.computeIfAbsent(index, ToolCallCollector::new);
+            int before = collector.argumentsBuilder.length();
             collector.collect(delta);
+            trace.event("arguments_appended", Map.of("chunk_sequence", collectedChunks - 1,
+                    "tool_index", index, "before_characters", before,
+                    "after_characters", collector.argumentsBuilder.length()));
         }
 
         // Usage may arrive in a dedicated trailing chunk after the chunk carrying
@@ -87,6 +99,9 @@ public class CatholicResponseChunkCollector {
 
     /** Builds a snapshot. Callers requiring a complete response must validate its state first. */
     public CatholicLLMResponseImpl build() {
+        if (trace.enabled()) toolCallCollectors.forEach((index, call) -> trace.payload("aggregated_arguments",
+                Map.of("tool_index", index, "tool_call_id", call.id == null ? "" : call.id,
+                        "function_name", call.name == null ? "" : call.name), call.argumentsBuilder.toString(), true));
         String text = !textBuilder.isEmpty() ? textBuilder.toString() : null;
         List<CatholicFunctionToolCall> toolCalls = null;
         if (!toolCallCollectors.isEmpty()) {

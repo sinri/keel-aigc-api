@@ -87,6 +87,12 @@ tasks.compileTestJava {
     options.release.set(17)
 }
 
+tasks.jar {
+    manifest {
+        attributes("Implementation-Title" to projectName, "Implementation-Version" to project.version.toString())
+    }
+}
+
 // Configure resources (exclude config.properties like Maven)
 tasks.processResources {
     exclude("config.properties")

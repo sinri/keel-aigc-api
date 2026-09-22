@@ -1,5 +1,7 @@
 package io.github.sinri.keel.aigc.api.llm.openai.chatcompletions;
 
+import io.github.sinri.keel.aigc.api.trace.CatholicTraceContext;
+
 import io.github.sinri.keel.aigc.api.internal.SSE2Chunk;
 import io.github.sinri.keel.aigc.api.llm.catholic.AuthMethod;
 import io.github.sinri.keel.aigc.api.internal.openai.OpenAiVertxSupport;
@@ -90,16 +92,17 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
         this.observer = CatholicLLMObservationSupport.orNoop(observer);
     }
 
+    @Override public boolean supportsTrace() { return true; }
+
     @Override
     public Future<CatholicLLMResponse> call(CatholicLLMRequest request) {
-        JsonObject openaiRequest = new OpenAIChatCompletionsRequestConverter()
-            .convert(request);
+        JsonObject openaiRequest = CatholicLLMObservationSupport.convertRequest(request, () -> new OpenAIChatCompletionsRequestConverter().convert(request));
         openaiRequest.put("stream", false);
-        var exchange = observeRequest(openaiRequest, false);
+        var exchange = observeRequest(openaiRequest, false, request.traceContext());
 
         return sendJsonPost(openaiRequest, false)
             .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, CHAT_API_ERROR, observer, exchange))
-            .map(body -> new OpenAIChatCompletionsResponseConverter().convert(body.toJsonObject()))
+            .map(body -> CatholicLLMObservationSupport.convertResponse(exchange, () -> new OpenAIChatCompletionsResponseConverter().convert(body.toJsonObject())))
             .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
@@ -108,13 +111,13 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
         CatholicLLMRequest request,
         Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
     ) {
-        JsonObject openaiRequest = new OpenAIChatCompletionsRequestConverter()
-            .convert(request);
+        JsonObject openaiRequest = CatholicLLMObservationSupport.convertRequest(request, () -> new OpenAIChatCompletionsRequestConverter().convert(request));
         openaiRequest.put("stream", true);
         includeStreamUsage(openaiRequest);
-        var exchange = observeRequest(openaiRequest, true);
+        var exchange = observeRequest(openaiRequest, true, request.traceContext());
 
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
+        streamHandler.getCollector().trace(exchange.trace());
 
         return sendJsonPost(openaiRequest, true)
             .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
@@ -126,16 +129,17 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
 
     @Override
     public Future<CatholicLLMResponse> callStream(CatholicLLMRequest request) {
-        JsonObject openaiRequest = new OpenAIChatCompletionsRequestConverter()
-            .convert(request);
+        JsonObject openaiRequest = CatholicLLMObservationSupport.convertRequest(request, () -> new OpenAIChatCompletionsRequestConverter().convert(request));
         openaiRequest.put("stream", true);
         includeStreamUsage(openaiRequest);
-        var exchange = observeRequest(openaiRequest, true);
+        var exchange = observeRequest(openaiRequest, true, request.traceContext());
 
         OpenAIChatCompletionsStreamHandler streamHandler = new OpenAIChatCompletionsStreamHandler();
+        streamHandler.getCollector().trace(exchange.trace());
 
         // Aggregate in the sequential processor; completion and failures are tracked by SSE2Chunk.
         CatholicResponseChunkCollector safeCollector = new CatholicResponseChunkCollector();
+        safeCollector.trace(exchange.trace());
 
         Future<Void> streamFuture = sendJsonPost(openaiRequest, true)
             .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
@@ -165,9 +169,9 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
         streamOptions.put("include_usage", true);
     }
 
-    private CatholicLLMObservationSupport.Exchange observeRequest(JsonObject body, boolean stream) {
+    private CatholicLLMObservationSupport.Exchange observeRequest(JsonObject body, boolean stream, CatholicTraceContext trace) {
         String endpoint = baseUrl + CHAT_COMPLETIONS_PATH;
-        var exchange = CatholicLLMObservationSupport.exchange("openai-chat-completions", endpoint, stream);
+        var exchange = CatholicLLMObservationSupport.exchange("openai-chat-completions", endpoint, stream, trace);
         CatholicLLMObservationSupport.request(observer, exchange, requestHeaders(stream), body.encode());
         return exchange;
     }
@@ -266,6 +270,6 @@ public class OpenAIChatCompletionsLLM implements CatholicLLM {
     }
 
     public JsonObject convert(CatholicLLMRequest request) {
-        return new OpenAIChatCompletionsRequestConverter().convert(request);
+        return CatholicLLMObservationSupport.convertRequest(request, () -> new OpenAIChatCompletionsRequestConverter().convert(request));
     }
 }

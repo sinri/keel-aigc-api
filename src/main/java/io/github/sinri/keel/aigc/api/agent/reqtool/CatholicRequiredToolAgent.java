@@ -1,5 +1,7 @@
 package io.github.sinri.keel.aigc.api.agent.reqtool;
 
+import io.github.sinri.keel.aigc.api.trace.CatholicTraceSession;
+
 import io.github.sinri.keel.aigc.api.agent.CatholicAgent;
 import io.github.sinri.keel.aigc.api.agent.CatholicAgentResult;
 import io.github.sinri.keel.aigc.api.llm.catholic.message.CatholicUserMessage;
@@ -31,14 +33,31 @@ public final class CatholicRequiredToolAgent {
         return interact(CatholicUserMessage.ofText(userText));
     }
 
+    public Future<CatholicAgentResult> interact(String userText,
+            CatholicTraceSession session) {
+        return interact(CatholicUserMessage.ofText(userText), session);
+    }
+
     public Future<CatholicAgentResult> interact(CatholicUserMessage userMessage) {
-        return delegate.interact(List.of(), userMessage, functionName, response -> {
+        return interactWithSession(userMessage, null, false);
+    }
+
+    public Future<CatholicAgentResult> interact(CatholicUserMessage userMessage,
+            CatholicTraceSession session) {
+        return interactWithSession(userMessage, session, true);
+    }
+
+    private Future<CatholicAgentResult> interactWithSession(CatholicUserMessage userMessage,
+            CatholicTraceSession session, boolean explicit) {
+        CatholicAgentFirstResponseValidator validator = response -> {
             boolean requiredToolCalled = response.message().hasToolCalls()
                 && response.message().toolCalls().stream()
                     .anyMatch(call -> functionName.equals(call.functionName()));
             return requiredToolCalled
                 ? Future.succeededFuture()
                 : Future.failedFuture(new CatholicRequiredToolNotCalledException(functionName));
-        });
+        };
+        return explicit ? delegate.interact(List.of(), userMessage, functionName, validator, session)
+                : delegate.interact(List.of(), userMessage, functionName, validator);
     }
 }

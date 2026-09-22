@@ -30,3 +30,5 @@
 - Agent 的工具按模型返回顺序执行，不并行；
 - 一次 `interact(...)` 是独立交互，长期会话、重试、超时和持久化由应用负责；
 - `allowed-tools` 可随 Skill 披露，但不会绕过应用自己的权限控制。
+
+- [Agent 失败现场 Trace](error-tracing.md)：有界采集、失败持久化和离线重放。

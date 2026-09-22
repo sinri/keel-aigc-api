@@ -26,6 +26,8 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.jspecify.annotations.Nullable;
 
+import io.github.sinri.keel.aigc.api.trace.*;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
@@ -44,6 +46,7 @@ public final class CatholicAgent {
     public static final String ACTIVATE_SKILL_FUNCTION_NAME = "activate_skill";
     public static final String READ_SKILL_RESOURCE_FUNCTION_NAME = "read_skill_resource";
     public static final String EXECUTE_SKILL_SCRIPT_FUNCTION_NAME = "execute_skill_script";
+    private final @Nullable CatholicTraceRecorder traceRecorder;
     private final CatholicLLM llm;
     private final String model;
     private final List<CatholicToolDefinition> tools;
@@ -60,7 +63,9 @@ public final class CatholicAgent {
                           CatholicAgentObserver observer, int maxRounds,
                           List<CatholicChatMessage> initialMessages,
                           @Nullable CatholicSkillProvider skillProvider,
-                          @Nullable CatholicSkillScriptExecutor skillScriptExecutor) {
+                          @Nullable CatholicSkillScriptExecutor skillScriptExecutor,
+                          @Nullable CatholicTraceRecorder traceRecorder) {
+        this.traceRecorder = traceRecorder;
         this.llm = llm;
         this.model = model;
         this.tools = tools;
@@ -256,6 +261,34 @@ public final class CatholicAgent {
                                                 CatholicUserMessage userMessage,
                                                 @Nullable String requiredTool,
                                                 CatholicAgentFirstResponseValidator firstResponseValidator) {
+        CatholicTraceSession session = traceRecorder == null ? null : traceRecorder.start(Map.of());
+        return interact(priorMessages, userMessage, requiredTool, firstResponseValidator, session);
+    }
+
+    /** Explicit session exposes traceId before work begins and accepts business correlation tags. */
+    public Future<CatholicAgentResult> interact(String userText, CatholicTraceSession session) {
+        return interact(List.of(), CatholicUserMessage.ofText(userText), null,
+                response -> Future.succeededFuture(), session);
+    }
+
+    public Future<CatholicAgentResult> interact(List<? extends CatholicChatMessage> priorMessages,
+            CatholicUserMessage userMessage, @Nullable String requiredTool,
+            CatholicAgentFirstResponseValidator firstResponseValidator, @Nullable CatholicTraceSession session) {
+        CatholicTraceContext trace = session == null ? CatholicTraceContext.none() : session.context();
+        trace.event("agent_started", Map.of("model", model, "max_rounds", maxRounds));
+        return Future.succeededFuture().compose(v -> interactInternal(priorMessages, userMessage,
+                requiredTool, firstResponseValidator, trace)).andThen(result -> {
+            if (session == null) return;
+            if (result.failed()) session.fail("AGENT", result.cause());
+            else if (!result.result().completed()) session.fail("ROUND_LIMIT",
+                    new CatholicAgentTooManyToolRoundsException(maxRounds));
+            else session.succeed();
+        });
+    }
+
+    private Future<CatholicAgentResult> interactInternal(List<? extends CatholicChatMessage> priorMessages,
+            CatholicUserMessage userMessage, @Nullable String requiredTool,
+            CatholicAgentFirstResponseValidator firstResponseValidator, CatholicTraceContext trace) {
         Objects.requireNonNull(priorMessages, "priorMessages");
         Objects.requireNonNull(userMessage, "userMessage");
         Objects.requireNonNull(firstResponseValidator, "firstResponseValidator");
@@ -264,13 +297,15 @@ public final class CatholicAgent {
                 .map(message -> Objects.requireNonNull(message, "priorMessages contains null"))
                 .map(x -> (CatholicChatMessage) x)
                 .toList();
-        return prepareSkillContext().compose(skillContext -> {
+        return Future.succeededFuture().compose(v -> prepareSkillContext())
+                .andThen(ar -> { if (ar.failed()) trace.failure("SKILL_PREPARATION", ar.cause()); })
+                .compose(skillContext -> {
             ArrayList<CatholicChatMessage> transcript = new ArrayList<>(initialMessages);
             if (skillContext.catalogMessage() != null) transcript.add(skillContext.catalogMessage());
             transcript.addAll(priorMessagesSnapshot);
             transcript.add(userMessage);
             return execute(transcript, 1, 0, requiredTool, firstResponseValidator,
-                    skillContext.tools(), skillContext.handler());
+                    skillContext.tools(), skillContext.handler(), trace);
         });
     }
 
@@ -297,7 +332,8 @@ public final class CatholicAgent {
                                                 @Nullable String firstRoundRequiredTool,
                                                 CatholicAgentFirstResponseValidator firstResponseValidator,
                                                 List<CatholicToolDefinition> interactionTools,
-                                                CatholicToolInvocationHandler interactionToolHandler) {
+                                                CatholicToolInvocationHandler interactionToolHandler, CatholicTraceContext runTrace) {
+        CatholicTraceContext trace = runTrace.child("llm_round", llmRound);
         CatholicLLMRequestOptions requestOptions = firstRoundRequiredTool == null
                 ? copyOptions(options, null)
                 : copyOptions(options, firstRoundRequiredTool);
@@ -309,16 +345,18 @@ public final class CatholicAgent {
                                                        .stream(true)
                                                        .build();
 
-        return llm.callStream(request).compose(response -> {
+        return llm.callStream(request, trace).compose(response -> {
             CatholicAssistantMessage assistant = response.message();
             transcript.add(assistant);
-            Future<Void> validation = llmRound == 1
-                    ? firstResponseValidator.validate(response)
-                    : Future.succeededFuture();
+            trace.event("llm_completed", Map.of("response_id", response.id(), "finished", response.finished()));
+            Future<Void> validation = Future.succeededFuture().compose(v -> llmRound == 1
+                    ? firstResponseValidator.validate(response) : Future.succeededFuture())
+                    .andThen(ar -> { if (ar.failed()) trace.failure("FIRST_RESPONSE_VALIDATION", ar.cause()); });
             return validation.compose(ignored -> {
                 CatholicAgentObservationContext context = new CatholicAgentObservationContext(
                         response, List.copyOf(transcript), llmRound, toolRounds, maxRounds);
-                return observer.observe(context);
+                return Future.succeededFuture().compose(v -> observer.observe(context))
+                        .andThen(ar -> { if (ar.failed()) trace.failure("AGENT_OBSERVER", ar.cause()); });
             }).compose(directive -> {
                 if (directive == null) {
                     return Future.failedFuture(new IllegalStateException("observer returned null directive"));
@@ -334,30 +372,30 @@ public final class CatholicAgent {
                 }
                 if (assistant.hasToolCalls()) {
                     return appendToolResultsSequential(transcript, assistant.toolCalls(), 0,
-                            interactionToolHandler)
+                            interactionToolHandler, trace.child("response_id", response.id()))
                             .compose(v -> execute(transcript, llmRound + 1, toolRounds + 1, null,
-                                    firstResponseValidator, interactionTools, interactionToolHandler));
+                                    firstResponseValidator, interactionTools, interactionToolHandler, runTrace));
                 }
                 if (directive.messagesToAppend().isEmpty()) {
                     return Future.failedFuture(new IllegalStateException(
                             "observer requested continuation without tool calls or observation messages"));
                 }
                 return execute(transcript, llmRound + 1, toolRounds, null, firstResponseValidator,
-                        interactionTools, interactionToolHandler);
+                        interactionTools, interactionToolHandler, runTrace);
             });
         });
     }
 
     private Future<Void> appendToolResultsSequential(ArrayList<CatholicChatMessage> transcript,
                                                      List<CatholicFunctionToolCall> calls, int index,
-                                                     CatholicToolInvocationHandler interactionToolHandler) {
+                                                     CatholicToolInvocationHandler interactionToolHandler, CatholicTraceContext trace) {
         if (index >= calls.size()) return Future.succeededFuture();
         CatholicFunctionToolCall call = calls.get(index);
-        return interactionToolHandler.handle(call).compose(result -> {
+        return interactionToolHandler.handle(call, trace.child("tool_order", index)).compose(result -> {
             if (result == null) return Future.failedFuture(new IllegalStateException(
                     "tool returned null: " + call.functionName()));
             transcript.add(CatholicToolCallMessage.of(call.id(), result));
-            return appendToolResultsSequential(transcript, calls, index + 1, interactionToolHandler);
+            return appendToolResultsSequential(transcript, calls, index + 1, interactionToolHandler, trace);
         });
     }
 
@@ -429,7 +467,7 @@ public final class CatholicAgent {
 
             Set<String> activatedSkillNames = new HashSet<>();
             Map<String, CatholicSkill> activatedSkills = new HashMap<>();
-            CatholicToolInvocationHandler interactionHandler = CatholicToolInvocationHandler.of(call -> {
+            CatholicToolInvocationHandler interactionHandler = CatholicToolInvocationHandler.ofTraced((call, trace) -> {
                 if (EXECUTE_SKILL_SCRIPT_FUNCTION_NAME.equals(call.functionName())) {
                     if (skillScriptExecutor == null) {
                         return Future.failedFuture(new IllegalStateException(
@@ -439,6 +477,7 @@ public final class CatholicAgent {
                     try {
                         arguments = call.parseArguments();
                     } catch (RuntimeException e) {
+                        trace.failure("TOOL_ARGUMENT_PARSE", e);
                         return Future.failedFuture(e);
                     }
                     String name = arguments.getString("name");
@@ -490,6 +529,7 @@ public final class CatholicAgent {
                     try {
                         arguments = call.parseArguments();
                     } catch (RuntimeException e) {
+                        trace.failure("TOOL_ARGUMENT_PARSE", e);
                         return Future.failedFuture(e);
                     }
                     String name = arguments.getString("name");
@@ -510,7 +550,7 @@ public final class CatholicAgent {
                             .map(content -> resourceToolResult(name, resource,
                                     Objects.requireNonNull(content, "skill provider returned null resource")));
                 }
-                if (!ACTIVATE_SKILL_FUNCTION_NAME.equals(call.functionName())) return toolHandler.handle(call);
+                if (!ACTIVATE_SKILL_FUNCTION_NAME.equals(call.functionName())) return toolHandler.handle(call, trace);
                 String name;
                 try {
                     name = call.parseArguments().getString("name");
@@ -590,6 +630,12 @@ public final class CatholicAgent {
         private CatholicLLMRequestOptions options = CatholicLLMRequestOptions.defaultOptions();
         private CatholicAgentObserver observer = CatholicAgentObserver.defaultObserver();
         private int maxRounds = 32;
+        private @Nullable CatholicTraceRecorder traceRecorder;
+
+        public Builder traceRecorder(CatholicTraceRecorder recorder) {
+            this.traceRecorder = Objects.requireNonNull(recorder);
+            return this;
+        }
         private @Nullable CatholicSkillProvider skillProvider;
         private @Nullable CatholicSkillScriptExecutor skillScriptExecutor;
 
@@ -680,7 +726,7 @@ public final class CatholicAgent {
                     : lateToolHandler.get();
             return new CatholicAgent(lateLlm.get(), lateModel.get(), List.copyOf(tools), options,
                     handler, observer, maxRounds, List.copyOf(initialMessages), skillProvider,
-                    skillScriptExecutor);
+                    skillScriptExecutor, traceRecorder);
         }
     }
 }

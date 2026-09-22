@@ -80,6 +80,7 @@ public class OpenAIChatCompletionsStreamHandler {
         int index = firstChoice.getInteger("index", 0);
         JsonObject delta = firstChoice.getJsonObject("delta");
         String finishReason = firstChoice.getString("finish_reason");
+        if (finishReason != null) collector.terminal(finishReason);
 
         String deltaText = null;
         List<CatholicToolCallChunkDelta> deltaToolCalls = null;

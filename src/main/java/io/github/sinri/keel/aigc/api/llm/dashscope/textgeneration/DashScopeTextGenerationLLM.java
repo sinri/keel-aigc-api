@@ -66,15 +66,15 @@ public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
 
     @Override
     public Future<CatholicLLMResponse> call(CatholicLLMRequest request) {
-        JsonObject dashscopeRequest = new DashScopeRequestConverter().convert(request);
+        JsonObject dashscopeRequest = CatholicLLMObservationSupport.convertRequest(request, () -> new DashScopeRequestConverter().convert(request));
         dashscopeRequest.getJsonObject("parameters").put("stream", false);
-        var exchange = observeRequest("dashscope-text-generation", TEXT_GENERATION_PATH, dashscopeRequest, false);
+        var exchange = observeRequest("dashscope-text-generation", TEXT_GENERATION_PATH, dashscopeRequest, false, request.traceContext());
 
         return sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, false)
             .compose(response -> SSE2Chunk.requireSuccessAndReadBody(
                 response, "DashScope Text Generation API error", getObserver(), exchange
             ))
-            .map(body -> new DashScopeResponseConverter().convert(body.toJsonObject()))
+            .map(body -> CatholicLLMObservationSupport.convertResponse(exchange, () -> new DashScopeResponseConverter().convert(body.toJsonObject())))
             .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
@@ -83,13 +83,14 @@ public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
         CatholicLLMRequest request,
         Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
     ) {
-        JsonObject dashscopeRequest = new DashScopeRequestConverter().convert(request);
+        JsonObject dashscopeRequest = CatholicLLMObservationSupport.convertRequest(request, () -> new DashScopeRequestConverter().convert(request));
         JsonObject parameters = dashscopeRequest.getJsonObject("parameters");
         parameters.put("stream", true);
         parameters.put("incremental_output", true);
-        var exchange = observeRequest("dashscope-text-generation", TEXT_GENERATION_PATH, dashscopeRequest, true);
+        var exchange = observeRequest("dashscope-text-generation", TEXT_GENERATION_PATH, dashscopeRequest, true, request.traceContext());
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
+        streamHandler.getCollector().trace(exchange.trace());
 
         return sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(
@@ -101,13 +102,14 @@ public class DashScopeTextGenerationLLM extends AbstractDashScopeLLM {
 
     @Override
     public Future<CatholicLLMResponse> callStream(CatholicLLMRequest request) {
-        JsonObject dashscopeRequest = new DashScopeRequestConverter().convert(request);
+        JsonObject dashscopeRequest = CatholicLLMObservationSupport.convertRequest(request, () -> new DashScopeRequestConverter().convert(request));
         JsonObject parameters = dashscopeRequest.getJsonObject("parameters");
         parameters.put("stream", true);
         parameters.put("incremental_output", true);
-        var exchange = observeRequest("dashscope-text-generation", TEXT_GENERATION_PATH, dashscopeRequest, true);
+        var exchange = observeRequest("dashscope-text-generation", TEXT_GENERATION_PATH, dashscopeRequest, true, request.traceContext());
 
         DashScopeStreamHandler streamHandler = new DashScopeStreamHandler();
+        streamHandler.getCollector().trace(exchange.trace());
 
         Future<Void> streamFuture = sendJsonPost(dashscopeRequest, TEXT_GENERATION_PATH, true)
             .compose(response -> SSE2Chunk.processDashScopeSSEStream(

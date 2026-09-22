@@ -58,7 +58,9 @@ public class SSE2Chunk {
             if (!collector.isFinished()) {
                 throw new IllegalStateException("Stream ended before " + terminalEvent + "; exchange=" + exchange.id());
             }
-            return collector.build();
+            var result = collector.build();
+            exchange.trace().event("response_built", java.util.Map.of("response_id", result.id()));
+            return result;
         }).andThen(ar -> {
             if (ar.failed() && streamFuture.succeeded()) CatholicLLMObservationSupport.failure(
                 observer, exchange, CatholicLLMObservationStage.RESPONSE_CONVERSION, ar.cause());
@@ -144,6 +146,7 @@ public class SSE2Chunk {
         java.util.concurrent.atomic.AtomicBoolean done = new java.util.concurrent.atomic.AtomicBoolean();
         Intravenous.SingleDropProcessor<String> dropProcessor = drop -> {
             long sequence = events.getAndIncrement();
+            exchange.trace().payload("sse_event", java.util.Map.of("event_sequence", sequence), drop, false);
             CatholicLLMObservationSupport.safely(() -> observer.onStreamEvent(
                 exchange.id(), exchange.provider(), sequence, drop, exchange.elapsedMillis()));
             Future<Void> chain = Future.succeededFuture();
@@ -163,7 +166,15 @@ public class SSE2Chunk {
                         return Future.failedFuture(e);
                     }
                     if (chunk == null) return Future.succeededFuture();
-                    parsed.incrementAndGet();
+                    long chunkSequence = parsed.getAndIncrement();
+                    exchange.trace().event("converted_chunk", java.util.Map.of("event_sequence", sequence,
+                            "chunk_sequence", chunkSequence, "finished", chunk.isFinished(), "choice_index", chunk.index()));
+                    if (chunk.deltaToolCalls() != null) for (var delta : chunk.deltaToolCalls()) {
+                        if (delta.function() != null) exchange.trace().payload("converted_arguments_delta",
+                                java.util.Map.of("event_sequence", sequence, "chunk_sequence", chunkSequence,
+                                        "tool_index", delta.index(), "tool_call_id", delta.id() == null ? "" : delta.id()),
+                                delta.function().argumentsDelta(), true);
+                    }
                     if (chunk.isFinished()) terminalChunks.incrementAndGet();
                     return Future.succeededFuture().compose(ignored -> chunkAsyncProcessor.apply(chunk))
                         .andThen(ar -> {
@@ -175,7 +186,7 @@ public class SSE2Chunk {
             return chain;
         };
         return processSSEStream(keel, httpClientResponse, dropProcessor, 0L,
-            details -> diagnostic(observer, exchange, "transport_completed", details))
+            details -> diagnostic(observer, exchange, "transport_completed", details), exchange)
             .andThen(ar -> {
                 diagnostic(observer, exchange, "stream_completed", java.util.Map.of(
                     "events", events.get(), "parsed_chunks", parsed.get(), "processed_chunks", processed.get(),
@@ -187,6 +198,7 @@ public class SSE2Chunk {
 
     public static void diagnostic(CatholicLLMObserver observer, Exchange exchange,
                                   String phase, java.util.Map<String, Object> details) {
+        exchange.trace().event(phase, details);
         CatholicLLMObservationSupport.safely(() -> observer.onStreamDiagnostic(
             exchange.id(), exchange.provider(), phase, details, exchange.elapsedMillis()));
     }
@@ -239,13 +251,13 @@ public class SSE2Chunk {
         Intravenous.SingleDropProcessor<String> dropProcessor,
         long timeout
     ) {
-        return processSSEStream(keel, httpClientResponse, dropProcessor, timeout, details -> {});
+        return processSSEStream(keel, httpClientResponse, dropProcessor, timeout, details -> {}, null);
     }
 
     private static Future<Void> processSSEStream(
         Keel keel, HttpClientResponse httpClientResponse,
         Intravenous.SingleDropProcessor<String> dropProcessor, long timeout,
-        java.util.function.Consumer<java.util.Map<String, Object>> diagnostic
+        java.util.function.Consumer<java.util.Map<String, Object>> diagnostic, @Nullable Exchange exchange
     ) {
         // Pause before asynchronous deployment; a fast HTTP body can otherwise end unobserved.
         httpClientResponse.pause();
@@ -258,8 +270,14 @@ public class SSE2Chunk {
                 });
         };
         AtomicLong bytes = new AtomicLong();
+        AtomicLong buffers = new AtomicLong();
         java.util.concurrent.atomic.AtomicBoolean eof = new java.util.concurrent.atomic.AtomicBoolean();
         var cutter = new IntravenouslyCutterOnString(guarded, timeout) {
+            void capturePending() {
+                if (exchange != null && exchange.trace().enabled()) synchronized (getBufferRef()) {
+                    CatholicLLMObservationSupport.captureBuffer(exchange, "transport_pending", getBufferRef().get(), buffers.get());
+                }
+            }
             java.util.Map<String, Object> snapshot() {
                 synchronized (getBufferRef()) {
                     Buffer pending = getBufferRef().get();
@@ -273,6 +291,8 @@ public class SSE2Chunk {
                          httpClientResponse.pause();
                          httpClientResponse.handler(buffer -> {
                              bytes.addAndGet(buffer.length());
+                             if (exchange != null) CatholicLLMObservationSupport.captureBuffer(
+                                     exchange, "transport_buffer", buffer, buffers.getAndIncrement());
                              cutter.acceptFromStream(buffer);
                          });
                          httpClientResponse.exceptionHandler(cutter::stopHere);
@@ -286,6 +306,7 @@ public class SSE2Chunk {
                              ? Future.<Void>succeededFuture() : Future.<Void>failedFuture(processingFailure.get()));
                      })
                      .andThen(ar -> {
+                         CatholicLLMObservationSupport.safely(cutter::capturePending);
                          CatholicLLMObservationSupport.safely(() -> diagnostic.accept(cutter.snapshot()));
                          cutter.undeployMe();
                      });

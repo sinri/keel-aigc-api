@@ -1,5 +1,7 @@
 package io.github.sinri.keel.aigc.api.llm.anthropic;
 
+import io.github.sinri.keel.aigc.api.trace.CatholicTraceContext;
+
 import io.github.sinri.keel.aigc.api.internal.SSE2Chunk;
 import io.github.sinri.keel.aigc.api.internal.anthropic.AnthropicRequestConverter;
 import io.github.sinri.keel.aigc.api.internal.anthropic.AnthropicResponseConverter;
@@ -85,15 +87,17 @@ public class AnthropicLLM implements CatholicLLM {
         return new Builder();
     }
 
+    @Override public boolean supportsTrace() { return true; }
+
     @Override
     public Future<CatholicLLMResponse> call(CatholicLLMRequest request) {
-        JsonObject body = new AnthropicRequestConverter().convert(request);
+        JsonObject body = CatholicLLMObservationSupport.convertRequest(request, () -> new AnthropicRequestConverter().convert(request));
         body.put("stream", false);
-        var exchange = observeRequest(body, false);
+        var exchange = observeRequest(body, false, request.traceContext());
 
         return sendJsonPost(body, false)
                 .compose(response -> SSE2Chunk.requireSuccessAndReadBody(response, ANTHROPIC_API_ERROR, observer, exchange))
-                .map(buf -> new AnthropicResponseConverter().convert(buf.toJsonObject()))
+                .map(buf -> CatholicLLMObservationSupport.convertResponse(exchange, () -> new AnthropicResponseConverter().convert(buf.toJsonObject())))
                 .andThen(ar -> observeFailure(exchange, ar.cause()));
     }
 
@@ -102,11 +106,12 @@ public class AnthropicLLM implements CatholicLLM {
             CatholicLLMRequest request,
             Function<CatholicLLMResponseChunk, Future<Void>> chunkAsyncProcessor
     ) {
-        JsonObject body = new AnthropicRequestConverter().convert(request);
+        JsonObject body = CatholicLLMObservationSupport.convertRequest(request, () -> new AnthropicRequestConverter().convert(request));
         body.put("stream", true);
-        var exchange = observeRequest(body, true);
+        var exchange = observeRequest(body, true, request.traceContext());
 
         AnthropicStreamHandler streamHandler = new AnthropicStreamHandler();
+        streamHandler.getCollector().trace(exchange.trace());
 
         return sendJsonPost(body, true)
                 .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
@@ -118,11 +123,12 @@ public class AnthropicLLM implements CatholicLLM {
 
     @Override
     public Future<CatholicLLMResponse> callStream(CatholicLLMRequest request) {
-        JsonObject body = new AnthropicRequestConverter().convert(request);
+        JsonObject body = CatholicLLMObservationSupport.convertRequest(request, () -> new AnthropicRequestConverter().convert(request));
         body.put("stream", true);
-        var exchange = observeRequest(body, true);
+        var exchange = observeRequest(body, true, request.traceContext());
 
         AnthropicStreamHandler streamHandler = new AnthropicStreamHandler();
+        streamHandler.getCollector().trace(exchange.trace());
 
         Future<Void> streamFuture = sendJsonPost(body, true)
                 .compose(response -> SSE2Chunk.processOpenAiStyleSSEStream(
@@ -134,9 +140,9 @@ public class AnthropicLLM implements CatholicLLM {
             "message_stop", observer, exchange);
     }
 
-    private CatholicLLMObservationSupport.Exchange observeRequest(JsonObject body, boolean stream) {
+    private CatholicLLMObservationSupport.Exchange observeRequest(JsonObject body, boolean stream, CatholicTraceContext trace) {
         String endpoint = baseUrl + "/messages";
-        var exchange = CatholicLLMObservationSupport.exchange("anthropic-messages", endpoint, stream);
+        var exchange = CatholicLLMObservationSupport.exchange("anthropic-messages", endpoint, stream, trace);
         var headers = new java.util.LinkedHashMap<String, String>();
         headers.put("Content-Type", "application/json");
         headers.put("x-api-key", apiKey);
