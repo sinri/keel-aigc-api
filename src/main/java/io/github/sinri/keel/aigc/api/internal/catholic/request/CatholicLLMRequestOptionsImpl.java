@@ -14,8 +14,21 @@ public record CatholicLLMRequestOptionsImpl(
     @Nullable Integer maxTokens,
     @Nullable Double topP,
     @Nullable List<String> stop,
-    JsonObject extra
+    JsonObject extra,
+    @Nullable String requiredToolName
 ) implements CatholicLLMRequestOptions {
+
+    public CatholicLLMRequestOptionsImpl {
+        if (requiredToolName != null && requiredToolName.isBlank()) {
+            throw new IllegalArgumentException("requiredToolName must not be blank");
+        }
+    }
+
+    /** 保留原有构造方式。 */
+    public CatholicLLMRequestOptionsImpl(@Nullable Double temperature, @Nullable Integer maxTokens,
+            @Nullable Double topP, @Nullable List<String> stop, JsonObject extra) {
+        this(temperature, maxTokens, topP, stop, extra, null);
+    }
 
     /**
      * 创建默认选项
@@ -39,7 +52,14 @@ public record CatholicLLMRequestOptionsImpl(
         private @Nullable Integer maxTokens;
         private @Nullable Double topP;
         private @Nullable List<String> stop;
+        private @Nullable String requiredToolName;
         private JsonObject extra = new JsonObject();
+
+        @Override
+        public Builder requiredToolName(String name) {
+            this.requiredToolName = java.util.Objects.requireNonNull(name, "name");
+            return this;
+        }
 
         public Builder temperature(double temperature) {
             this.temperature = temperature;
@@ -77,7 +97,7 @@ public record CatholicLLMRequestOptionsImpl(
         }
 
         public CatholicLLMRequestOptionsImpl build() {
-            return new CatholicLLMRequestOptionsImpl(temperature, maxTokens, topP, stop, extra);
+            return new CatholicLLMRequestOptionsImpl(temperature, maxTokens, topP, stop, extra, requiredToolName);
         }
     }
 }

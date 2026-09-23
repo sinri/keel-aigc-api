@@ -209,6 +209,10 @@ public class DashScopeRequestConverter {
         if (options.extra() != null && !options.extra().isEmpty()) {
             params.mergeIn(options.extra());
         }
+        if (options.requiredToolName() != null) {
+            params.put("tool_choice", new JsonObject().put("type", "function")
+                .put("function", new JsonObject().put("name", options.requiredToolName())));
+        }
 
         return params;
     }

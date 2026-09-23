@@ -646,8 +646,56 @@ class CatholicAgentTest {
         CatholicAgentResult result = new CatholicRequiredToolAgent(agent, "f").interact("x")
             .toCompletionStage().toCompletableFuture().join();
         assertTrue(result.completed());
-        assertNotNull(llm.requests.get(0).options().extra().getJsonObject("tool_choice"));
+        assertEquals("f", llm.requests.get(0).options().requiredToolName());
+        assertNull(llm.requests.get(1).options().requiredToolName());
         assertFalse(llm.requests.get(1).options().extra().containsKey("tool_choice"));
+    }
+
+    @Test
+    void requiredToolRequestsUseProviderFormatsAndRestoreBaseOptions() {
+        var converters = List.<Function<CatholicLLMRequest, io.vertx.core.json.JsonObject>>of(
+            new io.github.sinri.keel.aigc.api.internal.openai.chatcompletions.OpenAIChatCompletionsRequestConverter()::convert,
+            new io.github.sinri.keel.aigc.api.internal.openai.responses.OpenAIResponsesRequestConverter()::convert,
+            new io.github.sinri.keel.aigc.api.internal.anthropic.AnthropicRequestConverter()::convert,
+            request -> new io.github.sinri.keel.aigc.api.internal.dashscope.DashScopeRequestConverter().convert(request).getJsonObject("parameters"),
+            request -> new io.github.sinri.keel.aigc.api.internal.dashscope.multimodalgeneration.DashScopeMultimodalRequestConverter().convert(request).getJsonObject("parameters")
+        );
+        var nested = new io.vertx.core.json.JsonObject().put("type", "function")
+            .put("function", new io.vertx.core.json.JsonObject().put("name", "f"));
+        var expected = List.of(nested,
+            new io.vertx.core.json.JsonObject().put("type", "function").put("name", "f"),
+            new io.vertx.core.json.JsonObject().put("type", "tool").put("name", "f"), nested, nested);
+        for (int provider = 0; provider < converters.size(); provider++) {
+            for (int baseMode = 0; baseMode < 3; baseMode++) {
+                boolean genericBase = baseMode == 2;
+                CountingLlm llm = new CountingLlm();
+                llm.queue.add(toolOnlyResponse(new CatholicFunctionToolCallImpl("c", new FunctionCall("f", "{}"))));
+                llm.queue.add(textOnlyResponse("done"));
+                Object nativeChoice = baseMode == 0 ? null : provider == 2
+                    ? new io.vertx.core.json.JsonObject().put("type", "auto") : "auto";
+                var optionsBuilder = io.github.sinri.keel.aigc.api.llm.catholic.request.CatholicLLMRequestOptions.builder()
+                    .temperature(0.4);
+                if (nativeChoice != null) optionsBuilder.putExtra("tool_choice", nativeChoice);
+                if (genericBase) optionsBuilder.requiredToolName("base");
+                var options = optionsBuilder.build();
+                var agent = CatholicAgent.builder().llm(llm).model("m").maxRounds(2).options(options)
+                    .tools(List.of(CatholicToolDefinition.function(FunctionDefinition.of("f", "d")),
+                        CatholicToolDefinition.function(FunctionDefinition.of("base", "d"))))
+                    .toolHandler(CatholicToolInvocationHandler.of(tc -> Future.succeededFuture("{}"))).build();
+                assertTrue(new CatholicRequiredToolAgent(agent, "f").interact("x")
+                    .toCompletionStage().toCompletableFuture().join().completed());
+                var first = converters.get(provider).apply(llm.requests.get(0));
+                var second = converters.get(provider).apply(llm.requests.get(1));
+                assertEquals(expected.get(provider), first.getJsonObject("tool_choice"));
+                Object restored = genericBase
+                    ? new io.vertx.core.json.JsonObject(expected.get(provider).encode().replace("\"f\"", "\"base\""))
+                    : nativeChoice;
+                assertEquals(restored, second.getValue("tool_choice"));
+                assertEquals(0.4, first.getDouble("temperature"));
+                assertEquals(nativeChoice, options.extra().getValue("tool_choice"));
+                assertEquals(genericBase ? "base" : null, options.requiredToolName());
+            }
+        }
     }
 
     @Test

@@ -199,5 +199,8 @@ public class AnthropicRequestConverter {
         if (options.extra() != null && !options.extra().isEmpty()) {
             body.mergeIn(options.extra());
         }
+        if (options.requiredToolName() != null) {
+            body.put("tool_choice", new JsonObject().put("type", "tool").put("name", options.requiredToolName()));
+        }
     }
 }

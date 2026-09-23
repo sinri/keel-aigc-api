@@ -31,6 +31,12 @@ public interface CatholicLLMRequestOptions {
     @Nullable List<String> stop();
 
     /**
+     * 指定必须调用的函数名称；非 null 时优先于 extra 中的 tool_choice。
+     * 未设置时保留厂商原生参数。
+     */
+    default @Nullable String requiredToolName() { return null; }
+
+    /**
      * 其他厂商特有参数（扩展用）
      */
     JsonObject extra();
@@ -53,6 +59,11 @@ public interface CatholicLLMRequestOptions {
      * Builder接口，将构造逻辑暴露给外部模块。
      */
     interface Builder {
+        /** 指定必须调用的函数。旧的自定义 Builder 如需支持此选项，应覆盖本方法。 */
+        default Builder requiredToolName(String name) {
+            throw new UnsupportedOperationException("requiredToolName is not supported by this builder");
+        }
+
         Builder temperature(double temperature);
 
         Builder maxTokens(int maxTokens);

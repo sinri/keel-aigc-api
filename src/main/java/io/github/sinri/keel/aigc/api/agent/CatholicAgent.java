@@ -231,11 +231,8 @@ public final class CatholicAgent {
         if (source.topP() != null) builder.topP(source.topP());
         if (source.stop() != null) builder.stop(List.copyOf(source.stop()));
         var extra = source.extra().copy();
-        if (requiredTool != null) {
-            extra.put("tool_choice", new io.vertx.core.json.JsonObject()
-                    .put("type", "function")
-                    .put("function", new io.vertx.core.json.JsonObject().put("name", requiredTool)));
-        }
+        String selectedTool = requiredTool != null ? requiredTool : source.requiredToolName();
+        if (selectedTool != null) builder.requiredToolName(selectedTool);
         return builder.extra(extra).build();
     }
 

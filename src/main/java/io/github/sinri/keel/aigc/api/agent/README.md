@@ -244,7 +244,7 @@ CatholicRequiredToolAgent reportAgent =
 return reportAgent.interact(userMessage);
 ```
 
-构造 `CatholicRequiredToolAgent` 时会验证指定函数已经配置。其 `tool_choice` 覆盖只存在于本次交互的首次 LLM 请求中；后续请求恢复基础 options，且不会修改或污染共享的 `CatholicLLMRequestOptions`。
+构造 `CatholicRequiredToolAgent` 时会验证指定函数已经配置。其通用 `requiredToolName` 覆盖只存在于本次交互的首次 LLM 请求中；后续请求恢复基础 options，且不会修改或污染共享的 `CatholicLLMRequestOptions`。
 
 实际的工具选择仍由模型服务根据 `tool_choice` 参数完成，框架不会绕过模型自行调用工具。首次响应返回后，框架会在 Observer 和任何工具 handler 执行前验证响应中包含指定函数调用。如果模型服务忽略参数、没有调用工具或改为调用其他工具，交互会以 `CatholicRequiredToolNotCalledException` 失败，错误的工具调用不会产生副作用。
 
@@ -271,3 +271,5 @@ return reportAgent.interact(userMessage);
 - 一次 `interact(...)` 是独立用户交互，不负责跨交互的会话存储；
 - 工具调用当前顺序执行，不并行执行；
 - 工具重试、超时、错误转换以及长期记忆应由 handler、Observer 或上层业务实现。
+
+指定工具由各 Provider 转换为原生 `tool_choice` 格式。通用 `requiredToolName` 非空时优先于 `extra.tool_choice`；未设置时原生参数保持原样。RequiredToolAgent 后续请求恢复基础配置（包括调用方原有的工具选择），首轮覆盖不会修改共享 options。

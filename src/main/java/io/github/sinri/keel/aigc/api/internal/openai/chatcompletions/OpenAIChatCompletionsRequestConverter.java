@@ -201,5 +201,9 @@ public class OpenAIChatCompletionsRequestConverter {
         if (options.extra() != null && !options.extra().isEmpty()) {
             openaiRequest.mergeIn(options.extra());
         }
+        if (options.requiredToolName() != null) {
+            openaiRequest.put("tool_choice", new JsonObject().put("type", "function")
+                .put("function", new JsonObject().put("name", options.requiredToolName())));
+        }
     }
 }
