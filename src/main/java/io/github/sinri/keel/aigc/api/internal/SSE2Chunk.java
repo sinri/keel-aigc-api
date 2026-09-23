@@ -99,7 +99,7 @@ public class SSE2Chunk {
     }
 
     /**
-     * 消费 OpenAI/Anthropic 风格的 SSE 流：每个 {@code \n\n} 分隔的事件块被逐行传给 {@code processSseLine}，
+     * 消费 OpenAI/Anthropic 风格的 SSE 流：每个空行分隔的事件块（支持 LF、CRLF、CR）被逐行传给 {@code processSseLine}，
      * 非 null chunk 串行传给 {@code chunkAsyncProcessor}。
      * <p>
      * 对于 DashScope 风格的 SSE，请使用 {@link #processDashScopeSSEStream}。
@@ -204,7 +204,7 @@ public class SSE2Chunk {
     }
 
     /**
-     * 消费 DashScope 风格的 SSE 流：每个 {@code \n\n} 分隔的事件块被逐行传给 {@code streamHandler.processSseLine}，
+     * 消费 DashScope 风格的 SSE 流：每个空行分隔的事件块（支持 LF、CRLF、CR）被逐行传给 {@code streamHandler.processSseLine}，
      * 并在块末尾模拟空行边界以触发事件完成。未形成事件边界的底层残留数据仅在诊断中报告。
      * 非 null chunk 串行传给 {@code chunkAsyncProcessor}。
      */
@@ -234,7 +234,7 @@ public class SSE2Chunk {
     }
 
     /**
-     * 处理 SSE 流，使用 {@link IntravenouslyCutterOnString} 按 {@code \n\n} 切分事件块，
+     * 处理 SSE 流，使用 {@link IntravenouslyCutterOnString} 按空行切分事件块，支持 LF、CRLF、CR 及跨 Buffer 的换行边界，
      * 每个块作为 drop 由 {@code dropProcessor} 串行处理。
      *
      * @param keel               Keel 实例，用于部署 Verticle。

@@ -98,8 +98,9 @@ class SSEMissingDoneInvestigationTest {
         var vertx = Vertx.vertx();
         var keel = Keel.create(vertx);
         String[] bodies = {DATA + "\n\ndata: [DONE]\n\n", DATA + "\n\n", DATA + "\n", DATA,
-                DATA + "\r\n\r\n", "data: {invalid json}\n\n"};
-        String[] labels = {"done", "no-done-complete-event", "no-done-single-newline", "no-done-no-newline", "crlf", "invalid-json"};
+                DATA + "\r\n\r\n", "data: {invalid json}\n\n", DATA + "\r\r",
+                ": comment\r\n" + DATA + "\r\n\n"};
+        String[] labels = {"done", "no-done-complete-event", "no-done-single-newline", "no-done-no-newline", "crlf", "invalid-json", "cr", "mixed"};
         try {
             for (boolean separateCollector : new boolean[]{false, true}) {
                 for (int i = 0; i < bodies.length; i++) {
@@ -130,8 +131,10 @@ class SSEMissingDoneInvestigationTest {
                         var result = separateCollector ? collector.build() : handler.buildFinalResponse();
                         System.out.printf("PROBE separate=%s case=%s chunks=%d id=%s text=%s finished=%s%n",
                                 separateCollector, labels[i], count.get(), result.id(), result.text(), result.finished());
-                        assertEquals(i < 2 ? 1 : 0, count.get(), labels[i]);
-                        assertEquals(i < 2 ? "hello" : null, result.text(), labels[i]);
+                        boolean completeEvent = i < 2 || i == 4 || i >= 6;
+                        assertEquals(completeEvent ? 1 : 0, count.get(), labels[i]);
+                        assertEquals(completeEvent ? "hello" : null, result.text(), labels[i]);
+                        assertEquals(completeEvent, result.finished(), labels[i]);
                     } finally {
                         await(client.close());
                         await(server.close());
