@@ -6,11 +6,14 @@ import io.github.sinri.keel.aigc.api.internal.openai.chatcompletions.OpenAIChatC
 import io.github.sinri.keel.aigc.api.internal.openai.responses.OpenAIResponsesStreamHandler;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponse;
 import io.github.sinri.keel.aigc.api.llm.catholic.CatholicLLMResponseChunk;
+import io.github.sinri.keel.core.cutter.IntravenouslyCutterOnString;
+import io.vertx.core.Future;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Base64;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -70,19 +73,15 @@ public final class CatholicTraceReplay {
         }
         var result = new JsonObject().put("exchange_id", exchangeId).put("provider", provider)
                 .put("parser_version", CatholicTraceReplay.class.getPackage().getImplementationVersion());
-        String body = bytes.toString(StandardCharsets.UTF_8);
-        int start = 0, chunks = 0;
+        var framing = new ReplayFraming();
+        List<String> events = framing.feed(Buffer.buffer(bytes.toByteArray()));
+        int chunks = 0;
         try {
-            int boundary;
-            // Match the current production framing, including its CRLF limitation (issue #14).
-            while ((boundary = body.indexOf("\n\n", start)) >= 0) {
-                String event = body.substring(start, boundary);
-                for (String raw : event.split("\n")) {
-                    String line = raw.endsWith("\r") ? raw.substring(0, raw.length() - 1) : raw;
+            for (String event : events) {
+                for (String line : event.split("\n")) {
                     if (parse.apply(line) != null) chunks++;
                 }
                 if (dashscope && parse.apply("") != null) chunks++;
-                start = boundary + 2;
             }
             var response = build.get();
             var calls = new JsonArray();
@@ -105,6 +104,18 @@ public final class CatholicTraceReplay {
         } catch (RuntimeException cause) {
             result.put("parse_error", cause.getClass().getName()).put("parse_message", cause.getMessage());
         }
-        return result.put("chunks", chunks).put("pending_characters", body.length() - start);
+        return result.put("chunks", chunks).put("pending_characters", framing.pendingCharacters());
     }
+    /** Uses the same byte framing as live transport without deploying a worker. */
+    private static final class ReplayFraming extends IntravenouslyCutterOnString {
+        ReplayFraming() { super(event -> Future.succeededFuture()); }
+
+        List<String> feed(Buffer input) {
+            getBufferRef().get().appendBuffer(input);
+            return cut();
+        }
+
+        int pendingCharacters() { return getBufferRef().get().toString().length(); }
+    }
+
 }

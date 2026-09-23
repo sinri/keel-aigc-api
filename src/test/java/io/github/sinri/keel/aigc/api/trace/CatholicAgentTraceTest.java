@@ -151,7 +151,7 @@ class CatholicAgentTraceTest {
         } finally { recorder.close(); assertTrue(recorder.awaitClosed(Duration.ofSeconds(5))); }
     }
 
-    @Test void crlfFailureRetainsPreFramingEvidence() throws Exception {
+    @Test void crlfSuccessRetainsEvidenceForLaterArgumentFailure() throws Exception {
         var vertx = Vertx.vertx(); var keel = Keel.create(vertx);
         var traces = new CopyOnWriteArrayList<JsonObject>();
         var recorder = CatholicTraceRecorderTest.recorder(t -> { traces.add(t); return "memory"; }, CatholicTraceRecorder.ContentMode.RESTRICTED_RAW);
@@ -162,17 +162,50 @@ class CatholicAgentTraceTest {
             var session = recorder.start(Map.of());
             var model = llm("chat", keel, http, "http://127.0.0.1:" + server.actualPort());
             var request = CatholicLLMRequest.builder().model("probe").addMessage(CatholicUserMessage.ofText("probe")).build();
-            assertThrows(ExecutionException.class, () -> await(session.track(model.callStream(request, session.context()))));
+            var response = await(model.callStream(request, session.context()));
+            assertTrue(response.finished());
+            var failure = assertThrows(RuntimeException.class,
+                () -> response.message().toolCalls().get(0).parseArguments());
+            session.fail("TOOL_ARGUMENTS", failure);
             CatholicTraceRecorderTest.saved(session);
             var trace = traces.get(0);
             var events = trace.getJsonArray("events").stream().map(JsonObject.class::cast).toList();
-            assertFalse(events.stream().anyMatch(e -> "sse_event".equals(e.getString("kind"))));
+            assertTrue(events.stream().anyMatch(e -> "sse_event".equals(e.getString("kind"))));
             var buffer = events.stream().filter(e -> "transport_buffer".equals(e.getString("kind"))).findFirst().orElseThrow();
             var replay = CatholicTraceReplay.replayStream(trace, buffer.getString("exchange_id"));
-            assertEquals(0, replay.getInteger("chunks"));
-            assertTrue(replay.getInteger("pending_characters") > 0);
+            assertEquals(1, replay.getInteger("chunks"));
+            assertEquals(0, replay.getInteger("pending_characters"));
+            assertTrue(replay.getBoolean("finished"));
+            assertEquals(BAD, replay.getJsonArray("tool_calls").getJsonObject(0).getString("arguments"));
+            assertFalse(replay.getJsonArray("tool_calls").getJsonObject(0).getBoolean("arguments_valid"));
         } finally { await(http.close()); await(server.close()); await(vertx.close()); recorder.close(); assertTrue(recorder.awaitClosed(Duration.ofSeconds(5))); }
     }
+    @Test void replaySupportsAllLineEndingsAndSplitUtf8WithPendingTail() {
+        for (String ending : List.of("\n", "\r\n", "\r", "\r\n\n")) {
+            String data = "data: " + new JsonObject().put("id", "replay")
+                .put("choices", new JsonArray().add(new JsonObject().put("index", 0)
+                    .put("delta", new JsonObject().put("content", "中文🙂"))
+                    .put("finish_reason", "stop"))).encode();
+            String separator = ending.equals("\r\n\n") ? ending : ending + ending;
+            byte[] raw = (data + separator + "data: unfinished").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            var events = new JsonArray().add(new JsonObject().put("kind", "provider_request")
+                .put("exchange_id", "x").put("provider", "openai-chat-completions").put("stream", true));
+            for (int i = 0; i < raw.length; i++) {
+                events.add(new JsonObject().put("kind", "transport_buffer").put("exchange_id", "x")
+                    .put("buffer_sequence", i).put("original_bytes", 1)
+                    .put("payload", Base64.getEncoder().encodeToString(new byte[]{raw[i]})));
+            }
+            events.add(new JsonObject().put("kind", "transport_completed").put("exchange_id", "x").put("http_eof", true));
+            var trace = new JsonObject().put("schema_version", 1).put("content_mode", "RESTRICTED_RAW")
+                .put("evidence_complete", true).put("events", events);
+            var replay = CatholicTraceReplay.replayStream(trace, "x");
+            assertEquals(1, replay.getInteger("chunks"));
+            assertEquals("中文🙂", replay.getString("text"));
+            assertTrue(replay.getBoolean("finished"));
+            assertEquals("data: unfinished".length(), replay.getInteger("pending_characters"));
+        }
+    }
+
     private static CatholicLLM fixed(CatholicLLMResponse response) {
         return new CatholicLLM() {
             public io.vertx.core.Future<CatholicLLMResponse> call(CatholicLLMRequest r) { return io.vertx.core.Future.succeededFuture(response); }
